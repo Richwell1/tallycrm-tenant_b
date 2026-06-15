@@ -67,7 +67,11 @@ export interface CreateLeadInput {
   company_name?: string;
   message?: string;
   status?: LeadStatus;
+  source?: string;
   assigned_to?: string | null;
+  value?: number | null;
+  currency?: string | null;
+  expected_close_date?: string | null;
 }
 
 export function useCreateLead() {
@@ -78,7 +82,7 @@ export function useCreateLead() {
         .from("leads")
         .insert({
           ...input,
-          source: "Manual Entry",
+          source: input.source ?? "Manual Entry",
           status: input.status ?? "new",
         })
         .select("id")
@@ -87,6 +91,21 @@ export function useCreateLead() {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: leadsKey }),
+  });
+}
+
+export function useAssignableUsers() {
+  return useQuery({
+    queryKey: ["assignable_users"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("status", "active")
+        .order("full_name");
+      if (error) throw error;
+      return data as { id: string; full_name: string | null }[];
+    },
   });
 }
 

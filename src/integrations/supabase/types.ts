@@ -410,10 +410,12 @@ export type Database = {
           company_name: string | null
           converted_deal_id: string | null
           created_at: string
+          currency: string | null
           deleted_at: string | null
           disqualify_reason: string | null
           email: string
           email_status: string | null
+          expected_close_date: string | null
           first_name: string
           id: string
           ip_country: string | null
@@ -424,16 +426,19 @@ export type Database = {
           source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
+          value: number | null
         }
         Insert: {
           assigned_to?: string | null
           company_name?: string | null
           converted_deal_id?: string | null
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           disqualify_reason?: string | null
           email: string
           email_status?: string | null
+          expected_close_date?: string | null
           first_name: string
           id?: string
           ip_country?: string | null
@@ -444,16 +449,19 @@ export type Database = {
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+          value?: number | null
         }
         Update: {
           assigned_to?: string | null
           company_name?: string | null
           converted_deal_id?: string | null
           created_at?: string
+          currency?: string | null
           deleted_at?: string | null
           disqualify_reason?: string | null
           email?: string
           email_status?: string | null
+          expected_close_date?: string | null
           first_name?: string
           id?: string
           ip_country?: string | null
@@ -464,6 +472,7 @@ export type Database = {
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+          value?: number | null
         }
         Relationships: []
       }
