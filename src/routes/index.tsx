@@ -32,10 +32,10 @@ function Landing() {
               Features
             </a>
             <Link
-              to="/app"
+              to="/auth"
               className="rounded-lg bg-primary px-3.5 py-2 font-semibold text-primary-foreground hover:bg-primary-dark"
             >
-              Open CRM
+              Sign in
             </Link>
           </nav>
         </div>
@@ -53,11 +53,11 @@ function Landing() {
         </p>
         <div className="mt-8 flex gap-3">
           <Link
-            to="/app"
+            to="/auth"
             className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 font-semibold text-cta-foreground shadow-[var(--shadow-sm)] hover:bg-cta-hover"
           >
             <span className="material-symbols-outlined">login</span>
-            Enter the CRM
+            Sign in to your workspace
           </Link>
         </div>
       </main>
