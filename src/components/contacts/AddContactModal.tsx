@@ -1,206 +1,293 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { z } from "zod";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useCreateContact } from "@/lib/contacts-data";
-import { useAssignableUsers, useCompaniesLite } from "@/lib/leads-data";
+import { useAuth } from "@/lib/auth-context";
+import { useContactFormOptions, useCreateContact } from "@/lib/contacts-data";
 
-const schema = z.object({
-  first_name: z.string().trim().min(1, "Required").max(80),
-  last_name: z.string().trim().min(1, "Required").max(80),
-  email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
-  phone: z.string().trim().max(40).optional(),
-  job_title: z.string().trim().max(120).optional(),
-  company_id: z.string().optional(),
-  source: z.string().optional(),
-  notes: z.string().max(2000).optional(),
-});
-
-interface FormState {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  job_title: string;
-  company_id: string;
-  source: string;
-  assigned_to: string;
-  notes: string;
+interface AddContactModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const initial: FormState = {
+const initialState = {
   first_name: "",
   last_name: "",
   email: "",
   phone: "",
+  mobile: "",
   job_title: "",
   company_id: "",
-  source: "Manual",
-  assigned_to: "self",
+  country: "",
+  city: "",
+  tags: "Decision Maker, Tech Industry",
+  assigned_to: "",
   notes: "",
 };
 
-export function AddContactModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
+  const { user } = useAuth();
+  const [values, setValues] = useState(initialState);
   const create = useCreateContact();
-  const companies = useCompaniesLite();
-  const users = useAssignableUsers();
-  const [v, setV] = useState<FormState>(initial);
-  const [errs, setErrs] = useState<Record<string, string>>({});
+  const options = useContactFormOptions();
 
-  function set<K extends keyof FormState>(k: K, val: FormState[K]) {
-    setV((s) => ({ ...s, [k]: val }));
+  if (!open) return null;
+
+  function set<K extends keyof typeof values>(key: K, value: (typeof values)[K]) {
+    setValues((current) => ({ ...current, [key]: value }));
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  function close() {
+    if (!create.isPending) onOpenChange(false);
+  }
+
+  function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const p = schema.safeParse(v);
-    if (!p.success) {
-      const e2: Record<string, string> = {};
-      for (const i of p.error.issues) e2[i.path[0] as string] = i.message;
-      setErrs(e2);
+    if (!values.first_name.trim() || !values.last_name.trim()) {
+      toast.error("First and last name are required");
       return;
     }
-    setErrs({});
 
-    let assigned: string | null = null;
-    if (v.assigned_to === "self") {
-      const { data } = await supabase.auth.getUser();
-      assigned = data.user?.id ?? null;
-    } else if (v.assigned_to === "unassigned") {
-      assigned = null;
-    } else {
-      assigned = v.assigned_to;
-    }
-
-    try {
-      await create.mutateAsync({
-        first_name: v.first_name.trim(),
-        last_name: v.last_name.trim(),
-        email: v.email.trim() || null,
-        phone: v.phone.trim() || null,
-        job_title: v.job_title.trim() || null,
-        company_id: v.company_id || null,
-        source: v.source || null,
-        assigned_to: assigned,
-        notes: v.notes.trim() || null,
-      });
-      toast.success("Contact saved");
-      setV(initial);
-      onOpenChange(false);
-    } catch (err) {
-      toast.error("Could not save contact", { description: (err as Error).message });
-    }
+    create.mutate(
+      {
+        first_name: values.first_name.trim(),
+        last_name: values.last_name.trim(),
+        email: clean(values.email),
+        phone: clean(values.phone || values.mobile),
+        job_title: clean(values.job_title),
+        company_id: clean(values.company_id),
+        assigned_to: clean(values.assigned_to) || user?.id || null,
+        tags: values.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+        notes: clean(values.notes),
+      },
+      {
+        onSuccess: () => {
+          toast.success("Contact saved");
+          setValues(initialState);
+          onOpenChange(false);
+        },
+        onError: (error) =>
+          toast.error("Could not save contact", { description: (error as Error).message }),
+      },
+    );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add New Contact</DialogTitle>
-          <p className="text-sm text-text-secondary">
-            Capture details for a person record inside the CRM.
-          </p>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="First Name *" error={errs.first_name}>
-              <input className="input" value={v.first_name} onChange={(e) => set("first_name", e.target.value)} />
-            </Field>
-            <Field label="Last Name *" error={errs.last_name}>
-              <input className="input" value={v.last_name} onChange={(e) => set("last_name", e.target.value)} />
-            </Field>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
+        <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">person_add</span>
+            <h2 className="text-xl font-semibold text-foreground">Add Contact</h2>
+          </div>
+          <button
+            onClick={close}
+            className="rounded-full p-2 text-text-secondary transition-colors hover:bg-muted"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <form onSubmit={onSubmit} className="max-h-[76vh] overflow-y-auto p-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <Field label="First Name" required>
+                <input
+                  className="contact-input"
+                  value={values.first_name}
+                  onChange={(e) => set("first_name", e.target.value)}
+                  placeholder="e.g. Michael"
+                />
+              </Field>
+              <Field label="Last Name" required>
+                <input
+                  className="contact-input"
+                  value={values.last_name}
+                  onChange={(e) => set("last_name", e.target.value)}
+                  placeholder="e.g. Scott"
+                />
+              </Field>
+              <Field label="Email Address" required>
+                <input
+                  type="email"
+                  className="contact-input"
+                  value={values.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  placeholder="m.scott@dundermifflin.com"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Phone">
+                  <input
+                    type="tel"
+                    className="contact-input"
+                    value={values.phone}
+                    onChange={(e) => set("phone", e.target.value)}
+                    placeholder="+1..."
+                  />
+                </Field>
+                <Field label="Mobile">
+                  <input
+                    type="tel"
+                    className="contact-input"
+                    value={values.mobile}
+                    onChange={(e) => set("mobile", e.target.value)}
+                    placeholder="+1..."
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="Job Title">
+                <input
+                  className="contact-input"
+                  value={values.job_title}
+                  onChange={(e) => set("job_title", e.target.value)}
+                  placeholder="e.g. Regional Manager"
+                />
+              </Field>
+              <Field label="Company">
+                <div className="relative">
+                  <select
+                    className="contact-input pr-10"
+                    value={values.company_id}
+                    onChange={(e) => set("company_id", e.target.value)}
+                  >
+                    <option value="">Select company</option>
+                    {options.data?.companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-text-muted">
+                    search
+                  </span>
+                </div>
+              </Field>
+              <Field label="Country">
+                <select
+                  className="contact-input"
+                  value={values.country}
+                  onChange={(e) => set("country", e.target.value)}
+                >
+                  <option value="">Select Country</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Germany">Germany</option>
+                  <option value="Ghana">Ghana</option>
+                </select>
+              </Field>
+              <Field label="City">
+                <input
+                  className="contact-input"
+                  value={values.city}
+                  onChange={(e) => set("city", e.target.value)}
+                  placeholder="e.g. Scranton"
+                />
+              </Field>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Email Address" error={errs.email}>
-              <input
-                type="email"
-                className="input"
-                value={v.email}
-                onChange={(e) => set("email", e.target.value)}
+          <div className="mt-6 space-y-4 border-t border-border pt-6">
+            <Field label="Tags">
+              <div className="flex min-h-[38px] flex-wrap gap-1 rounded border border-border bg-muted/40 p-1">
+                {values.tags
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean)
+                  .slice(0, 3)
+                  .map((tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary"
+                    >
+                      {tag}
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </span>
+                  ))}
+                <input
+                  className="min-w-[140px] flex-1 border-none bg-transparent px-2 py-1 text-sm outline-none focus:ring-0"
+                  value={values.tags}
+                  onChange={(e) => set("tags", e.target.value)}
+                  placeholder="Add tag..."
+                />
+              </div>
+            </Field>
+
+            <Field label="Assigned To">
+              <div className="relative">
+                <select
+                  className="contact-input pr-10"
+                  value={values.assigned_to}
+                  onChange={(e) => set("assigned_to", e.target.value)}
+                >
+                  <option value="">Current User (Me)</option>
+                  {options.data?.profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.full_name ?? "Unnamed user"}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted">
+                  arrow_drop_down
+                </span>
+              </div>
+            </Field>
+
+            <Field label="Notes">
+              <textarea
+                className="min-h-[96px] w-full resize-none rounded border border-border bg-card p-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={values.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Additional details about the contact..."
               />
             </Field>
-            <Field label="Phone Number">
-              <input className="input" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
-            </Field>
           </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Job Title">
-              <input className="input" value={v.job_title} onChange={(e) => set("job_title", e.target.value)} />
-            </Field>
-            <Field label="Company">
-              <select
-                className="input"
-                value={v.company_id}
-                onChange={(e) => set("company_id", e.target.value)}
-              >
-                <option value="">— None —</option>
-                {(companies.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Source">
-              <select
-                className="input"
-                value={v.source}
-                onChange={(e) => set("source", e.target.value)}
-              >
-                <option value="Manual">Manual</option>
-                <option value="Landing Page">Landing Page</option>
-                <option value="Referral">Referral</option>
-                <option value="LinkedIn">LinkedIn</option>
-              </select>
-            </Field>
-            <Field label="Assigned To">
-              <select
-                className="input"
-                value={v.assigned_to}
-                onChange={(e) => set("assigned_to", e.target.value)}
-              >
-                <option value="self">Self (Me)</option>
-                {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name ?? "Unnamed user"}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Notes">
-            <textarea className="input" rows={3} value={v.notes} onChange={(e) => set("notes", e.target.value)} />
-          </Field>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? "Saving..." : "Save Contact"}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+
+        <footer className="flex items-center justify-end gap-4 border-t border-border bg-muted/40 px-6 py-4">
+          <button
+            onClick={close}
+            className="rounded px-6 py-2 text-sm font-semibold text-text-secondary hover:bg-border"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={create.isPending}
+            className="rounded bg-primary px-6 py-2 text-sm font-bold text-white shadow-[var(--shadow-sm)] transition-all hover:bg-primary-dark active:scale-95 disabled:opacity-60"
+          >
+            {create.isPending ? "Saving..." : "Save Contact"}
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-text-secondary">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-text-secondary">
+        {label} {required ? <span className="text-danger">*</span> : null}
+      </span>
       {children}
-      {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
     </label>
   );
+}
+
+function clean(value: string) {
+  return value.trim() || null;
 }

@@ -1,252 +1,315 @@
-import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { z } from "zod";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useCreateDeal, useContactsLite, usePipelineStages } from "@/lib/deals-data";
-import { useAssignableUsers } from "@/lib/leads-data";
-import { useCompaniesLite } from "@/lib/leads-data";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { useCreateDeal, useDealFormOptions } from "@/lib/deals-data";
 
-const schema = z.object({
-  name: z.string().trim().min(1, "Required").max(120),
-  primary_contact_id: z.string().uuid("Select a contact"),
-  company_id: z.string().optional(),
-  value: z.string().refine((v) => !isNaN(Number(v)) && Number(v) >= 0, "Enter a value"),
-  currency: z.enum(["GHS", "USD"]),
-  stage_id: z.string().uuid(),
-  expected_close_date: z.string().min(1, "Required"),
-  assigned_to: z.string().optional(),
-  description: z.string().max(2000).optional(),
-});
-
-interface FormState {
-  name: string;
-  primary_contact_id: string;
-  company_id: string;
-  value: string;
-  currency: "GHS" | "USD";
-  stage_id: string;
-  expected_close_date: string;
-  assigned_to: string;
-  description: string;
+interface AddDealModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const initial: FormState = {
-  name: "",
-  primary_contact_id: "",
-  company_id: "",
-  value: "",
-  currency: "GHS",
-  stage_id: "",
-  expected_close_date: "",
-  assigned_to: "self",
-  description: "",
-};
+const currencies = ["USD", "GHS", "NGN", "KES"];
 
-export function AddDealModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const create = useCreateDeal();
-  const contacts = useContactsLite();
-  const companies = useCompaniesLite();
-  const stages = usePipelineStages();
-  const users = useAssignableUsers();
-  const [v, setV] = useState<FormState>(initial);
-  const [errs, setErrs] = useState<Record<string, string>>({});
+export function AddDealModal({ open, onOpenChange }: AddDealModalProps) {
+  const { data: options } = useDealFormOptions();
+  const createDeal = useCreateDeal();
+  const [name, setName] = useState("");
+  const [contactId, setContactId] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [value, setValue] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [stageId, setStageId] = useState("");
+  const [probability, setProbability] = useState("25");
+  const [closeDate, setCloseDate] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState("Enterprise, Priority");
 
-  const openStages = useMemo(
-    () => (stages.data ?? []).filter((s) => !s.is_closed),
-    [stages.data]
+  const selectedStage = useMemo(
+    () => options?.stages.find((stage) => stage.id === stageId),
+    [options?.stages, stageId],
   );
 
-  function set<K extends keyof FormState>(k: K, val: FormState[K]) {
-    setV((s) => ({ ...s, [k]: val }));
-  }
+  useEffect(() => {
+    if (!open || !options?.stages.length || stageId) return;
+    const firstOpen = options.stages.find((stage) => !stage.is_closed) ?? options.stages[0];
+    setStageId(firstOpen.id);
+    setProbability(String(firstOpen.default_probability ?? 25));
+  }, [open, options?.stages, stageId]);
 
-  async function onSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!contactId || companyId) return;
+    const contact = options?.contacts.find((item) => item.id === contactId);
+    if (contact?.company_id) setCompanyId(contact.company_id);
+  }, [companyId, contactId, options?.contacts]);
+
+  if (!open) return null;
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const stageId = v.stage_id || openStages[0]?.id || "";
-    const payload = { ...v, stage_id: stageId };
-    const p = schema.safeParse(payload);
-    if (!p.success) {
-      const e2: Record<string, string> = {};
-      for (const i of p.error.issues) e2[i.path[0] as string] = i.message;
-      setErrs(e2);
-      return;
-    }
-    setErrs({});
-
-    let assigned: string | null = null;
-    if (v.assigned_to === "self") {
-      const { data } = await supabase.auth.getUser();
-      assigned = data.user?.id ?? null;
-    } else if (v.assigned_to === "unassigned") {
-      assigned = null;
-    } else {
-      assigned = v.assigned_to;
-    }
-
-    const stage = openStages.find((s) => s.id === stageId);
-
-    try {
-      await create.mutateAsync({
-        name: v.name.trim(),
-        primary_contact_id: v.primary_contact_id,
-        company_id: v.company_id || null,
-        value: Number(v.value),
-        currency: v.currency,
-        stage_id: stageId,
-        expected_close_date: v.expected_close_date || null,
-        assigned_to: assigned,
-        description: v.description.trim() || null,
-      });
-      // Patch probability to stage default
-      if (stage?.default_probability !== undefined) {
-        // separate update kept simple here; create_deal default 0
-      }
-      toast.success("Deal saved");
-      setV(initial);
-      onOpenChange(false);
-    } catch (err) {
-      toast.error("Could not save deal", { description: (err as Error).message });
-    }
+    await createDeal.mutateAsync({
+      name,
+      primary_contact_id: contactId,
+      company_id: companyId || null,
+      value: Number(value || 0),
+      currency,
+      stage_id: stageId,
+      probability: Number(probability || selectedStage?.default_probability || 0),
+      expected_close_date: closeDate,
+      assigned_to: assignedTo || null,
+      description: description || null,
+      tags: tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    });
+    onOpenChange(false);
+    setName("");
+    setContactId("");
+    setCompanyId("");
+    setValue("");
+    setDescription("");
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add New Deal</DialogTitle>
-          <p className="text-sm text-text-secondary">
-            Create a new sales opportunity linked to a contact and pipeline stage.
-          </p>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <Field label="Deal Name *" error={errs.name}>
-            <input className="input" value={v.name} onChange={(e) => set("name", e.target.value)} />
-          </Field>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Primary Contact *" error={errs.primary_contact_id}>
-              <select
-                className="input"
-                value={v.primary_contact_id}
-                onChange={(e) => set("primary_contact_id", e.target.value)}
-              >
-                <option value="">— Select contact —</option>
-                {(contacts.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.first_name} {c.last_name} {c.email ? `(${c.email})` : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Company">
-              <select
-                className="input"
-                value={v.company_id}
-                onChange={(e) => set("company_id", e.target.value)}
-              >
-                <option value="">— None —</option>
-                {(companies.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-[720px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+        <header className="flex items-center justify-between border-b border-border bg-muted px-8 py-6">
+          <div>
+            <h2 className="text-[24px] font-semibold text-foreground">Add New Deal</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Populate the fields below to create a new opportunity in the pipeline.
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-full p-2 text-text-secondary transition-colors hover:bg-danger-light hover:text-danger"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </header>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Deal Value *" error={errs.value}>
-              <div className="flex">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input rounded-r-none"
-                  value={v.value}
-                  onChange={(e) => set("value", e.target.value)}
-                />
-                <select
-                  className="input w-24 rounded-l-none border-l-0"
-                  value={v.currency}
-                  onChange={(e) => set("currency", e.target.value as FormState["currency"])}
-                >
-                  <option value="GHS">GHS</option>
-                  <option value="USD">USD</option>
-                </select>
-              </div>
-            </Field>
-            <Field label="Stage *">
-              <select
-                className="input"
-                value={v.stage_id || openStages[0]?.id || ""}
-                onChange={(e) => set("stage_id", e.target.value)}
-              >
-                {openStages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Expected Close Date *" error={errs.expected_close_date}>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-8">
+          <div className="space-y-6">
+            <Field label="Deal Name">
               <input
-                type="date"
-                className="input"
-                value={v.expected_close_date}
-                onChange={(e) => set("expected_close_date", e.target.value)}
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="deal-input"
+                placeholder="e.g. Q4 Cloud Infrastructure Expansion"
               />
             </Field>
-            <Field label="Assigned To">
-              <select
-                className="input"
-                value={v.assigned_to}
-                onChange={(e) => set("assigned_to", e.target.value)}
-              >
-                <option value="self">Self (Me)</option>
-                {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name ?? "Unnamed user"}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Field label="Primary Contact">
+                <div className="relative">
+                  <span className="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-muted">
+                    person
+                  </span>
+                  <select
+                    required
+                    value={contactId}
+                    onChange={(e) => setContactId(e.target.value)}
+                    className="deal-input appearance-none pl-9"
+                  >
+                    <option value="">Search contacts...</option>
+                    {options?.contacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.first_name} {contact.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </Field>
+              <Field label="Company">
+                <div className="relative">
+                  <span className="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-muted">
+                    business
+                  </span>
+                  <select
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    className="deal-input appearance-none pl-9"
+                  >
+                    <option value="">Search companies...</option>
+                    {options?.companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <Field label="Value" className="md:col-span-2">
+                <div className="flex">
+                  <input
+                    required
+                    min="0"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="deal-input rounded-r-none border-r-0"
+                    placeholder="0.00"
+                    type="number"
+                  />
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="h-[38px] w-24 rounded-r-lg border border-border bg-muted px-2 text-xs font-semibold outline-none"
+                  >
+                    {currencies.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+              </Field>
+              <Field label="Probability %">
+                <input
+                  min="0"
+                  max="100"
+                  value={probability}
+                  onChange={(e) => setProbability(e.target.value)}
+                  className="deal-input"
+                  type="number"
+                />
+              </Field>
+            </div>
+
+            <Field label="Stage">
+              <div className="flex h-10 w-full items-center gap-1 overflow-hidden">
+                {options?.stages.map((stage, index) => {
+                  const active = stage.id === stageId;
+                  const closedWon = stage.is_closed && stage.is_won;
+                  const closedLost = stage.is_closed && !stage.is_won;
+                  return (
+                    <button
+                      key={stage.id}
+                      type="button"
+                      onClick={() => {
+                        setStageId(stage.id);
+                        setProbability(String(stage.default_probability ?? probability));
+                      }}
+                      className={`pipeline-step h-full flex-1 text-[10px] font-bold uppercase transition-colors ${
+                        active
+                          ? closedWon
+                            ? "bg-success text-white shadow-inner"
+                            : closedLost
+                              ? "bg-danger text-white shadow-inner"
+                              : "bg-primary text-white shadow-inner"
+                          : closedWon
+                            ? "bg-success/30 text-text-secondary hover:bg-success/50"
+                            : closedLost
+                              ? "bg-danger/30 text-text-secondary hover:bg-danger/50"
+                              : "bg-primary/30 text-text-secondary hover:bg-primary/50"
+                      } ${index === 0 ? "pipeline-step-first" : ""} ${
+                        index === (options?.stages.length ?? 0) - 1 ? "pipeline-step-last" : ""
+                      }`}
+                    >
+                      {stage.name.replace(" Made", "").replace(" To Buy", "")}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Field label="Expected Close Date">
+                <input
+                  required
+                  value={closeDate}
+                  onChange={(e) => setCloseDate(e.target.value)}
+                  className="deal-input"
+                  type="date"
+                />
+              </Field>
+              <Field label="Assigned To">
+                <select
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  className="deal-input appearance-none bg-muted"
+                >
+                  <option value="">Current user</option>
+                  {options?.profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.full_name} ({profile.role})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Description">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-28 w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder="Brief summary of the deal context..."
+              />
+            </Field>
+
+            <Field label="Tags">
+              <div className="flex min-h-[42px] flex-wrap gap-2 rounded-lg border border-border bg-muted p-2">
+                {tags
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded bg-primary-light px-2 py-1 text-xs font-semibold text-primary"
+                    >
+                      {tag}
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </span>
+                  ))}
+                <input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="min-w-[160px] flex-1 border-none bg-transparent px-1 py-1 text-sm outline-none focus:ring-0"
+                  placeholder="Add tag..."
+                />
+              </div>
             </Field>
           </div>
 
-          <Field label="Description">
-            <textarea
-              className="input"
-              rows={3}
-              value={v.description}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </Field>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <footer className="-mx-8 -mb-8 mt-8 flex justify-end gap-4 border-t border-border bg-muted px-8 py-6">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-lg border border-border bg-card px-8 py-2 text-xs font-semibold transition-colors hover:bg-secondary"
+            >
               Cancel
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? "Saving..." : "Save Deal"}
-            </Button>
-          </DialogFooter>
+            </button>
+            <button
+              type="submit"
+              disabled={createDeal.isPending}
+              className="rounded-lg bg-primary px-8 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:bg-primary-dark active:scale-95 disabled:opacity-60"
+            >
+              {createDeal.isPending ? "Saving..." : "Save Deal"}
+            </button>
+          </footer>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-text-secondary">{label}</span>
+    <label className={`block space-y-1 ${className}`}>
+      <span className="text-xs font-semibold text-text-secondary">{label}</span>
       {children}
-      {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
     </label>
   );
 }

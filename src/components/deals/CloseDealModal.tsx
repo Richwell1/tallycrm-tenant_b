@@ -1,154 +1,215 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useCloseWonDeal, useCloseLostDeal, useLossReasons, usePipelineStages } from "@/lib/deals-data";
+import { type FormEvent, useMemo, useState } from "react";
+import {
+  type DealSummary,
+  type PipelineStageRow,
+  useCloseDeal,
+  useDealFormOptions,
+} from "@/lib/deals-data";
 
-type Variant = "won" | "lost";
-
-export function CloseDealModal({
-  open,
-  onOpenChange,
-  variant,
-  dealId,
-  currentStageId,
-  currentValue,
-  currency,
-}: {
+interface CloseDealModalProps {
+  deal: DealSummary;
+  mode: "won" | "lost";
   open: boolean;
-  onOpenChange: (v: boolean) => void;
-  variant: Variant;
-  dealId: string;
-  currentStageId: string;
-  currentValue: number;
-  currency: string;
-}) {
-  const stages = usePipelineStages();
-  const reasons = useLossReasons();
-  const won = useCloseWonDeal();
-  const lost = useCloseLostDeal();
+  onOpenChange: (open: boolean) => void;
+}
 
-  const [actualValue, setActualValue] = useState(String(currentValue));
-  const [actualDate, setActualDate] = useState(new Date().toISOString().slice(0, 10));
-  const [reason, setReason] = useState("");
-  const [showConfetti, setShowConfetti] = useState(false);
+export function CloseDealModal({ deal, mode, open, onOpenChange }: CloseDealModalProps) {
+  const { data: options } = useDealFormOptions();
+  const closeDeal = useCloseDeal();
+  const [actualValue, setActualValue] = useState(
+    String(Number(deal.actual_value ?? deal.value ?? 0)),
+  );
+  const [actualCloseDate, setActualCloseDate] = useState(new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState(
+    mode === "won"
+      ? "Secured following competitive POC. Client favored our implementation speed and support SLA."
+      : "",
+  );
+  const [lostReason, setLostReason] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      setActualValue(String(currentValue));
-      setActualDate(new Date().toISOString().slice(0, 10));
-      setReason("");
-    }
-  }, [open, currentValue]);
+  const targetStage = useMemo(
+    () => findCloseStage(options?.stages ?? [], mode),
+    [mode, options?.stages],
+  );
 
-  const wonStage = stages.data?.find((s) => s.is_won);
-  const lostStage = stages.data?.find((s) => s.is_closed && !s.is_won);
+  if (!open) return null;
 
-  async function submit() {
-    try {
-      if (variant === "won" && wonStage) {
-        await won.mutateAsync({
-          id: dealId,
-          from_stage: currentStageId,
-          won_stage_id: wonStage.id,
-          actual_value: Number(actualValue),
-          actual_close_date: actualDate,
-        });
-        toast.success("Deal Closed Won! 🎉");
-        setShowConfetti(true);
-        setTimeout(() => {
-          setShowConfetti(false);
-          onOpenChange(false);
-        }, 1500);
-      } else if (variant === "lost" && lostStage) {
-        if (!reason.trim()) {
-          toast.error("Reason required for Closed Lost");
-          return;
-        }
-        await lost.mutateAsync({
-          id: dealId,
-          from_stage: currentStageId,
-          lost_stage_id: lostStage.id,
-          reason,
-        });
-        toast.success("Deal closed as Lost");
-        onOpenChange(false);
-      }
-    } catch (e) {
-      toast.error("Could not close deal", { description: (e as Error).message });
-    }
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!targetStage) return;
+    await closeDeal.mutateAsync({
+      dealId: deal.id,
+      mode,
+      stageId: targetStage.id,
+      actualValue: Number(actualValue || deal.value || 0),
+      actualCloseDate,
+      note,
+      lostReason,
+    });
+    onOpenChange(false);
   }
 
+  const isWon = mode === "won";
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{variant === "won" ? "Close Deal — Won" : "Close Deal — Lost"}</DialogTitle>
-          <p className="text-sm text-text-secondary">
-            {variant === "won"
-              ? "Confirm the final sale value and close date."
-              : "Capture a reason — this powers loss analytics."}
-          </p>
-        </DialogHeader>
-
-        {showConfetti && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-7xl">
-            🎉
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm">
+      {isWon ? <Confetti /> : null}
+      <form
+        onSubmit={handleSubmit}
+        className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+      >
+        <div
+          className={`relative overflow-hidden px-8 py-8 text-center ${
+            isWon ? "bg-primary" : "bg-danger"
+          }`}
+        >
+          <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_2px_2px,#fff_1px,transparent_0)] [background-size:20px_20px]" />
+          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white shadow-inner backdrop-blur">
+            <span
+              className="material-symbols-outlined text-[40px]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              {isWon ? "workspace_premium" : "flag"}
+            </span>
           </div>
-        )}
+          <h2 className="relative text-[28px] font-bold leading-tight text-white">
+            {isWon ? "Closed Won!" : "Close Deal Lost"}
+          </h2>
+          <p className="relative mt-1 text-sm text-white/85">
+            Finalize the details for <span className="font-bold">{deal.name}</span>
+          </p>
+        </div>
 
-        <div className="space-y-4">
-          {variant === "won" ? (
-            <>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-text-secondary">
-                  Actual Value ({currency})
-                </span>
-                <input
-                  type="number"
-                  className="input"
-                  value={actualValue}
-                  onChange={(e) => setActualValue(e.target.value)}
-                />
+        <div className="space-y-6 p-8">
+          {isWon ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <label className="space-y-1">
+                <span className="px-1 text-xs font-semibold text-text-secondary">Actual Value</span>
+                <div className="relative h-[38px]">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-text-muted">
+                    $
+                  </span>
+                  <input
+                    value={actualValue}
+                    onChange={(e) => setActualValue(e.target.value)}
+                    className="deal-input h-full pl-7 font-bold"
+                    type="number"
+                    min="0"
+                  />
+                </div>
               </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-text-secondary">
+              <label className="space-y-1">
+                <span className="px-1 text-xs font-semibold text-text-secondary">
                   Actual Close Date
                 </span>
                 <input
+                  value={actualCloseDate}
+                  onChange={(e) => setActualCloseDate(e.target.value)}
+                  className="deal-input"
                   type="date"
-                  className="input"
-                  value={actualDate}
-                  onChange={(e) => setActualDate(e.target.value)}
                 />
               </label>
-            </>
+            </div>
           ) : (
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-text-secondary">
-                Reason for Loss *
-              </span>
-              <select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>
-                <option value="">— Select reason —</option>
-                {(reasons.data ?? []).map((r) => (
-                  <option key={r.id} value={r.label}>
-                    {r.label}
+            <label className="space-y-1">
+              <span className="px-1 text-xs font-semibold text-text-secondary">Loss Reason</span>
+              <select
+                required
+                value={lostReason}
+                onChange={(e) => setLostReason(e.target.value)}
+                className="deal-input appearance-none"
+              >
+                <option value="">Select a reason...</option>
+                {options?.lossReasons.map((reason) => (
+                  <option key={reason.id} value={reason.label}>
+                    {reason.label}
                   </option>
                 ))}
+                <option value="Budget unavailable">Budget unavailable</option>
+                <option value="Competitor selected">Competitor selected</option>
               </select>
             </label>
           )}
+
+          <label className="space-y-1">
+            <span className="px-1 text-xs font-semibold text-text-secondary">
+              {isWon ? "Win Summary Note" : "Loss Summary Note"}
+            </span>
+            <textarea
+              required={!isWon}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="min-h-[100px] w-full resize-none rounded-lg border border-border bg-card p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              placeholder={
+                isWon
+                  ? "What were the key drivers for this win?"
+                  : "Capture what changed and what should happen next."
+              }
+            />
+          </label>
+
+          <div className="flex gap-4 rounded-lg border border-primary/10 bg-muted p-4">
+            <div className="rounded-full bg-primary-light p-2 text-primary">
+              <span className="material-symbols-outlined text-[18px]">
+                {isWon ? "stars" : "manage_history"}
+              </span>
+            </div>
+            <p className="text-sm leading-tight text-text-secondary">
+              Completing this will move the deal to{" "}
+              <span className="font-bold text-foreground">
+                {targetStage?.name ?? (isWon ? "Closed Won" : "Closed Lost")}
+              </span>{" "}
+              and update the timeline, stage history, and forecast probability.
+            </p>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <footer className="flex justify-end gap-4 bg-muted p-6">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-lg px-6 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-secondary"
+          >
             Cancel
-          </Button>
-          <Button onClick={submit} disabled={won.isPending || lost.isPending}>
-            {variant === "won" ? "Mark Won" : "Mark Lost"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+          <button
+            type="submit"
+            disabled={closeDeal.isPending || !targetStage}
+            className={`rounded-lg px-8 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] transition-all active:scale-95 disabled:opacity-60 ${
+              isWon ? "bg-danger hover:brightness-110" : "bg-danger hover:brightness-110"
+            }`}
+          >
+            {closeDeal.isPending ? "Confirming..." : isWon ? "Confirm Win" : "Confirm Loss"}
+          </button>
+        </footer>
+      </form>
+    </div>
+  );
+}
+
+function findCloseStage(stages: PipelineStageRow[], mode: "won" | "lost") {
+  const expectedWon = mode === "won";
+  return (
+    stages.find((stage) => stage.is_closed && stage.is_won === expectedWon) ??
+    stages.find((stage) => stage.name.toLowerCase().includes(expectedWon ? "won" : "lost")) ??
+    null
+  );
+}
+
+function Confetti() {
+  return (
+    <div className="pointer-events-none fixed inset-0 z-10 overflow-hidden">
+      {Array.from({ length: 48 }).map((_, index) => (
+        <span
+          key={index}
+          className="absolute h-3 w-2 animate-[deal-confetti_2.6s_linear_infinite] rounded-sm opacity-80"
+          style={{
+            left: `${(index * 37) % 100}%`,
+            animationDelay: `${(index % 12) * 0.12}s`,
+            backgroundColor: ["#0057b8", "#ffd700", "#adc7ff", "#ffffff", "#00408b"][index % 5],
+          }}
+        />
+      ))}
+    </div>
   );
 }

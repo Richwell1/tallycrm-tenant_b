@@ -40,6 +40,8 @@ const SECTIONS: NavSection[] = [
 export function Sidebar() {
   const { user, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const sections =
+    user?.role === "admin" ? SECTIONS : SECTIONS.filter((section) => section.label !== "Admin");
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[260px] flex-col bg-sidebar px-4 py-6 text-sidebar-foreground">
@@ -53,7 +55,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label}>
             <p className="mt-4 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sidebar-section">
               {section.label}

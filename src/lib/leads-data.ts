@@ -128,9 +128,40 @@ export function useDisqualifyLead() {
 
 export interface ConvertLeadInput {
   lead: LeadRow;
-  contact: { first_name: string; last_name: string; email: string; phone?: string; job_title?: string };
-  company?: { id?: string; name?: string; industry?: string; website?: string };
-  deal: { name: string; value: number; currency: string; stage_id: string; expected_close_date?: string };
+  contact: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    job_title?: string;
+    notes?: string;
+    tags?: string[];
+  };
+  company?: {
+    id?: string;
+    name?: string;
+    industry?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    linkedin?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    account_manager_id?: string;
+    notes?: string;
+    rating?: number;
+  };
+  deal: {
+    name: string;
+    value: number;
+    currency: string;
+    stage_id: string;
+    expected_close_date?: string;
+    description?: string;
+    tags?: string[];
+    probability?: number | null;
+  };
 }
 
 export function useConvertLead() {
@@ -156,7 +187,17 @@ export function useConvertLead() {
             .insert({
               name: input.company.name.trim(),
               industry: input.company.industry || null,
+              email: input.company.email || input.lead.email || null,
+              phone: input.company.phone || input.lead.phone || null,
               website: input.company.website || null,
+              linkedin: input.company.linkedin || null,
+              address: input.company.address || null,
+              city: input.company.city || null,
+              country: input.company.country || input.lead.ip_country || null,
+              account_manager_id:
+                input.company.account_manager_id || input.lead.assigned_to || null,
+              notes: input.company.notes || input.lead.message || null,
+              rating: input.company.rating ?? 4,
             })
             .select("id")
             .single();
@@ -183,6 +224,8 @@ export function useConvertLead() {
             phone: input.contact.phone || null,
             job_title: input.contact.job_title || null,
             company_id: companyId,
+            notes: input.contact.notes || input.lead.message || null,
+            tags: input.contact.tags?.filter(Boolean) ?? null,
           })
           .eq("id", contactId);
       } else {
@@ -197,6 +240,8 @@ export function useConvertLead() {
             company_id: companyId,
             source: input.lead.source,
             assigned_to: input.lead.assigned_to,
+            notes: input.contact.notes || input.lead.message || null,
+            tags: input.contact.tags?.filter(Boolean) ?? null,
           })
           .select("id")
           .single();
@@ -214,8 +259,11 @@ export function useConvertLead() {
           value: input.deal.value,
           currency: input.deal.currency,
           stage_id: input.deal.stage_id,
+          probability: input.deal.probability ?? null,
           expected_close_date: input.deal.expected_close_date || null,
           assigned_to: input.lead.assigned_to,
+          description: input.deal.description || input.lead.message || null,
+          tags: input.deal.tags?.filter(Boolean) ?? null,
         })
         .select("id")
         .single();

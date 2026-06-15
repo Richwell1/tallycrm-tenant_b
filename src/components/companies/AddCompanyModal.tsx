@@ -1,41 +1,13 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { z } from "zod";
 import { toast } from "sonner";
-import { useCreateCompany } from "@/lib/companies-data";
+import { useCompanyManagers, useCreateCompany } from "@/lib/companies-data";
 
-const schema = z.object({
-  name: z.string().trim().min(1, "Required").max(120),
-  industry: z.string().trim().max(80).optional(),
-  email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
-  phone: z.string().trim().max(40).optional(),
-  website: z.string().trim().url("Invalid URL").optional().or(z.literal("")),
-  linkedin: z.string().trim().optional(),
-  address: z.string().trim().optional(),
-  city: z.string().trim().optional(),
-  country: z.string().trim().optional(),
-  rating: z.string().optional(),
-  notes: z.string().max(2000).optional(),
-  logo_url: z.string().trim().optional(),
-});
-
-interface FormState {
-  name: string;
-  industry: string;
-  email: string;
-  phone: string;
-  website: string;
-  linkedin: string;
-  address: string;
-  city: string;
-  country: string;
-  rating: string;
-  notes: string;
-  logo_url: string;
+interface AddCompanyModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const initial: FormState = {
+const initialState = {
   name: "",
   industry: "",
   email: "",
@@ -44,148 +16,320 @@ const initial: FormState = {
   linkedin: "",
   address: "",
   city: "",
-  country: "",
-  rating: "",
+  country: "United States",
+  account_manager_id: "",
   notes: "",
-  logo_url: "",
+  rating: "4",
 };
 
-export function AddCompanyModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
+  const [values, setValues] = useState(initialState);
   const create = useCreateCompany();
-  const [v, setV] = useState<FormState>(initial);
-  const [errs, setErrs] = useState<Record<string, string>>({});
+  const managers = useCompanyManagers();
 
-  function set<K extends keyof FormState>(k: K, val: FormState[K]) {
-    setV((s) => ({ ...s, [k]: val }));
+  if (!open) return null;
+
+  function set<K extends keyof typeof values>(key: K, value: (typeof values)[K]) {
+    setValues((current) => ({ ...current, [key]: value }));
+  }
+
+  function close() {
+    if (!create.isPending) onOpenChange(false);
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const p = schema.safeParse(v);
-    if (!p.success) {
-      const e2: Record<string, string> = {};
-      for (const i of p.error.issues) e2[i.path[0] as string] = i.message;
-      setErrs(e2);
+    if (!values.name.trim()) {
+      toast.error("Company name is required");
       return;
     }
-    setErrs({});
 
-    try {
-      await create.mutateAsync({
-        name: v.name.trim(),
-        industry: v.industry.trim() || null,
-        email: v.email.trim() || null,
-        phone: v.phone.trim() || null,
-        website: v.website.trim() || null,
-        linkedin: v.linkedin.trim() || null,
-        address: v.address.trim() || null,
-        city: v.city.trim() || null,
-        country: v.country.trim() || null,
-        rating: v.rating ? Number(v.rating) : null,
-        notes: v.notes.trim() || null,
-        logo_url: v.logo_url.trim() || null,
-      });
-      toast.success("Company saved");
-      setV(initial);
-      onOpenChange(false);
-    } catch (err) {
-      toast.error("Could not save company", { description: (err as Error).message });
-    }
+    create.mutate(
+      {
+        name: values.name.trim(),
+        industry: clean(values.industry),
+        email: clean(values.email),
+        phone: clean(values.phone),
+        website: clean(values.website),
+        linkedin: clean(values.linkedin),
+        address: clean(values.address),
+        city: clean(values.city),
+        country: clean(values.country),
+        account_manager_id: clean(values.account_manager_id),
+        notes: clean(values.notes),
+        rating: Number(values.rating) || 4,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Company saved");
+          setValues(initialState);
+          onOpenChange(false);
+        },
+        onError: (error) =>
+          toast.error("Could not save company", { description: (error as Error).message }),
+      },
+    );
   }
 
+  const selectedManager = managers.data?.find(
+    (manager) => manager.id === values.account_manager_id,
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add New Company</DialogTitle>
-          <p className="text-sm text-text-secondary">
-            Add an organisation record. Contacts and deals can be linked to it.
-          </p>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Company Name *" error={errs.name}>
-              <input className="input" value={v.name} onChange={(e) => set("name", e.target.value)} />
-            </Field>
-            <Field label="Industry">
-              <input className="input" value={v.industry} onChange={(e) => set("industry", e.target.value)} />
-            </Field>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="material-symbols-outlined">add_business</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Add New Company</h2>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+                Corporate Entry System
+              </p>
+            </div>
           </div>
+          <button
+            onClick={close}
+            className="text-text-muted transition-colors hover:text-foreground"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Email" error={errs.email}>
-              <input type="email" className="input" value={v.email} onChange={(e) => set("email", e.target.value)} />
-            </Field>
-            <Field label="Phone">
-              <input className="input" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
-            </Field>
-          </div>
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6">
+            <div>
+              <FieldLabel>Company Logo</FieldLabel>
+              <div className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted p-6 transition-colors hover:border-primary">
+                <span className="material-symbols-outlined text-[40px] text-text-muted">
+                  cloud_upload
+                </span>
+                <p className="mt-2 text-sm font-semibold text-foreground">
+                  Drag and drop logo or <span className="text-primary underline">browse</span>
+                </p>
+                <p className="mt-1 text-[11px] font-semibold text-text-muted">PNG, JPG up to 5MB</p>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Website" error={errs.website}>
-              <input
-                className="input"
-                placeholder="https://example.com"
-                value={v.website}
-                onChange={(e) => set("website", e.target.value)}
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Company Name">
+                <input
+                  className="company-input"
+                  value={values.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="e.g. Acme Corp"
+                />
+              </Field>
+              <Field label="Industry">
+                <select
+                  className="company-input"
+                  value={values.industry}
+                  onChange={(e) => set("industry", e.target.value)}
+                >
+                  <option value="">Select Industry</option>
+                  <option>Technology</option>
+                  <option>Manufacturing</option>
+                  <option>Healthcare</option>
+                  <option>Finance</option>
+                  <option>Consumer Retail</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Primary Email" icon="mail">
+                <input
+                  type="email"
+                  className="company-input pl-10"
+                  value={values.email}
+                  onChange={(e) => set("email", e.target.value)}
+                  placeholder="contact@company.com"
+                />
+              </Field>
+              <Field label="Phone Number" icon="call">
+                <input
+                  type="tel"
+                  className="company-input pl-10"
+                  value={values.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Website URL">
+                <div className="flex">
+                  <span className="flex h-[38px] items-center rounded-l border border-r-0 border-border bg-muted px-2 text-xs italic text-text-muted">
+                    https://
+                  </span>
+                  <input
+                    className="company-input rounded-l-none"
+                    value={values.website}
+                    onChange={(e) => set("website", e.target.value)}
+                    placeholder="www.example.com"
+                  />
+                </div>
+              </Field>
+              <Field label="LinkedIn Profile">
+                <input
+                  className="company-input"
+                  value={values.linkedin}
+                  onChange={(e) => set("linkedin", e.target.value)}
+                  placeholder="linkedin.com/company/..."
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-3 gap-6">
+              <Field label="Street Address">
+                <input
+                  className="company-input"
+                  value={values.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder="123 Business Way"
+                />
+              </Field>
+              <Field label="City">
+                <input
+                  className="company-input"
+                  value={values.city}
+                  onChange={(e) => set("city", e.target.value)}
+                  placeholder="San Francisco"
+                />
+              </Field>
+              <Field label="Country">
+                <select
+                  className="company-input"
+                  value={values.country}
+                  onChange={(e) => set("country", e.target.value)}
+                >
+                  <option>United States</option>
+                  <option>Canada</option>
+                  <option>United Kingdom</option>
+                  <option>Germany</option>
+                  <option>Ghana</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Account Manager">
+                <div className="relative">
+                  <select
+                    className="company-input pl-10"
+                    value={values.account_manager_id}
+                    onChange={(e) => set("account_manager_id", e.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {managers.data?.map((manager) => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.full_name ?? "Unnamed user"}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute left-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full border border-border bg-primary-light text-[10px] font-bold text-primary">
+                    {selectedManager?.avatar_url ? (
+                      <img
+                        src={selectedManager.avatar_url}
+                        alt={selectedManager.full_name ?? "Manager"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      initials(selectedManager?.full_name ?? "U")
+                    )}
+                  </div>
+                </div>
+              </Field>
+              <Field label="Rating">
+                <select
+                  className="company-input"
+                  value={values.rating}
+                  onChange={(e) => set("rating", e.target.value)}
+                >
+                  <option value="5">5 stars</option>
+                  <option value="4">4 stars</option>
+                  <option value="3">3 stars</option>
+                  <option value="2">2 stars</option>
+                  <option value="1">1 star</option>
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Internal Notes">
+              <textarea
+                className="min-h-[96px] w-full resize-none rounded border border-border bg-card p-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={values.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Add any relevant background information about the company..."
               />
             </Field>
-            <Field label="LinkedIn URL">
-              <input className="input" value={v.linkedin} onChange={(e) => set("linkedin", e.target.value)} />
-            </Field>
           </div>
-
-          <Field label="Address">
-            <input className="input" value={v.address} onChange={(e) => set("address", e.target.value)} />
-          </Field>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="City">
-              <input className="input" value={v.city} onChange={(e) => set("city", e.target.value)} />
-            </Field>
-            <Field label="Country">
-              <input className="input" value={v.country} onChange={(e) => set("country", e.target.value)} />
-            </Field>
-            <Field label="Rating (0–5)">
-              <select className="input" value={v.rating} onChange={(e) => set("rating", e.target.value)}>
-                <option value="">—</option>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Logo URL">
-            <input className="input" value={v.logo_url} onChange={(e) => set("logo_url", e.target.value)} />
-          </Field>
-
-          <Field label="Notes">
-            <textarea className="input" rows={3} value={v.notes} onChange={(e) => set("notes", e.target.value)} />
-          </Field>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? "Saving..." : "Save Company"}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+
+        <div className="flex items-center justify-end gap-4 border-t border-border bg-muted px-6 py-4">
+          <button
+            onClick={close}
+            className="h-[38px] rounded px-6 text-sm font-semibold text-text-secondary hover:bg-border"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={create.isPending}
+            className="h-[38px] rounded bg-danger px-6 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:brightness-110 disabled:opacity-60"
+          >
+            {create.isPending ? "Saving..." : "Save Company"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-text-secondary">{label}</span>
-      {children}
-      {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
+      <FieldLabel>{label}</FieldLabel>
+      <div className="relative mt-2">
+        {icon ? (
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+            {icon}
+          </span>
+        ) : null}
+        {children}
+      </div>
     </label>
   );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+      {children}
+    </span>
+  );
+}
+
+function clean(value: string) {
+  return value.trim() || null;
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }

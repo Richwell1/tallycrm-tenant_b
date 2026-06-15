@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { PageHeader, ToolbarButton, FilterBar } from "@/components/layout";
+import { PageHeader, ToolbarButton } from "@/components/layout";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { LeadKanban } from "@/components/leads/LeadKanban";
 import { LeadsTable } from "@/components/leads/LeadsTable";
@@ -26,7 +26,9 @@ function LeadsIndex() {
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((l) =>
-        [l.first_name, l.last_name, l.email, l.company_name].filter(Boolean).some((v) => v!.toLowerCase().includes(q)),
+        [l.first_name, l.last_name, l.email, l.company_name]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(q)),
       );
     }
     return list;
@@ -46,45 +48,87 @@ function LeadsIndex() {
                   onClick={() => setView(v)}
                   className={`px-3 py-2 ${view === v ? "bg-primary text-primary-foreground" : "text-text-secondary hover:bg-surface-hover"}`}
                 >
-                  <span className="material-symbols-outlined text-[16px] align-middle">{v === "kanban" ? "view_kanban" : "table_rows"}</span>
+                  <span className="material-symbols-outlined text-[16px] align-middle">
+                    {v === "kanban" ? "view_kanban" : "table_rows"}
+                  </span>
                   <span className="ml-1.5">{v === "kanban" ? "Kanban" : "Table"}</span>
                 </button>
               ))}
             </div>
-            <ToolbarButton icon="refresh" onClick={() => refetch?.()}>Refresh</ToolbarButton>
-            <ToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>Add lead</ToolbarButton>
+            <ToolbarButton icon="refresh" onClick={() => refetch?.()}>
+              Refresh
+            </ToolbarButton>
+            <ToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>
+              Add lead
+            </ToolbarButton>
           </>
         }
       />
 
-      <FilterBar
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search leads by name, email, company..."
-        chips={statusFilter !== "all" ? [{ label: `Status: ${LEAD_STATUSES.find((s) => s.id === statusFilter)?.label}`, onRemove: () => setStatusFilter("all") }] : []}
-        right={
-          <select
-            className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "all")}
-          >
-            <option value="all">All statuses</option>
-            {LEAD_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-        }
-      />
+      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+        <div className="relative min-w-[260px] flex-1">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+            search
+          </span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter by name or company..."
+            className="h-[38px] w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <select
+          className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "all")}
+        >
+          <option value="all">Status: All</option>
+          {LEAD_STATUSES.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <select className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+          <option>Source: All</option>
+          <option>Tally Landing Page</option>
+          <option>Manual Entry</option>
+          <option>Referral</option>
+        </select>
+        <div className="relative min-w-[210px]">
+          <input
+            readOnly
+            value="Oct 1, 2023 - Oct 31, 2023"
+            className="h-[38px] w-full cursor-pointer rounded-lg border border-border bg-card pl-3 pr-10 text-sm outline-none"
+          />
+          <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+            calendar_today
+          </span>
+        </div>
+        <button className="inline-flex h-[38px] items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-text-secondary transition-colors hover:bg-muted">
+          <span className="material-symbols-outlined text-[18px]">filter_list</span>
+          More Filters
+        </button>
+      </div>
 
       {isLoading ? (
         <TableSkeleton rows={6} />
       ) : isError ? (
-        <ErrorState description={(error as Error)?.message ?? "Could not load leads"} onRetry={() => refetch?.()} />
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load leads"}
+          onRetry={() => refetch?.()}
+        />
       ) : (leads?.length ?? 0) === 0 ? (
         <EmptyState
           icon={<span className="material-symbols-outlined text-[28px]">person_search</span>}
           title="No leads yet"
           description="Leads from the public landing page or manual entry will appear here."
           action={
-            <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 rounded-md bg-cta px-4 py-2 text-sm font-semibold text-cta-foreground hover:bg-cta-hover">
+            <button
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-cta px-4 py-2 text-sm font-semibold text-cta-foreground hover:bg-cta-hover"
+            >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Add your first lead
             </button>
