@@ -18,7 +18,13 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
+import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
+import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_authenticated/app.contacts.index'
+import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
+import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
+import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authenticated/app.contacts.$id'
+import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -66,11 +72,46 @@ const AuthenticatedAppLeadsIndexRoute =
     path: '/leads/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppDealsIndexRoute =
+  AuthenticatedAppDealsIndexRouteImport.update({
+    id: '/deals/',
+    path: '/deals/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppContactsIndexRoute =
+  AuthenticatedAppContactsIndexRouteImport.update({
+    id: '/contacts/',
+    path: '/contacts/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCompaniesIndexRoute =
+  AuthenticatedAppCompaniesIndexRouteImport.update({
+    id: '/companies/',
+    path: '/companies/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
   id: '/leads/$id',
   path: '/leads/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppDealsIdRoute = AuthenticatedAppDealsIdRouteImport.update({
+  id: '/deals/$id',
+  path: '/deals/$id',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppContactsIdRoute =
+  AuthenticatedAppContactsIdRouteImport.update({
+    id: '/contacts/$id',
+    path: '/contacts/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCompaniesIdRoute =
+  AuthenticatedAppCompaniesIdRouteImport.update({
+    id: '/companies/$id',
+    path: '/companies/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,7 +121,13 @@ export interface FileRoutesByFullPath {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
+  '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
+  '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
+  '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
+  '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -90,7 +137,13 @@ export interface FileRoutesByTo {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
+  '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
+  '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
+  '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
+  '/app/deals': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRoutesById {
@@ -103,7 +156,13 @@ export interface FileRoutesById {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
+  '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
+  '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
+  '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
+  '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,7 +175,13 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app/'
+    | '/app/companies/$id'
+    | '/app/contacts/$id'
+    | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/companies/'
+    | '/app/contacts/'
+    | '/app/deals/'
     | '/app/leads/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -126,7 +191,13 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app'
+    | '/app/companies/$id'
+    | '/app/contacts/$id'
+    | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/companies'
+    | '/app/contacts'
+    | '/app/deals'
     | '/app/leads'
   id:
     | '__root__'
@@ -138,7 +209,13 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
+    | '/_authenticated/app/companies/$id'
+    | '/_authenticated/app/contacts/$id'
+    | '/_authenticated/app/deals/$id'
     | '/_authenticated/app/leads/$id'
+    | '/_authenticated/app/companies/'
+    | '/_authenticated/app/contacts/'
+    | '/_authenticated/app/deals/'
     | '/_authenticated/app/leads/'
   fileRoutesById: FileRoutesById
 }
@@ -216,6 +293,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLeadsIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/deals/': {
+      id: '/_authenticated/app/deals/'
+      path: '/deals'
+      fullPath: '/app/deals/'
+      preLoaderRoute: typeof AuthenticatedAppDealsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/contacts/': {
+      id: '/_authenticated/app/contacts/'
+      path: '/contacts'
+      fullPath: '/app/contacts/'
+      preLoaderRoute: typeof AuthenticatedAppContactsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/companies/': {
+      id: '/_authenticated/app/companies/'
+      path: '/companies'
+      fullPath: '/app/companies/'
+      preLoaderRoute: typeof AuthenticatedAppCompaniesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/leads/$id': {
       id: '/_authenticated/app/leads/$id'
       path: '/leads/$id'
@@ -223,18 +321,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLeadsIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/deals/$id': {
+      id: '/_authenticated/app/deals/$id'
+      path: '/deals/$id'
+      fullPath: '/app/deals/$id'
+      preLoaderRoute: typeof AuthenticatedAppDealsIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/contacts/$id': {
+      id: '/_authenticated/app/contacts/$id'
+      path: '/contacts/$id'
+      fullPath: '/app/contacts/$id'
+      preLoaderRoute: typeof AuthenticatedAppContactsIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/companies/$id': {
+      id: '/_authenticated/app/companies/$id'
+      path: '/companies/$id'
+      fullPath: '/app/companies/$id'
+      preLoaderRoute: typeof AuthenticatedAppCompaniesIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppCompaniesIdRoute: typeof AuthenticatedAppCompaniesIdRoute
+  AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
+  AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
+  AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
+  AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
+  AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppCompaniesIdRoute: AuthenticatedAppCompaniesIdRoute,
+  AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
+  AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
+  AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
+  AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
+  AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
 }
 
