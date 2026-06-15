@@ -1,5 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+  "Access-Control-Max-Age": "86400",
+};
 
 const payloadSchema = z.object({
   first_name: z.string().trim().min(1).max(80),
@@ -15,13 +22,19 @@ const payloadSchema = z.object({
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...corsHeaders },
   });
+}
+
+function redirectHome(request: Request) {
+  return Response.redirect(new URL("/", request.url), 302);
 }
 
 export const Route = createFileRoute("/api/public/leads-capture")({
   server: {
     handlers: {
+      GET: async ({ request }) => redirectHome(request),
+      OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
         let raw: unknown;
         try {
@@ -134,4 +147,5 @@ export const Route = createFileRoute("/api/public/leads-capture")({
       },
     },
   },
+  component: () => <Navigate to="/" replace />,
 });
