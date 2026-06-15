@@ -1,5 +1,4 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
-import { createElement } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 const corsHeaders = {
@@ -148,5 +147,4 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
       },
     },
   },
-  component: () => createElement(Navigate, { to: "/", replace: true }),
 });
