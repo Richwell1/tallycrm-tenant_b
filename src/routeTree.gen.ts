@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api/public/leads-capture'
+import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
+import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -45,6 +47,17 @@ const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
   path: '/api/public/leads-capture',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppLeadsIndexRoute =
+  AuthenticatedAppLeadsIndexRouteImport.update({
+    id: '/leads/',
+    path: '/leads/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
+  id: '/leads/$id',
+  path: '/leads/$id',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,12 +65,16 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -67,12 +84,27 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/app' | '/api/public/leads-capture' | '/app/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/app'
+    | '/api/public/leads-capture'
+    | '/app/'
+    | '/app/leads/$id'
+    | '/app/leads/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/api/public/leads-capture' | '/app'
+  to:
+    | '/'
+    | '/auth'
+    | '/api/public/leads-capture'
+    | '/app'
+    | '/app/leads/$id'
+    | '/app/leads'
   id:
     | '__root__'
     | '/'
@@ -81,6 +113,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/api/public/leads-capture'
     | '/_authenticated/app/'
+    | '/_authenticated/app/leads/$id'
+    | '/_authenticated/app/leads/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,15 +168,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLeadsCaptureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/leads/': {
+      id: '/_authenticated/app/leads/'
+      path: '/leads'
+      fullPath: '/app/leads/'
+      preLoaderRoute: typeof AuthenticatedAppLeadsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/leads/$id': {
+      id: '/_authenticated/app/leads/$id'
+      path: '/leads/$id'
+      fullPath: '/app/leads/$id'
+      preLoaderRoute: typeof AuthenticatedAppLeadsIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
+  AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
+  AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
