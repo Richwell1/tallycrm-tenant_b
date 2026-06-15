@@ -31,7 +31,7 @@ function redirectHome(request: Request) {
   return Response.redirect(new URL("/", request.url), 302);
 }
 
-export const Route = createFileRoute("/api/public/leads-capture")({
+export const Route = createFileRoute("/api/public/leads-capture-submit")({
   server: {
     handlers: {
       GET: async ({ request }) => redirectHome(request),
