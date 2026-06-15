@@ -259,7 +259,7 @@ export function useConvertLead() {
           value: input.deal.value,
           currency: input.deal.currency,
           stage_id: input.deal.stage_id,
-          probability: input.deal.probability ?? null,
+          probability: input.deal.probability ?? undefined,
           expected_close_date: input.deal.expected_close_date || null,
           assigned_to: input.lead.assigned_to,
           description: input.deal.description || input.lead.message || null,
