@@ -14,6 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
+<<<<<<< HEAD
       activities: {
         Row: {
           contact_id: string | null
@@ -1053,11 +1054,15 @@ export type Database = {
         }
         Relationships: []
       }
+=======
+      [_ in never]: never
+>>>>>>> 0c21c12 (Changes)
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+<<<<<<< HEAD
       automation_rule_config: { Args: { _rule_id: string }; Returns: Json }
       automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
       capture_landing_lead: {
@@ -1177,6 +1182,12 @@ export type Database = {
       task_priority: "low" | "medium" | "high"
       task_status: "pending" | "in_progress" | "done" | "cancelled"
       user_status: "active" | "inactive" | "invited"
+=======
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+>>>>>>> 0c21c12 (Changes)
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1303,6 +1314,7 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
+<<<<<<< HEAD
     Enums: {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
       app_role: ["admin", "manager", "rep"],
@@ -1317,5 +1329,8 @@ export const Constants = {
       task_status: ["pending", "in_progress", "done", "cancelled"],
       user_status: ["active", "inactive", "invited"],
     },
+=======
+    Enums: {},
+>>>>>>> 0c21c12 (Changes)
   },
 } as const
