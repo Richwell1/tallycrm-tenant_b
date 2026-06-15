@@ -18,16 +18,19 @@ import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticat
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as AuthenticatedAppTasksIndexRouteImport } from './routes/_authenticated/app.tasks.index'
+import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
 import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_authenticated/app.pipeline.index'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
 import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_authenticated/app.contacts.index'
 import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
+import { Route as AuthenticatedAppAnalyticsIndexRouteImport } from './routes/_authenticated/app.analytics.index'
 import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_authenticated/app.activities.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
 import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authenticated/app.contacts.$id'
 import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
+import { Route as AuthenticatedAppAnalyticsRepIdRouteImport } from './routes/_authenticated/app.analytics.$repId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -75,6 +78,12 @@ const AuthenticatedAppTasksIndexRoute =
     path: '/tasks/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppSettingsIndexRoute =
+  AuthenticatedAppSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPipelineIndexRoute =
   AuthenticatedAppPipelineIndexRouteImport.update({
     id: '/pipeline/',
@@ -105,6 +114,12 @@ const AuthenticatedAppCompaniesIndexRoute =
     path: '/companies/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppAnalyticsIndexRoute =
+  AuthenticatedAppAnalyticsIndexRouteImport.update({
+    id: '/analytics/',
+    path: '/analytics/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppActivitiesIndexRoute =
   AuthenticatedAppActivitiesIndexRouteImport.update({
     id: '/activities/',
@@ -133,6 +148,12 @@ const AuthenticatedAppCompaniesIdRoute =
     path: '/companies/$id',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppAnalyticsRepIdRoute =
+  AuthenticatedAppAnalyticsRepIdRouteImport.update({
+    id: '/analytics/$repId',
+    path: '/analytics/$repId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -142,16 +163,19 @@ export interface FileRoutesByFullPath {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/analytics/$repId': typeof AuthenticatedAppAnalyticsRepIdRoute
   '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
+  '/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRoutesByTo {
@@ -161,16 +185,19 @@ export interface FileRoutesByTo {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/analytics/$repId': typeof AuthenticatedAppAnalyticsRepIdRoute
   '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/activities': typeof AuthenticatedAppActivitiesIndexRoute
+  '/app/analytics': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRoutesById {
@@ -183,16 +210,19 @@ export interface FileRoutesById {
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/analytics/$repId': typeof AuthenticatedAppAnalyticsRepIdRoute
   '/_authenticated/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/_authenticated/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
+  '/_authenticated/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRouteTypes {
@@ -205,16 +235,19 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app/'
+    | '/app/analytics/$repId'
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
     | '/app/activities/'
+    | '/app/analytics/'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
     | '/app/leads/'
     | '/app/pipeline/'
+    | '/app/settings/'
     | '/app/tasks/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -224,16 +257,19 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app'
+    | '/app/analytics/$repId'
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
     | '/app/activities'
+    | '/app/analytics'
     | '/app/companies'
     | '/app/contacts'
     | '/app/deals'
     | '/app/leads'
     | '/app/pipeline'
+    | '/app/settings'
     | '/app/tasks'
   id:
     | '__root__'
@@ -245,16 +281,19 @@ export interface FileRouteTypes {
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
+    | '/_authenticated/app/analytics/$repId'
     | '/_authenticated/app/companies/$id'
     | '/_authenticated/app/contacts/$id'
     | '/_authenticated/app/deals/$id'
     | '/_authenticated/app/leads/$id'
     | '/_authenticated/app/activities/'
+    | '/_authenticated/app/analytics/'
     | '/_authenticated/app/companies/'
     | '/_authenticated/app/contacts/'
     | '/_authenticated/app/deals/'
     | '/_authenticated/app/leads/'
     | '/_authenticated/app/pipeline/'
+    | '/_authenticated/app/settings/'
     | '/_authenticated/app/tasks/'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppTasksIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/settings/': {
+      id: '/_authenticated/app/settings/'
+      path: '/settings'
+      fullPath: '/app/settings/'
+      preLoaderRoute: typeof AuthenticatedAppSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/pipeline/': {
       id: '/_authenticated/app/pipeline/'
       path: '/pipeline'
@@ -365,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/companies'
       fullPath: '/app/companies/'
       preLoaderRoute: typeof AuthenticatedAppCompaniesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/analytics/': {
+      id: '/_authenticated/app/analytics/'
+      path: '/analytics'
+      fullPath: '/app/analytics/'
+      preLoaderRoute: typeof AuthenticatedAppAnalyticsIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/activities/': {
@@ -402,36 +455,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCompaniesIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/analytics/$repId': {
+      id: '/_authenticated/app/analytics/$repId'
+      path: '/analytics/$repId'
+      fullPath: '/app/analytics/$repId'
+      preLoaderRoute: typeof AuthenticatedAppAnalyticsRepIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppAnalyticsRepIdRoute: typeof AuthenticatedAppAnalyticsRepIdRoute
   AuthenticatedAppCompaniesIdRoute: typeof AuthenticatedAppCompaniesIdRoute
   AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
   AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
   AuthenticatedAppActivitiesIndexRoute: typeof AuthenticatedAppActivitiesIndexRoute
+  AuthenticatedAppAnalyticsIndexRoute: typeof AuthenticatedAppAnalyticsIndexRoute
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
   AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
+  AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppAnalyticsRepIdRoute: AuthenticatedAppAnalyticsRepIdRoute,
   AuthenticatedAppCompaniesIdRoute: AuthenticatedAppCompaniesIdRoute,
   AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
   AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
   AuthenticatedAppActivitiesIndexRoute: AuthenticatedAppActivitiesIndexRoute,
+  AuthenticatedAppAnalyticsIndexRoute: AuthenticatedAppAnalyticsIndexRoute,
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
   AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
+  AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
 }
 

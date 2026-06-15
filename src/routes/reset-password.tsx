@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
@@ -18,6 +18,10 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      setReady(false);
+      return;
+    }
     // Recovery flow sets session via hash; wait until we have one.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);
@@ -30,6 +34,10 @@ function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isSupabaseConfigured()) {
+      toast.error("Password reset needs Supabase environment variables.");
+      return;
+    }
     if (password !== confirm) {
       toast.error("Passwords do not match");
       return;
@@ -58,7 +66,9 @@ function ResetPasswordPage() {
         {ready ? (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-text-secondary">New password</label>
+              <label className="mb-1 block text-xs font-semibold text-text-secondary">
+                New password
+              </label>
               <input
                 type={show ? "text" : "password"}
                 required
@@ -69,7 +79,9 @@ function ResetPasswordPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-text-secondary">Confirm password</label>
+              <label className="mb-1 block text-xs font-semibold text-text-secondary">
+                Confirm password
+              </label>
               <input
                 type={show ? "text" : "password"}
                 required

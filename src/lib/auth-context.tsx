@@ -1,7 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  disableLocalPreview,
+  isLocalPreviewEnabled,
+  isSupabaseConfigured,
+  supabase,
+} from "@/integrations/supabase/client";
 import type { CurrentUser, Role } from "@/types";
 
 interface AuthContextValue {
@@ -20,6 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+
+    if (!isSupabaseConfigured()) {
+      setUser(
+        isLocalPreviewEnabled()
+          ? {
+              id: "local-preview-admin",
+              fullName: "Local Preview Admin",
+              email: "preview@example.com",
+              avatarUrl: null,
+              role: "admin",
+            }
+          : null,
+      );
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
 
     async function hydrate(userId: string | undefined, email: string | null | undefined) {
       if (!userId) {
@@ -55,11 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getUser().then(({ data }) => hydrate(data.user?.id, data.user?.email));
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        event !== "SIGNED_IN" &&
-        event !== "SIGNED_OUT" &&
-        event !== "USER_UPDATED"
-      ) {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") {
         return;
       }
       if (event === "SIGNED_OUT") {
@@ -78,6 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    if (!isSupabaseConfigured()) {
+      disableLocalPreview();
+      setUser(null);
+      navigate({ to: "/auth", replace: true });
+      return;
+    }
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }

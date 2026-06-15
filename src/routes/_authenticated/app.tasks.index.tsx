@@ -74,14 +74,16 @@ function TasksIndex() {
 
     return source.sort((a, b) => {
       if (sortKey === "priority") return priorityRank(b.priority) - priorityRank(a.priority);
-      if (sortKey === "recent") return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      if (sortKey === "recent")
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       return taskDueRank(a) - taskDueRank(b);
     });
   }, [priorityFilter, search, sortKey, statusFilter, tasks]);
 
   const groups = useMemo(() => groupTasks(filtered), [filtered]);
   const stats = useMemo(() => buildStats(tasks ?? []), [tasks]);
-  const nextTask = filtered.find((item) => item.status !== "done" && item.status !== "cancelled") ?? null;
+  const nextTask =
+    filtered.find((item) => item.status !== "done" && item.status !== "cancelled") ?? null;
 
   async function handleToggle(task: TaskItem, completed: boolean) {
     try {
@@ -268,12 +270,16 @@ function TasksIndex() {
                               </div>
                               <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                                 <span className="flex items-center gap-1">
-                                  <span className="material-symbols-outlined text-[16px]">event</span>
+                                  <span className="material-symbols-outlined text-[16px]">
+                                    event
+                                  </span>
                                   {task.due_at ? formatTaskDue(task.due_at) : "No due date"}
                                 </span>
                                 {task.owner ? (
                                   <span className="flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[16px]">person</span>
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      person
+                                    </span>
                                     {task.owner.full_name}
                                   </span>
                                 ) : null}
@@ -283,7 +289,9 @@ function TasksIndex() {
                                     params={{ id: task.deal.id }}
                                     className="flex items-center gap-1 text-primary hover:underline"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">handshake</span>
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      handshake
+                                    </span>
                                     {task.deal.name}
                                   </Link>
                                 ) : null}
@@ -293,19 +301,25 @@ function TasksIndex() {
                                     params={{ id: task.contact.id }}
                                     className="flex items-center gap-1 text-primary hover:underline"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">person</span>
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      person
+                                    </span>
                                     {task.contact.first_name} {task.contact.last_name}
                                   </Link>
                                 ) : null}
                                 {task.company ? (
                                   <span className="flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[16px]">business</span>
+                                    <span className="material-symbols-outlined text-[16px]">
+                                      business
+                                    </span>
                                     {task.company.name}
                                   </span>
                                 ) : null}
                               </div>
                               {task.notes ? (
-                                <p className="mt-2 line-clamp-2 text-sm text-text-muted">{task.notes}</p>
+                                <p className="mt-2 line-clamp-2 text-sm text-text-muted">
+                                  {task.notes}
+                                </p>
                               ) : null}
                             </div>
                             <div className="text-right">
@@ -339,9 +353,21 @@ function TasksIndex() {
             <SectionCard title="Overview" description="Live status for your open work.">
               <div className="grid grid-cols-2 gap-3">
                 <StatTile label="Open" value={stats.open} tone="bg-primary-light text-primary" />
-                <StatTile label="Overdue" value={stats.overdue} tone="bg-danger-light text-danger" />
-                <StatTile label="Due Soon" value={stats.dueSoon} tone="bg-warning-light text-warning" />
-                <StatTile label="Done Today" value={stats.completedToday} tone="bg-success-light text-success" />
+                <StatTile
+                  label="Overdue"
+                  value={stats.overdue}
+                  tone="bg-danger-light text-danger"
+                />
+                <StatTile
+                  label="Due Soon"
+                  value={stats.dueSoon}
+                  tone="bg-warning-light text-warning"
+                />
+                <StatTile
+                  label="Done Today"
+                  value={stats.completedToday}
+                  tone="bg-success-light text-success"
+                />
               </div>
               <div className="mt-4 rounded-lg border border-border bg-muted p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
@@ -351,7 +377,9 @@ function TasksIndex() {
                   {nextTask?.title ?? "No pending tasks"}
                 </p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {nextTask?.due_at ? formatTaskDue(nextTask.due_at) : "Create a task to get started."}
+                  {nextTask?.due_at
+                    ? formatTaskDue(nextTask.due_at)
+                    : "Create a task to get started."}
                 </p>
               </div>
             </SectionCard>
@@ -408,6 +436,15 @@ function TaskListSkeleton() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function StatTile({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className={`text-[22px] font-semibold leading-tight ${tone}`}>{value}</p>
+      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-text-muted">{label}</p>
     </div>
   );
 }
@@ -513,7 +550,9 @@ function StatusBadge({ status }: { status: TaskStatus }) {
           ? { label: "Cancelled", tone: "bg-danger-light text-danger" }
           : { label: "Pending", tone: "bg-primary-light text-primary" };
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${meta.tone}`}>
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${meta.tone}`}
+    >
       {meta.label}
     </span>
   );
@@ -524,7 +563,9 @@ function TypeBadge({ type }: { type: string | null }) {
   const tone = typeTone(type);
   const icon = typeIcon(type);
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone}`}
+    >
       <span className="material-symbols-outlined text-[14px]">{icon}</span>
       {label}
     </span>
@@ -539,7 +580,9 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
         ? "bg-warning-light text-warning"
         : "bg-secondary text-secondary-foreground";
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone}`}>
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone}`}
+    >
       {priority}
     </span>
   );

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationCenter } from "./NotificationCenter";
 
 export function Topbar() {
   const { user } = useAuth();
@@ -28,12 +29,7 @@ export function Topbar() {
           Create Task
         </Link>
         <div className="ml-2 flex items-center gap-2 border-l border-border pl-4 text-text-secondary">
-          <button
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted hover:text-primary"
-            title="Notifications"
-          >
-            <span className="material-symbols-outlined">notifications</span>
-          </button>
+          <NotificationCenter />
           <button
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted hover:text-primary"
             title="Messages"

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
@@ -56,10 +56,89 @@ export interface CreateTaskInput {
 
 export const tasksKey = ["tasks"] as const;
 
+const DEMO_PROFILE = {
+  id: "demo-admin",
+  full_name: "Demo Admin",
+  avatar_url: null,
+  email: "admin@example.com",
+  status: "active",
+} as ProfileRow;
+
+const DEMO_CONTACT = {
+  id: "demo-contact-1",
+  first_name: "Ama",
+  last_name: "Mensah",
+  company_id: "demo-company-1",
+} as ContactRow;
+
+const DEMO_COMPANY = {
+  id: "demo-company-1",
+  name: "Accra Foods",
+} as CompanyRow;
+
+const DEMO_DEAL = {
+  id: "demo-deal-1",
+  name: "Accra Foods Expansion",
+  company_id: "demo-company-1",
+} as DealRow;
+
+const DEMO_TASKS: TaskItem[] = [
+  buildDemoTask({
+    id: "demo-task-1",
+    title: "Make first contact with Ama Mensah",
+    type: "call",
+    dueOffsetHours: -2,
+    status: "pending",
+    priority: "high",
+    notes: "New landing-page lead. Confirm branch count and timeline.",
+    contact: DEMO_CONTACT,
+    company: DEMO_COMPANY,
+  }),
+  buildDemoTask({
+    id: "demo-task-2",
+    title: "Send proposal follow-up",
+    type: "email",
+    dueOffsetHours: 26,
+    status: "in_progress",
+    priority: "medium",
+    notes: "Attach implementation checklist and pricing summary.",
+    deal: DEMO_DEAL,
+    company: DEMO_COMPANY,
+  }),
+  buildDemoTask({
+    id: "demo-task-3",
+    title: "Prepare demo agenda",
+    type: "meeting",
+    dueOffsetHours: 52,
+    status: "pending",
+    priority: "low",
+    notes: "Focus on inventory, invoicing, and reporting workflows.",
+    deal: DEMO_DEAL,
+    contact: DEMO_CONTACT,
+    company: DEMO_COMPANY,
+  }),
+  buildDemoTask({
+    id: "demo-task-4",
+    title: "Log completed onboarding call",
+    type: "task",
+    dueOffsetHours: -20,
+    status: "done",
+    priority: "medium",
+    notes: "Customer confirmed training slots.",
+    contact: DEMO_CONTACT,
+    company: DEMO_COMPANY,
+  }),
+];
+
 export function useTasks() {
   return useQuery({
     queryKey: tasksKey,
     queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        await delay(120);
+        return DEMO_TASKS;
+      }
+
       const [tasksRes, contactsRes, dealsRes, companiesRes, profilesRes] = await Promise.all([
         supabase.from("tasks").select("*").order("due_at", { ascending: true, nullsFirst: false }),
         supabase.from("contacts").select("*").is("deleted_at", null),
@@ -90,6 +169,15 @@ export function useTaskFormOptions() {
   return useQuery({
     queryKey: ["task_form_options"],
     queryFn: async (): Promise<TaskFormOptions> => {
+      if (!isSupabaseConfigured()) {
+        await delay(80);
+        return {
+          contacts: [DEMO_CONTACT],
+          deals: [DEMO_DEAL],
+          profiles: [DEMO_PROFILE],
+        };
+      }
+
       const [contactsRes, dealsRes, profilesRes] = await Promise.all([
         supabase.from("contacts").select("*").is("deleted_at", null).order("last_name"),
         supabase.from("deals").select("*").is("deleted_at", null).order("name"),
@@ -113,6 +201,26 @@ export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateTaskInput) => {
+      if (!isSupabaseConfigured()) {
+        await delay(100);
+        const dueAt = combineDateTime(input.dueDate, input.dueTime);
+        const contact = input.contactId === DEMO_CONTACT.id ? DEMO_CONTACT : null;
+        const deal = input.dealId === DEMO_DEAL.id ? DEMO_DEAL : null;
+        return buildDemoTask({
+          id: `demo-task-${Date.now()}`,
+          title: input.title,
+          type: input.type,
+          dueAt,
+          status: input.status,
+          priority: input.priority,
+          notes: input.notes,
+          reminder: input.reminder,
+          contact,
+          deal,
+          company: contact || deal ? DEMO_COMPANY : null,
+        });
+      }
+
       const dueAt = combineDateTime(input.dueDate, input.dueTime);
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = input.ownerId || userData.user?.id || null;
@@ -139,7 +247,14 @@ export function useCreateTask() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
+      if (!isSupabaseConfigured()) {
+        qc.setQueryData<TaskItem[]>(tasksKey, (current = DEMO_TASKS) => [
+          created as TaskItem,
+          ...current,
+        ]);
+        return;
+      }
       qc.invalidateQueries({ queryKey: tasksKey });
       qc.invalidateQueries({ queryKey: ["dashboard", "mytasks"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
@@ -151,6 +266,16 @@ export function useToggleTaskCompletion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ task, completed }: { task: TaskItem; completed: boolean }) => {
+      if (!isSupabaseConfigured()) {
+        await delay(80);
+        return {
+          ...task,
+          status: completed ? "done" : "pending",
+          completed_at: completed ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        } satisfies TaskItem;
+      }
+
       const payload: TaskUpdate = completed
         ? {
             status: "done",
@@ -163,12 +288,87 @@ export function useToggleTaskCompletion() {
       const { error } = await supabase.from("tasks").update(payload).eq("id", task.id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (updated, vars) => {
+      if (!isSupabaseConfigured()) {
+        qc.setQueryData<TaskItem[]>(tasksKey, (current = DEMO_TASKS) =>
+          current.map((task) => (task.id === vars.task.id ? (updated as TaskItem) : task)),
+        );
+        return;
+      }
       qc.invalidateQueries({ queryKey: tasksKey });
       qc.invalidateQueries({ queryKey: ["dashboard", "mytasks"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
     },
   });
+}
+
+function buildDemoTask({
+  id,
+  title,
+  type,
+  dueOffsetHours,
+  dueAt,
+  status,
+  priority,
+  notes,
+  reminder = true,
+  contact = null,
+  deal = null,
+  company = null,
+}: {
+  id: string;
+  title: string;
+  type: TaskType;
+  dueOffsetHours?: number;
+  dueAt?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  notes?: string | null;
+  reminder?: boolean;
+  contact?: ContactRow | null;
+  deal?: DealRow | null;
+  company?: CompanyRow | null;
+}): TaskItem {
+  const now = new Date();
+  const due =
+    dueAt ?? new Date(now.getTime() + (dueOffsetHours ?? 0) * 60 * 60 * 1000).toISOString();
+  const completedAt =
+    status === "done" ? new Date(now.getTime() - 45 * 60 * 1000).toISOString() : null;
+  const row = {
+    id,
+    title,
+    type,
+    due_at: due,
+    status,
+    priority,
+    reminder_at: reminder ? reminderBefore(due) : null,
+    notes: notes ?? null,
+    assigned_to: DEMO_PROFILE.id,
+    completed_at: completedAt,
+    created_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: completedAt ?? now.toISOString(),
+  } as TaskRow;
+
+  return {
+    id,
+    title,
+    type,
+    due_at: due,
+    status,
+    priority,
+    reminder_at: reminder ? reminderBefore(due) : null,
+    notes: notes ?? null,
+    assigned_to: DEMO_PROFILE.id,
+    completed_at: completedAt,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    locked: false,
+    contact,
+    deal,
+    company,
+    owner: DEMO_PROFILE,
+    raw: row,
+  };
 }
 
 function normalizeTask(
@@ -221,8 +421,11 @@ function reminderBefore(dueAt: string) {
 
 function taskSortValue(task: TaskItem) {
   const base = task.due_at ? new Date(task.due_at).getTime() : Number.MAX_SAFE_INTEGER;
-  const completedBias = task.status === "done" && task.completed_at
-    ? new Date(task.completed_at).getTime() + 1000
-    : 0;
+  const completedBias =
+    task.status === "done" && task.completed_at ? new Date(task.completed_at).getTime() + 1000 : 0;
   return base + completedBias;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
