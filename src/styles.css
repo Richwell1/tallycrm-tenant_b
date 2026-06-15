@@ -257,8 +257,6 @@
   font-size: 0.875rem;
   color: var(--color-foreground);
   transition: border-color 120ms, box-shadow 120ms;
-}
-@utility input {
   &:focus {
     outline: none;
     border-color: var(--color-primary);
