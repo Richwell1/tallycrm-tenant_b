@@ -363,7 +363,7 @@ function ContactForm() {
     setErrors({});
     setState("submitting");
     try {
-      const res = await fetch("/api/public/leads-capture", {
+      const res = await fetch("/api/public/leads-capture-submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...parsed.data, website: values.website }),

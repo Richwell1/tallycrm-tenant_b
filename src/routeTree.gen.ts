@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
+import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 
@@ -54,6 +55,11 @@ const ApiPublicLeadsCaptureSubmitRoute =
     path: '/api/public/leads-capture-submit',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
+  id: '/api/public/leads-capture',
+  path: '/api/public/leads-capture',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppLeadsIndexRoute =
   AuthenticatedAppLeadsIndexRouteImport.update({
     id: '/leads/',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/app'
+    | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app/'
     | '/app/leads/$id'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app'
     | '/app/leads/$id'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/app'
+    | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
     | '/_authenticated/app/leads/$id'
@@ -135,6 +147,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicLeadsCaptureRoute: typeof ApiPublicLeadsCaptureRoute
   ApiPublicLeadsCaptureSubmitRoute: typeof ApiPublicLeadsCaptureSubmitRoute
 }
 
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLeadsCaptureSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/leads-capture': {
+      id: '/api/public/leads-capture'
+      path: '/api/public/leads-capture'
+      fullPath: '/api/public/leads-capture'
+      preLoaderRoute: typeof ApiPublicLeadsCaptureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/leads/': {
       id: '/_authenticated/app/leads/'
       path: '/leads'
@@ -237,8 +257,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicLeadsCaptureRoute: ApiPublicLeadsCaptureRoute,
   ApiPublicLeadsCaptureSubmitRoute: ApiPublicLeadsCaptureSubmitRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
