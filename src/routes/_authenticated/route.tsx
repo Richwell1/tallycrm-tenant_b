@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated")({
     const next = aal.data?.nextLevel ?? "aal1";
     const current = aal.data?.currentLevel ?? "aal1";
     if (next === "aal2" && current !== "aal2") {
-      throw redirect({ to: "/auth/mfa" });
+      throw redirect({ to: "/mfa" });
     }
     return { user: data.user };
   },

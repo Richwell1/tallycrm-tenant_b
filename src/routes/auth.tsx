@@ -34,7 +34,7 @@ function AuthPage() {
       if (aal.data?.currentLevel === "aal2") {
         navigate({ to: "/app", replace: true });
       } else {
-        navigate({ to: "/auth/mfa", replace: true });
+        navigate({ to: "/mfa", replace: true });
       }
     });
   }, [navigate, supabaseConfigured]);
@@ -50,7 +50,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast.success("Signed in — verify two-factor to continue");
-      navigate({ to: "/auth/mfa", replace: true });
+      navigate({ to: "/mfa", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
     } finally {
