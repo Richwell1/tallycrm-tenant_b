@@ -95,6 +95,10 @@
   --color-chart-4: var(--warning);
   --color-chart-5: var(--info);
 
+  --color-navy: var(--navy);
+
+
+
   /* Type scale */
   --text-xs: 11px;
   --text-xs--line-height: 1.4;
@@ -125,6 +129,8 @@
 
 :root {
   --radius: 8px;
+
+  --navy: #0a1628;
 
   /* Brand */
   --primary: #0057b8;
