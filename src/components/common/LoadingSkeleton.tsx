@@ -68,9 +68,19 @@ export function StatCardSkeleton() {
   );
 }
 
-export function GridSkeleton({ count = 8 }: { count?: number }) {
+export function GridSkeleton({
+  count = 8,
+  className,
+}: {
+  count?: number;
+  className?: string;
+}) {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div
+      className={
+        className ?? "grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      }
+    >
       {Array.from({ length: count }).map((_, i) => (
         <CardSkeleton key={i} />
       ))}

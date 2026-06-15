@@ -1,7 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ErrorState, TableSkeleton } from "@/components/common";
-import { type CompanyDetail, useCompany } from "@/lib/companies-data";
+import { toast } from "sonner";
+import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
+import { EditCompanyModal } from "@/components/companies/EditCompanyModal";
+import { useCurrentRole } from "@/lib/auth-context";
+import { type CompanyDetail, useCompany, useDeleteCompany } from "@/lib/companies-data";
 import { formatCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/app/companies/$id")({
@@ -12,15 +15,30 @@ type Tab = "overview" | "contacts" | "deals" | "activities" | "notes";
 
 function CompanyDetailPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { data: company, isLoading, isError, error, refetch } = useCompany(id);
+  const role = useCurrentRole();
+  const deleteCompany = useDeleteCompany();
   const [tab, setTab] = useState<Tab>("overview");
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const canDelete = role === "admin" || role === "manager";
 
   if (isLoading) return <TableSkeleton rows={8} />;
-  if (isError || !company) {
+  if (isError) {
     return (
       <ErrorState
-        description={(error as Error)?.message ?? "Company not found"}
+        description={(error as Error)?.message ?? "Could not load company"}
         onRetry={() => refetch()}
+      />
+    );
+  }
+  if (!company) {
+    return (
+      <EmptyState
+        icon={<span className="material-symbols-outlined text-[28px]">business</span>}
+        title="Company not found"
+        description="This company may have been deleted or moved."
       />
     );
   }
@@ -55,8 +73,12 @@ function CompanyDetailPage() {
         <div className="grid grid-cols-2 gap-2">
           <ActionTile icon="add_call" label="Call" />
           <ActionTile icon="mail" label="Email" />
-          <ActionTile icon="calendar_today" label="Meet" />
-          <ActionTile icon="more_horiz" label="More" />
+          <ActionTile icon="edit" label="Edit" onClick={() => setEditOpen(true)} />
+          {canDelete ? (
+            <ActionTile icon="delete" label="Delete" onClick={() => setDeleteOpen(true)} danger />
+          ) : (
+            <ActionTile icon="calendar_today" label="Meet" />
+          )}
         </div>
 
         <div className="space-y-8">
@@ -140,6 +162,50 @@ function CompanyDetailPage() {
           {tab === "notes" && <NotesPanel company={company} />}
         </div>
       </section>
+
+      {editOpen && company && (
+        <EditCompanyModal company={company} open={editOpen} onOpenChange={setEditOpen} />
+      )}
+      {deleteOpen && company && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-[400px] rounded-xl bg-card p-6 shadow-2xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger/10">
+              <span className="material-symbols-outlined text-danger">delete</span>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Delete Company</h3>
+            <p className="mb-6 text-sm text-text-secondary">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{company.name}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteOpen(false)}
+                className="rounded px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  deleteCompany.mutate(company.id, {
+                    onSuccess: () => {
+                      toast.success("Company deleted");
+                      navigate({ to: "/app/companies" });
+                    },
+                    onError: (error) =>
+                      toast.error("Could not delete company", {
+                        description: (error as Error).message,
+                      }),
+                  });
+                }}
+                disabled={deleteCompany.isPending}
+                className="rounded bg-danger px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-60"
+              >
+                {deleteCompany.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -415,11 +481,36 @@ function NotesPanel({ company }: { company: CompanyDetail }) {
   );
 }
 
-function ActionTile({ icon, label }: { icon: string; label: string }) {
+function ActionTile({
+  icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: string;
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+}) {
   return (
-    <button className="group flex flex-col items-center justify-center rounded-lg border border-border p-4 transition-colors hover:bg-muted">
-      <span className="material-symbols-outlined mb-1 text-primary">{icon}</span>
-      <span className="text-xs font-semibold text-text-secondary group-hover:text-primary">
+    <button
+      onClick={onClick}
+      className={`group flex flex-col items-center justify-center rounded-lg border p-4 transition-colors ${
+        danger
+          ? "border-danger/30 hover:bg-danger/10"
+          : "border-border hover:bg-muted"
+      }`}
+    >
+      <span className={`material-symbols-outlined mb-1 ${danger ? "text-danger" : "text-primary"}`}>
+        {icon}
+      </span>
+      <span
+        className={`text-xs font-semibold ${
+          danger
+            ? "text-danger"
+            : "text-text-secondary group-hover:text-primary"
+        }`}
+      >
         {label}
       </span>
     </button>

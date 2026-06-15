@@ -12,17 +12,29 @@ export const Route = createFileRoute("/_authenticated/app/leads/")({
 });
 
 type View = "kanban" | "table";
+type LeadSort = "recent" | "name" | "value";
 
 function LeadsIndex() {
   const { data: leads, isLoading, isError, error, refetch } = useLeads();
   const [view, setView] = useState<View>("kanban");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<LeadSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
+
+  const sourceOptions = useMemo(
+    () =>
+      Array.from(new Set((leads ?? []).map((lead) => lead.source).filter(Boolean)))
+        .sort()
+        .map((source) => source!),
+    [leads],
+  );
 
   const filtered = useMemo(() => {
     let list = leads ?? [];
     if (statusFilter !== "all") list = list.filter((l) => l.status === statusFilter);
+    if (sourceFilter !== "all") list = list.filter((l) => l.source === sourceFilter);
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((l) =>
@@ -31,8 +43,13 @@ function LeadsIndex() {
           .some((v) => v!.toLowerCase().includes(q)),
       );
     }
-    return list;
-  }, [leads, search, statusFilter]);
+    return [...list].sort((a, b) => {
+      if (sortKey === "name")
+        return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+      if (sortKey === "value") return Number(b.value ?? 0) - Number(a.value ?? 0);
+      return dateRank(b.created_at) - dateRank(a.created_at);
+    });
+  }, [leads, search, sortKey, sourceFilter, statusFilter]);
 
   return (
     <>
@@ -90,26 +107,27 @@ function LeadsIndex() {
             </option>
           ))}
         </select>
-        <select className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
-          <option>Source: All</option>
-          <option>Tally Landing Page</option>
-          <option>Manual Entry</option>
-          <option>Referral</option>
+        <select
+          className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+        >
+          <option value="all">Source: All</option>
+          {sourceOptions.map((source) => (
+            <option key={source} value={source}>
+              {source}
+            </option>
+          ))}
         </select>
-        <div className="relative min-w-[210px]">
-          <input
-            readOnly
-            value="Oct 1, 2023 - Oct 31, 2023"
-            className="h-[38px] w-full cursor-pointer rounded-lg border border-border bg-card pl-3 pr-10 text-sm outline-none"
-          />
-          <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
-            calendar_today
-          </span>
-        </div>
-        <button className="inline-flex h-[38px] items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-text-secondary transition-colors hover:bg-muted">
-          <span className="material-symbols-outlined text-[18px]">filter_list</span>
-          More Filters
-        </button>
+        <select
+          className="h-[38px] min-w-[170px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as LeadSort)}
+        >
+          <option value="recent">Sort: Recently created</option>
+          <option value="name">Sort: Name</option>
+          <option value="value">Sort: Estimated value</option>
+        </select>
       </div>
 
       {isLoading ? (
@@ -134,6 +152,12 @@ function LeadsIndex() {
             </button>
           }
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">search_off</span>}
+          title="No leads match your filters"
+          description="Adjust search, status, source, or sort criteria to widen the result set."
+        />
       ) : view === "kanban" ? (
         <LeadKanban leads={filtered} />
       ) : (
@@ -143,4 +167,8 @@ function LeadsIndex() {
       <AddLeadModal open={addOpen} onOpenChange={setAddOpen} />
     </>
   );
+}
+
+function dateRank(value: string | null | undefined) {
+  return value ? new Date(value).getTime() : 0;
 }

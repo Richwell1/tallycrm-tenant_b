@@ -1,37 +1,66 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { AddCompanyModal } from "@/components/companies/AddCompanyModal";
-import { type CompanySummary, useCompanies } from "@/lib/companies-data";
+import { EditCompanyModal } from "@/components/companies/EditCompanyModal";
+import { useCurrentRole } from "@/lib/auth-context";
+import { type CompanySummary, useCompanies, useDeleteCompany } from "@/lib/companies-data";
 
 export const Route = createFileRoute("/_authenticated/app/companies/")({
   component: CompaniesIndex,
 });
 
 type View = "table" | "grid";
+type CompanySort = "name" | "rating" | "deals" | "value";
 
 function CompaniesIndex() {
   const { data: companies, isLoading, isError, error, refetch } = useCompanies();
+  const role = useCurrentRole();
+  const deleteCompany = useDeleteCompany();
   const [view, setView] = useState<View>("table");
   const [search, setSearch] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<CompanySort>("name");
   const [addOpen, setAddOpen] = useState(false);
+  const [editCompany, setEditCompany] = useState<CompanySummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CompanySummary | null>(null);
+  const canDelete = role === "admin" || role === "manager";
+
+  const industries = useMemo(
+    () =>
+      Array.from(new Set((companies ?? []).map((company) => company.industry).filter(Boolean)))
+        .sort()
+        .map((industry) => industry!),
+    [companies],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return companies ?? [];
-    return (companies ?? []).filter((company) =>
-      [
-        company.name,
-        company.website,
-        company.email,
-        company.city,
-        company.country,
-        company.industry,
-      ]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(q)),
-    );
-  }, [companies, search]);
+    const list = (companies ?? []).filter((company) => {
+      const industryMatch = industryFilter === "all" || company.industry === industryFilter;
+      const searchMatch =
+        !q ||
+        [
+          company.name,
+          company.website,
+          company.email,
+          company.city,
+          company.country,
+          company.industry,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(q));
+      return industryMatch && searchMatch;
+    });
+
+    return list.sort((a, b) => {
+      if (sortKey === "rating") return Number(b.rating ?? 0) - Number(a.rating ?? 0);
+      if (sortKey === "deals") return b.open_deal_count - a.open_deal_count;
+      if (sortKey === "value") return b.open_deal_value - a.open_deal_value;
+      return a.name.localeCompare(b.name);
+    });
+  }, [companies, industryFilter, search, sortKey]);
 
   return (
     <>
@@ -88,6 +117,28 @@ function CompaniesIndex() {
           </div>
           <div className="h-6 w-px bg-border" />
           <ToolbarPill icon="filter_list">Filters</ToolbarPill>
+          <select
+            value={industryFilter}
+            onChange={(e) => setIndustryFilter(e.target.value)}
+            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">Industry: All</option>
+            {industries.map((industry) => (
+              <option key={industry} value={industry}>
+                {industry}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as CompanySort)}
+            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="name">Sort: Name</option>
+            <option value="rating">Sort: Rating</option>
+            <option value="deals">Sort: Open deals</option>
+            <option value="value">Sort: Pipeline value</option>
+          </select>
           <ToolbarPill icon="export_notes">Export</ToolbarPill>
         </div>
         <p className="text-xs font-semibold text-text-muted">
@@ -117,18 +168,66 @@ function CompaniesIndex() {
             </button>
           }
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">search_off</span>}
+          title="No companies match your filters"
+          description="Adjust the search term or industry filter to widen the result set."
+        />
       ) : view === "table" ? (
-        <CompaniesTable companies={filtered} />
+        <CompaniesTable
+          companies={filtered}
+          onEdit={setEditCompany}
+          onDelete={canDelete ? setDeleteTarget : undefined}
+        />
       ) : (
-        <CompaniesGrid companies={filtered} />
+        <CompaniesGrid
+          companies={filtered}
+          onEdit={setEditCompany}
+          onDelete={canDelete ? setDeleteTarget : undefined}
+        />
       )}
 
       <AddCompanyModal open={addOpen} onOpenChange={setAddOpen} />
+      {editCompany && (
+        <EditCompanyModal
+          company={editCompany}
+          open={!!editCompany}
+          onOpenChange={(open) => !open && setEditCompany(null)}
+        />
+      )}
+      {deleteTarget && (
+        <ConfirmDelete
+          name={deleteTarget.name}
+          isPending={deleteCompany.isPending}
+          onConfirm={() => {
+            deleteCompany.mutate(deleteTarget.id, {
+              onSuccess: () => {
+                toast.success("Company deleted");
+                setDeleteTarget(null);
+              },
+              onError: (error) =>
+                toast.error("Could not delete company", {
+                  description: (error as Error).message,
+                }),
+            });
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </>
   );
 }
 
-function CompaniesTable({ companies }: { companies: CompanySummary[] }) {
+function CompaniesTable({
+  companies,
+  onEdit,
+  onDelete,
+}: {
+  companies: CompanySummary[];
+  onEdit: (company: CompanySummary) => void;
+  onDelete?: (company: CompanySummary) => void;
+}) {
   return (
     <div className="flex h-[calc(100vh-220px)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xs)]">
       <div className="flex-1 overflow-auto">
@@ -205,9 +304,28 @@ function CompaniesTable({ companies }: { companies: CompanySummary[] }) {
                   </span>
                 </td>
                 <td className="sticky right-0 border-l border-border bg-inherit p-4 text-center">
-                  <button className="rounded-lg p-2 transition-colors hover:bg-muted">
-                    <span className="material-symbols-outlined text-text-muted">more_vert</span>
-                  </button>
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => onEdit(company)}
+                      className="rounded-lg p-2 transition-colors hover:bg-muted hover:text-primary"
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined text-[18px] text-text-muted">
+                        edit
+                      </span>
+                    </button>
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(company)}
+                        className="rounded-lg p-2 transition-colors hover:bg-muted hover:text-danger"
+                        title="Delete"
+                      >
+                        <span className="material-symbols-outlined text-[18px] text-text-muted">
+                          delete
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -249,35 +367,51 @@ function CompaniesTable({ companies }: { companies: CompanySummary[] }) {
   );
 }
 
-function CompaniesGrid({ companies }: { companies: CompanySummary[] }) {
+function CompaniesGrid({
+  companies,
+  onEdit,
+  onDelete,
+}: {
+  companies: CompanySummary[];
+  onEdit: (company: CompanySummary) => void;
+  onDelete?: (company: CompanySummary) => void;
+}) {
   return (
     <>
-      <div className="mb-6 flex items-center gap-4 overflow-x-auto rounded-lg border border-border bg-card p-4">
-        <ToolbarPill icon="filter_list">Filter</ToolbarPill>
-        <div className="h-4 w-px bg-border" />
-        <FilterChip>Industry: Tech</FilterChip>
-        <FilterChip>Region: North America</FilterChip>
-      </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {companies.map((company) => (
-          <Link
+          <div
             key={company.id}
-            to="/app/companies/$id"
-            params={{ id: company.id }}
             className="group flex flex-col rounded-lg border border-border bg-card p-4 shadow-[var(--shadow-xs)] transition-all hover:border-primary"
           >
             <div className="mb-4 flex items-start justify-between">
-              <CompanyLogo company={company} rounded="full" size="lg" />
+              <Link to="/app/companies/$id" params={{ id: company.id }}>
+                <CompanyLogo company={company} rounded="full" size="lg" />
+              </Link>
               <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <span className="material-symbols-outlined rounded p-1 text-[20px] text-text-muted hover:bg-muted hover:text-primary">
-                  edit
-                </span>
-                <span className="material-symbols-outlined rounded p-1 text-[20px] text-text-muted hover:bg-muted hover:text-danger">
-                  delete
-                </span>
+                <button
+                  onClick={() => onEdit(company)}
+                  className="rounded p-1 text-text-muted hover:bg-muted hover:text-primary"
+                  title="Edit"
+                >
+                  <span className="material-symbols-outlined text-[20px]">edit</span>
+                </button>
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(company)}
+                    className="rounded p-1 text-text-muted hover:bg-muted hover:text-danger"
+                    title="Delete"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
+                )}
               </div>
             </div>
-            <h3 className="truncate text-[16px] font-semibold text-foreground">{company.name}</h3>
+            <Link to="/app/companies/$id" params={{ id: company.id }}>
+              <h3 className="truncate text-[16px] font-semibold text-foreground hover:text-primary">
+                {company.name}
+              </h3>
+            </Link>
             <div className="mt-1">
               <Rating value={company.rating ?? 0} />
             </div>
@@ -296,7 +430,7 @@ function CompaniesGrid({ companies }: { companies: CompanySummary[] }) {
             <div className="mt-4">
               <Tags tags={company.tags.length ? company.tags : fallbackTags(company)} />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
       <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
@@ -314,6 +448,48 @@ function CompaniesGrid({ companies }: { companies: CompanySummary[] }) {
         </div>
       </div>
     </>
+  );
+}
+
+function ConfirmDelete({
+  name,
+  isPending,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[400px] rounded-xl bg-card p-6 shadow-2xl">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger/10">
+          <span className="material-symbols-outlined text-danger">delete</span>
+        </div>
+        <h3 className="mb-2 text-lg font-semibold text-foreground">Delete Company</h3>
+        <p className="mb-6 text-sm text-text-secondary">
+          Are you sure you want to delete <span className="font-semibold">{name}</span>? This action
+          cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="rounded bg-danger px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-60"
+          >
+            {isPending ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

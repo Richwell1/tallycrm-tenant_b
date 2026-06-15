@@ -1,52 +1,111 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useModalA11y } from "@/components/common/use-modal-a11y";
-import { useCompanyManagers, useCreateCompany } from "@/lib/companies-data";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  type CompanySummary,
+  useCompanyManagers,
+  useUpdateCompany,
+} from "@/lib/companies-data";
 
-interface AddCompanyModalProps {
+interface EditCompanyModalProps {
+  company: CompanySummary;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const initialState = {
-  name: "",
-  industry: "",
-  email: "",
-  phone: "",
-  website: "",
-  linkedin: "",
-  address: "",
-  city: "",
-  country: "United States",
-  account_manager_id: "",
-  notes: "",
-  rating: "4",
+type FormState = {
+  name: string;
+  industry: string;
+  email: string;
+  phone: string;
+  website: string;
+  linkedin: string;
+  address: string;
+  city: string;
+  country: string;
+  account_manager_id: string;
+  notes: string;
+  rating: string;
 };
 
-export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
-  const [values, setValues] = useState(initialState);
-  const create = useCreateCompany();
+function fromCompany(company: CompanySummary): FormState {
+  return {
+    name: company.name ?? "",
+    industry: company.industry ?? "",
+    email: company.email ?? "",
+    phone: company.phone ?? "",
+    website: company.website ?? "",
+    linkedin: company.linkedin ?? "",
+    address: company.address ?? "",
+    city: company.city ?? "",
+    country: company.country ?? "United States",
+    account_manager_id: company.account_manager_id ?? "",
+    notes: company.notes ?? "",
+    rating: String(company.rating ?? 4),
+  };
+}
+
+export function EditCompanyModal({ company, open, onOpenChange }: EditCompanyModalProps) {
+  const [values, setValues] = useState<FormState>(() => fromCompany(company));
+  const [logoPreview, setLogoPreview] = useState<string | null>(company.logo_url ?? null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const update = useUpdateCompany();
   const managers = useCompanyManagers();
-  const modal = useModalA11y(open, onOpenChange, { disabled: create.isPending });
+  const modal = useModalA11y(open, onOpenChange, { disabled: update.isPending || uploading });
+
+  useEffect(() => {
+    if (open) {
+      setValues(fromCompany(company));
+      setLogoPreview(company.logo_url ?? null);
+    }
+  }, [open, company]);
 
   if (!open) return null;
 
-  function set<K extends keyof typeof values>(key: K, value: (typeof values)[K]) {
-    setValues((current) => ({ ...current, [key]: value }));
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setValues((prev) => ({ ...prev, [key]: value }));
   }
 
   function close() {
-    if (!create.isPending) onOpenChange(false);
+    if (!update.isPending && !uploading) onOpenChange(false);
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Logo must be under 5MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `company-logos/${company.id}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("public")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from("public").getPublicUrl(path);
+      setLogoPreview(data.publicUrl);
+      await update.mutateAsync({ id: company.id, logo_url: data.publicUrl });
+      toast.success("Logo updated");
+    } catch (error) {
+      toast.error("Logo upload failed", { description: (error as Error).message });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!values.name.trim()) {
       toast.error("Company name is required");
       return;
     }
     if (values.email.trim() && !isEmail(values.email)) {
-      toast.error("Enter a valid company email address");
+      toast.error("Enter a valid email address");
       return;
     }
     if (values.website.trim() && !isHostname(values.website)) {
@@ -54,8 +113,9 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
       return;
     }
 
-    create.mutate(
+    update.mutate(
       {
+        id: company.id,
         name: values.name.trim(),
         industry: clean(values.industry),
         email: clean(values.email),
@@ -71,26 +131,23 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Company saved");
-          setValues(initialState);
+          toast.success("Company updated");
           onOpenChange(false);
         },
         onError: (error) =>
-          toast.error("Could not save company", { description: (error as Error).message }),
+          toast.error("Could not update company", { description: (error as Error).message }),
       },
     );
   }
 
-  const selectedManager = managers.data?.find(
-    (manager) => manager.id === values.account_manager_id,
-  );
+  const selectedManager = managers.data?.find((m) => m.id === values.account_manager_id);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="add-company-title"
+      aria-labelledby="edit-company-title"
       ref={modal.ref}
       onKeyDown={modal.onKeyDown}
     >
@@ -98,14 +155,14 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <span className="material-symbols-outlined">add_business</span>
+              <span className="material-symbols-outlined">edit</span>
             </div>
             <div>
-              <h2 id="add-company-title" className="text-xl font-semibold text-foreground">
-                Add New Company
+              <h2 id="edit-company-title" className="text-xl font-semibold text-foreground">
+                Edit Company
               </h2>
               <p className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-                Corporate Entry System
+                {company.name}
               </p>
             </div>
           </div>
@@ -121,15 +178,42 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
           <div className="space-y-6">
             <div>
               <FieldLabel>Company Logo</FieldLabel>
-              <div className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted p-6 transition-colors hover:border-primary">
-                <span className="material-symbols-outlined text-[40px] text-text-muted">
-                  cloud_upload
-                </span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                onChange={handleLogoChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="mt-2 flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted p-6 transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="mb-2 h-16 w-16 rounded-lg object-contain"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-[40px] text-text-muted">
+                    cloud_upload
+                  </span>
+                )}
                 <p className="mt-2 text-sm font-semibold text-foreground">
-                  Drag and drop logo or <span className="text-primary underline">browse</span>
+                  {uploading
+                    ? "Uploading..."
+                    : logoPreview
+                      ? "Click to change logo"
+                      : "Drag and drop logo or "}
+                  {!uploading && !logoPreview && (
+                    <span className="text-primary underline">browse</span>
+                  )}
                 </p>
                 <p className="mt-1 text-[11px] font-semibold text-text-muted">PNG, JPG up to 5MB</p>
-              </div>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -138,7 +222,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input"
                   value={values.name}
                   onChange={(e) => set("name", e.target.value)}
-                  placeholder="e.g. Acme Corp"
                 />
               </Field>
               <Field label="Industry">
@@ -164,7 +247,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input pl-10"
                   value={values.email}
                   onChange={(e) => set("email", e.target.value)}
-                  placeholder="contact@company.com"
                 />
               </Field>
               <Field label="Phone Number" icon="call">
@@ -173,7 +255,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input pl-10"
                   value={values.phone}
                   onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
                 />
               </Field>
             </div>
@@ -188,7 +269,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                     className="company-input rounded-l-none"
                     value={values.website}
                     onChange={(e) => set("website", e.target.value)}
-                    placeholder="www.example.com"
                   />
                 </div>
               </Field>
@@ -197,7 +277,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input"
                   value={values.linkedin}
                   onChange={(e) => set("linkedin", e.target.value)}
-                  placeholder="linkedin.com/company/..."
                 />
               </Field>
             </div>
@@ -208,7 +287,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input"
                   value={values.address}
                   onChange={(e) => set("address", e.target.value)}
-                  placeholder="123 Business Way"
                 />
               </Field>
               <Field label="City">
@@ -216,7 +294,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                   className="company-input"
                   value={values.city}
                   onChange={(e) => set("city", e.target.value)}
-                  placeholder="San Francisco"
                 />
               </Field>
               <Field label="Country">
@@ -257,7 +334,7 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      initials(selectedManager?.full_name ?? "U")
+                      managerInitials(selectedManager?.full_name ?? "")
                     )}
                   </div>
                 </div>
@@ -282,7 +359,6 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
                 className="min-h-[96px] w-full resize-none rounded border border-border bg-card p-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 value={values.notes}
                 onChange={(e) => set("notes", e.target.value)}
-                placeholder="Add any relevant background information about the company..."
               />
             </Field>
           </div>
@@ -297,10 +373,10 @@ export function AddCompanyModal({ open, onOpenChange }: AddCompanyModalProps) {
           </button>
           <button
             onClick={onSubmit}
-            disabled={create.isPending}
-            className="h-[38px] rounded bg-danger px-6 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:brightness-110 disabled:opacity-60"
+            disabled={update.isPending || uploading}
+            className="h-[38px] rounded bg-primary px-6 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:brightness-110 disabled:opacity-60"
           >
-            {create.isPending ? "Saving..." : "Save Company"}
+            {update.isPending ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
@@ -352,11 +428,11 @@ function isHostname(value: string) {
   return /^(https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(value.trim());
 }
 
-function initials(name: string) {
+function managerInitials(name: string) {
   return name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
+    .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 }

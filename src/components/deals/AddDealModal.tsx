@@ -1,4 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useModalA11y } from "@/components/common/use-modal-a11y";
 import { useCreateDeal, useDealFormOptions } from "@/lib/deals-data";
 
 interface AddDealModalProps {
@@ -21,7 +23,8 @@ export function AddDealModal({ open, onOpenChange }: AddDealModalProps) {
   const [closeDate, setCloseDate] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState("Enterprise, Priority");
+  const [tags, setTags] = useState("");
+  const modal = useModalA11y(open, onOpenChange, { disabled: createDeal.isPending });
 
   const selectedStage = useMemo(
     () => options?.stages.find((stage) => stage.id === stageId),
@@ -45,36 +48,71 @@ export function AddDealModal({ open, onOpenChange }: AddDealModalProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    await createDeal.mutateAsync({
-      name,
-      primary_contact_id: contactId,
-      company_id: companyId || null,
-      value: Number(value || 0),
-      currency,
-      stage_id: stageId,
-      probability: Number(probability || selectedStage?.default_probability || 0),
-      expected_close_date: closeDate,
-      assigned_to: assignedTo || null,
-      description: description || null,
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    });
-    onOpenChange(false);
-    setName("");
-    setContactId("");
-    setCompanyId("");
-    setValue("");
-    setDescription("");
+    if (!name.trim()) {
+      toast.error("Deal name is required");
+      return;
+    }
+    if (!contactId) {
+      toast.error("Primary contact is required");
+      return;
+    }
+    if (!value || Number(value) <= 0) {
+      toast.error("Deal value must be greater than zero");
+      return;
+    }
+    if (!stageId) {
+      toast.error("Select a pipeline stage");
+      return;
+    }
+    if (!closeDate) {
+      toast.error("Expected close date is required");
+      return;
+    }
+
+    try {
+      await createDeal.mutateAsync({
+        name: name.trim(),
+        primary_contact_id: contactId,
+        company_id: companyId || null,
+        value: Number(value),
+        currency,
+        stage_id: stageId,
+        probability: Number(probability || selectedStage?.default_probability || 0),
+        expected_close_date: closeDate,
+        assigned_to: assignedTo || null,
+        description: description.trim() || null,
+        tags: tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      });
+      toast.success("Deal saved");
+      onOpenChange(false);
+      setName("");
+      setContactId("");
+      setCompanyId("");
+      setValue("");
+      setDescription("");
+    } catch (error) {
+      toast.error("Could not save deal", { description: (error as Error).message });
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-deal-title"
+      ref={modal.ref}
+      onKeyDown={modal.onKeyDown}
+    >
       <div className="flex max-h-[92vh] w-full max-w-[720px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
         <header className="flex items-center justify-between border-b border-border bg-muted px-8 py-6">
           <div>
-            <h2 className="text-[24px] font-semibold text-foreground">Add New Deal</h2>
+            <h2 id="add-deal-title" className="text-[24px] font-semibold text-foreground">
+              Add New Deal
+            </h2>
             <p className="mt-1 text-sm text-text-secondary">
               Populate the fields below to create a new opportunity in the pipeline.
             </p>

@@ -151,6 +151,44 @@ export function useCreateCompany() {
   });
 }
 
+export interface UpdateCompanyInput extends Partial<CreateCompanyInput> {
+  id: string;
+  logo_url?: string | null;
+}
+
+export function useUpdateCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: UpdateCompanyInput) => {
+      const { error } = await supabase
+        .from("companies")
+        .update({ ...input, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: companiesKey });
+      qc.invalidateQueries({ queryKey: ["company", id] });
+    },
+  });
+}
+
+export function useDeleteCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("companies")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: companiesKey });
+    },
+  });
+}
+
 export function useCompanyManagers() {
   return useQuery({
     queryKey: ["company_managers"],

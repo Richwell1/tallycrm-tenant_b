@@ -145,6 +145,43 @@ export function useCreateContact() {
   });
 }
 
+export interface UpdateContactInput extends Partial<CreateContactInput> {
+  id: string;
+}
+
+export function useUpdateContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: UpdateContactInput) => {
+      const { error } = await supabase
+        .from("contacts")
+        .update({ ...input, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: contactsKey });
+      qc.invalidateQueries({ queryKey: ["contact", id] });
+    },
+  });
+}
+
+export function useDeleteContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("contacts")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: contactsKey });
+    },
+  });
+}
+
 export function useContactFormOptions() {
   return useQuery({
     queryKey: ["contact_form_options"],

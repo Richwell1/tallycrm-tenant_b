@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useModalA11y } from "@/components/common/use-modal-a11y";
 import { useAuth } from "@/lib/auth-context";
 import { useContactFormOptions, useCreateContact } from "@/lib/contacts-data";
 
@@ -18,7 +19,7 @@ const initialState = {
   company_id: "",
   country: "",
   city: "",
-  tags: "Decision Maker, Tech Industry",
+  tags: "",
   assigned_to: "",
   notes: "",
 };
@@ -28,6 +29,7 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
   const [values, setValues] = useState(initialState);
   const create = useCreateContact();
   const options = useContactFormOptions();
+  const modal = useModalA11y(open, onOpenChange, { disabled: create.isPending });
 
   if (!open) return null;
 
@@ -43,6 +45,10 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
     e.preventDefault();
     if (!values.first_name.trim() || !values.last_name.trim()) {
       toast.error("First and last name are required");
+      return;
+    }
+    if (!values.email.trim() || !isEmail(values.email)) {
+      toast.error("Enter a valid email address");
       return;
     }
 
@@ -74,12 +80,21 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-contact-title"
+      ref={modal.ref}
+      onKeyDown={modal.onKeyDown}
+    >
       <div className="flex w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
         <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">person_add</span>
-            <h2 className="text-xl font-semibold text-foreground">Add Contact</h2>
+            <h2 id="add-contact-title" className="text-xl font-semibold text-foreground">
+              Add Contact
+            </h2>
           </div>
           <button
             onClick={close}
@@ -290,4 +305,8 @@ function Field({
 
 function clean(value: string) {
   return value.trim() || null;
+}
+
+function isEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }

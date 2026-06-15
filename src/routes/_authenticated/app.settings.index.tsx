@@ -16,6 +16,22 @@ import {
   useToggleAutomation,
 } from "@/lib/automations-data";
 import { useCurrentRole } from "@/lib/auth-context";
+import { useLossReasons } from "@/lib/leads-data";
+import {
+  useSettingsUsers,
+  useAssignmentReps,
+  useAuditLog,
+  usePipelineStagesConfig,
+  useUpdatePipelineStage,
+  useCreateLossReason,
+  useUpdateLossReason,
+  useDeleteLossReason,
+  useUpdateUserRole,
+  useAppSettings,
+  useSaveAppSettings,
+  type AuditLogEntry,
+  type SettingsUser,
+} from "@/lib/settings-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/settings/")({
@@ -80,136 +96,6 @@ const SETTINGS_TABS: Array<{ id: SettingsTab; label: string; icon: string }> = [
   { id: "lossReasons", label: "Loss Reasons", icon: "report_off" },
   { id: "auditLog", label: "Audit Log", icon: "history_edu" },
   { id: "landingIntegration", label: "Landing Page Integration", icon: "extension" },
-];
-
-const PIPELINE_STAGES = [
-  { name: "New Lead", color: "bg-primary", sla: 2, closed: false, locked: false },
-  { name: "Contacted", color: "bg-info", sla: 3, closed: false, locked: false },
-  { name: "Qualified", color: "bg-primary-mid", sla: 5, closed: false, locked: false },
-  { name: "Demo / Proposal", color: "bg-accent", sla: 10, closed: false, locked: false },
-  { name: "Negotiation", color: "bg-warning", sla: 7, closed: false, locked: false },
-  { name: "Closed-Won", color: "bg-success", sla: 0, closed: true, locked: true },
-  { name: "Closed-Lost", color: "bg-danger", sla: 0, closed: true, locked: true },
-];
-
-const SETTINGS_USERS = [
-  {
-    name: "Alexander Pierce",
-    initials: "AP",
-    email: "a.pierce@tallycrm.com",
-    role: "Admin",
-    status: "Active",
-    mfa: "Enrolled",
-    lastLogin: "2 mins ago",
-  },
-  {
-    name: "Sarah Jenkins",
-    initials: "SJ",
-    email: "s.jenkins@tallycrm.com",
-    role: "Sales Manager",
-    status: "Active",
-    mfa: "Enrolled",
-    lastLogin: "45 mins ago",
-  },
-  {
-    name: "Michael Ross",
-    initials: "MR",
-    email: "m.ross@tallycrm.com",
-    role: "Sales Rep",
-    status: "Pending",
-    mfa: "Pending",
-    lastLogin: "Never",
-  },
-];
-
-const ASSIGNMENT_REPS = [
-  { name: "David Chen", title: "Senior Account Executive", initials: "DC", load: 12, active: true },
-  { name: "Sarah Jenkins", title: "Sales Specialist", initials: "SJ", load: 8, active: true },
-  { name: "Marcus Rivera", title: "Regional Lead", initials: "MR", load: 15, active: false },
-  { name: "Elena Kostas", title: "Junior Rep", initials: "EK", load: 5, active: true },
-];
-
-const LOSS_REASONS = [
-  "Price too high",
-  "Chose competitor",
-  "No budget",
-  "Timing",
-  "Unresponsive",
-  "Poor product fit",
-];
-
-const AUDIT_LOG_ROWS = [
-  {
-    actor: "Sarah Jenkins",
-    email: "sarah.j@tallycrm.com",
-    initials: "SJ",
-    action: "Closed Won",
-    entity: "Deal",
-    entityName: "Acme Corp Expansion",
-    timestamp: "Oct 24, 2024, 14:22:10",
-    ip: "192.168.1.45",
-    tone: "success" as const,
-  },
-  {
-    actor: "Michael Chen",
-    email: "m.chen@tallycrm.com",
-    initials: "MC",
-    action: "Update",
-    entity: "Lead",
-    entityName: "Globex Retail Solutions",
-    timestamp: "Oct 24, 2024, 13:58:04",
-    ip: "10.0.4.122",
-    tone: "primary" as const,
-  },
-  {
-    actor: "System / Automation",
-    email: "Automated Task",
-    initials: "SYS",
-    action: "Task Created",
-    entity: "Task",
-    entityName: "Make first contact",
-    timestamp: "Oct 24, 2024, 12:00:00",
-    ip: "172.16.254.1",
-    tone: "warning" as const,
-  },
-  {
-    actor: "Jane Doe",
-    email: "admin@tallycrm.com",
-    initials: "JD",
-    action: "Delete",
-    entity: "API Key",
-    entityName: "Inactive Landing Page Token",
-    timestamp: "Oct 24, 2024, 09:15:22",
-    ip: "82.112.4.9",
-    tone: "danger" as const,
-  },
-];
-
-const NOTIFICATION_ROWS = [
-  {
-    label: "New Lead Assigned",
-    detail: "When a lead is manually or auto-assigned.",
-    email: true,
-    app: true,
-  },
-  {
-    label: "Deal Stage Change",
-    detail: "When a deal progresses or stalls.",
-    email: true,
-    app: true,
-  },
-  {
-    label: "SLA Breach Escalation",
-    detail: "When a lead or deal breaches its stage SLA.",
-    email: true,
-    app: true,
-  },
-  {
-    label: "Daily Digest",
-    detail: "Morning task, overdue, and new-lead summary.",
-    email: true,
-    app: false,
-  },
 ];
 
 function SettingsPage() {
@@ -281,6 +167,49 @@ function SettingsPage() {
 }
 
 function GeneralSettingsPanel() {
+  const { data: settings, isLoading, isError, error, refetch } = useAppSettings();
+  const saveSettings = useSaveAppSettings();
+
+  const [crmName, setCrmName] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [dateFormat, setDateFormat] = useState("");
+  const [language, setLanguage] = useState("");
+  const [initialized, setInitialized] = useState(false);
+
+  if (settings && !initialized) {
+    setCrmName(settings.crm_name);
+    setCurrency(settings.default_currency);
+    setTimezone(settings.timezone);
+    setDateFormat(settings.date_format);
+    setLanguage(settings.language);
+    setInitialized(true);
+  }
+
+  async function handleSave() {
+    try {
+      await saveSettings.mutateAsync({
+        crm_name: crmName,
+        default_currency: currency,
+        timezone,
+        date_format: dateFormat,
+        language,
+      });
+      toast.success("General settings saved");
+    } catch (err) {
+      toast.error("Could not save settings", { description: (err as Error).message });
+    }
+  }
+
+  if (isLoading) return <TableSkeleton rows={6} columns={2} />;
+  if (isError)
+    return (
+      <ErrorState
+        description={(error as Error)?.message ?? "Could not load settings"}
+        onRetry={() => refetch()}
+      />
+    );
+
   return (
     <div className="space-y-6">
       <SectionCard
@@ -290,7 +219,7 @@ function GeneralSettingsPanel() {
       >
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_180px]">
           <div className="space-y-4">
-            <InputControl label="CRM Instance Name" value="Tally CRM Sales" onChange={() => {}} />
+            <InputControl label="CRM Instance Name" value={crmName} onChange={setCrmName} />
             <p className="text-sm text-text-secondary">
               This name appears in browser titles, notifications, and system-generated messages.
             </p>
@@ -311,37 +240,37 @@ function GeneralSettingsPanel() {
         <div className="grid gap-4 md:grid-cols-2">
           <SelectControl
             label="Default Currency"
-            value="GHS - Ghanaian Cedi"
-            onChange={() => {}}
-            options={[
-              "GHS - Ghanaian Cedi",
-              "USD - US Dollar",
-              "EUR - Euro",
-              "GBP - British Pound",
-            ]}
+            value={currency}
+            onChange={setCurrency}
+            options={["GHS", "USD", "EUR", "GBP"]}
           />
           <SelectControl
             label="Timezone"
-            value="GMT - Greenwich Mean Time"
-            onChange={() => {}}
-            options={[
-              "GMT - Greenwich Mean Time",
-              "UTC - Coordinated Universal Time",
-              "Africa/Accra",
-            ]}
+            value={timezone}
+            onChange={setTimezone}
+            options={["GMT", "UTC", "Africa/Accra"]}
           />
           <SelectControl
             label="Date Format"
-            value="DD/MM/YYYY"
-            onChange={() => {}}
+            value={dateFormat}
+            onChange={setDateFormat}
             options={["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]}
           />
           <SelectControl
             label="System Language"
-            value="English (United States)"
-            onChange={() => {}}
+            value={language}
+            onChange={setLanguage}
             options={["English (United States)", "French", "Spanish"]}
           />
+        </div>
+        <div className="mt-4 flex justify-end border-t border-border pt-4">
+          <button
+            onClick={handleSave}
+            disabled={saveSettings.isPending}
+            className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+          >
+            {saveSettings.isPending ? "Saving…" : "Save General Settings"}
+          </button>
         </div>
       </SectionCard>
 
@@ -363,11 +292,34 @@ function GeneralSettingsPanel() {
 }
 
 function PipelineSettingsPanel() {
+  const { data: stages = [], isLoading, isError, error, refetch } = usePipelineStagesConfig();
+  const updateStage = useUpdatePipelineStage();
+  const [edits, setEdits] = useState<Record<string, { name?: string; sla_days?: number }>>({});
+
+  function patchEdit(id: string, patch: { name?: string; sla_days?: number }) {
+    setEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  }
+
+  async function saveAllStages() {
+    const entries = Object.entries(edits);
+    if (entries.length === 0) {
+      toast.info("No changes to save");
+      return;
+    }
+    try {
+      await Promise.all(entries.map(([id, patch]) => updateStage.mutateAsync({ id, ...patch })));
+      setEdits({});
+      toast.success("Pipeline configuration saved");
+    } catch (err) {
+      toast.error("Could not save pipeline config", { description: (err as Error).message });
+    }
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard
         title="Sales Pipeline Configuration"
-        description="Seven canonical stages from the PRD. Closed stages are locked; total stages cannot drop below three."
+        description="Closed stages are locked; total stages cannot drop below three."
         actions={
           <button className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-light">
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -376,69 +328,102 @@ function PipelineSettingsPanel() {
         }
         bodyClassName="p-0"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] text-left">
-            <thead className="border-b border-border bg-muted">
-              <tr>
-                {["Order", "Stage Name", "Color", "SLA Days", "Closed", "Actions"].map(
-                  (heading) => (
-                    <th
-                      key={heading}
-                      className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted"
-                    >
-                      {heading}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {PIPELINE_STAGES.map((stage, index) => (
-                <tr key={stage.name} className="hover:bg-muted/40">
-                  <td className="px-5 py-4">
-                    <span className="material-symbols-outlined text-text-muted">
-                      drag_indicator
-                    </span>
-                    <span className="ml-2 text-sm font-semibold">{index + 1}</span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <input
-                      value={stage.name}
-                      readOnly
-                      className="w-full max-w-[260px] rounded-lg border border-transparent bg-transparent px-2 py-2 text-sm font-semibold outline-none focus:border-primary focus:bg-card"
-                    />
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={cn(
-                        "inline-flex h-7 w-7 rounded-full border-2 border-white shadow-[var(--shadow-xs)] ring-1 ring-border",
-                        stage.color,
-                      )}
-                    />
-                  </td>
-                  <td className="px-5 py-4">
-                    <input
-                      value={stage.sla}
-                      readOnly
-                      className="h-10 w-16 rounded-lg border border-border bg-card text-center text-sm font-semibold"
-                    />
-                  </td>
-                  <td className="px-5 py-4">
-                    <AutomationSwitch checked={stage.closed} disabled onChange={() => {}} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <IconButton
-                      icon={stage.locked ? "lock" : "delete"}
-                      label={stage.locked ? "Locked default stage" : "Remove stage"}
-                      danger={!stage.locked}
-                      onClick={() => {}}
-                    />
-                  </td>
+        {isLoading ? (
+          <TableSkeleton rows={7} columns={6} />
+        ) : isError ? (
+          <ErrorState
+            description={(error as Error)?.message ?? "Could not load stages"}
+            onRetry={() => refetch()}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[780px] text-left">
+              <thead className="border-b border-border bg-muted">
+                <tr>
+                  {["Order", "Stage Name", "Color", "SLA Days", "Closed", "Actions"].map(
+                    (heading) => (
+                      <th
+                        key={heading}
+                        className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted"
+                      >
+                        {heading}
+                      </th>
+                    ),
+                  )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {stages.map((stage, index) => (
+                  <tr key={stage.id} className="hover:bg-muted/40">
+                    <td className="px-5 py-4">
+                      <span className="material-symbols-outlined text-text-muted">
+                        drag_indicator
+                      </span>
+                      <span className="ml-2 text-sm font-semibold">{index + 1}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <input
+                        defaultValue={stage.name}
+                        disabled={stage.is_closed}
+                        onBlur={(e) => {
+                          if (e.target.value !== stage.name) {
+                            patchEdit(stage.id, { name: e.target.value });
+                          }
+                        }}
+                        className="w-full max-w-[260px] rounded-lg border border-transparent bg-transparent px-2 py-2 text-sm font-semibold outline-none focus:border-primary focus:bg-card disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className="inline-flex h-7 w-7 rounded-full border-2 border-white shadow-[var(--shadow-xs)] ring-1 ring-border"
+                        style={{ background: stage.color || "var(--color-primary)" }}
+                      />
+                    </td>
+                    <td className="px-5 py-4">
+                      <input
+                        defaultValue={stage.sla_days}
+                        type="number"
+                        min={1}
+                        onBlur={(e) => {
+                          const val = Number(e.target.value);
+                          if (!isNaN(val) && val !== stage.sla_days) {
+                            patchEdit(stage.id, { sla_days: val });
+                          }
+                        }}
+                        className="h-10 w-16 rounded-lg border border-border bg-card text-center text-sm font-semibold"
+                      />
+                    </td>
+                    <td className="px-5 py-4">
+                      <AutomationSwitch checked={stage.is_closed} disabled onChange={() => {}} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <IconButton
+                        icon={stage.is_closed ? "lock" : "delete"}
+                        label={stage.is_closed ? "Locked default stage" : "Remove stage"}
+                        danger={!stage.is_closed}
+                        onClick={() => {}}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <footer className="flex justify-between items-center border-t border-border bg-muted px-5 py-4">
+              <p className="text-sm text-text-secondary">
+                {Object.keys(edits).length > 0
+                  ? `${Object.keys(edits).length} unsaved change(s)`
+                  : "No pending changes"}
+              </p>
+              <button
+                onClick={saveAllStages}
+                disabled={updateStage.isPending}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+              >
+                {updateStage.isPending ? "Saving…" : "Save Pipeline Config"}
+              </button>
+            </footer>
+          </div>
+        )}
       </SectionCard>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -466,6 +451,12 @@ function PipelineSettingsPanel() {
 
 function UsersSettingsPanel() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { data: users = [], isLoading, isError, error, refetch } = useSettingsUsers();
+  const updateRole = useUpdateUserRole();
+
+  const adminCount = users.filter((u) => u.role === "admin").length;
+  const managerCount = users.filter((u) => u.role === "manager").length;
+  const repCount = users.filter((u) => u.role === "rep").length;
 
   return (
     <div className="space-y-6">
@@ -475,7 +466,7 @@ function UsersSettingsPanel() {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               Search
             </span>
-            <input className="input" placeholder="Filter by name or email..." />
+            <input className="input" placeholder="Filter by name..." />
           </label>
           <SelectField
             label="Role"
@@ -495,7 +486,8 @@ function UsersSettingsPanel() {
             options={[
               { label: "All Statuses", value: "all" },
               { label: "Active", value: "active" },
-              { label: "Pending", value: "pending" },
+              { label: "Invited", value: "invited" },
+              { label: "Inactive", value: "inactive" },
             ]}
           />
         </div>
@@ -509,66 +501,113 @@ function UsersSettingsPanel() {
         description="Admin can invite users, assign one of the three CRM roles, and monitor mandatory 2FA enrollment."
         bodyClassName="p-0"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="border-b border-border bg-muted">
-              <tr>
-                {["User", "Email", "Role", "Status", "2FA Status", "Last Login", "Actions"].map(
-                  (heading) => (
+        {isLoading ? (
+          <TableSkeleton rows={3} columns={6} />
+        ) : isError ? (
+          <ErrorState
+            description={(error as Error)?.message ?? "Could not load users"}
+            onRetry={() => refetch()}
+          />
+        ) : users.length === 0 ? (
+          <EmptyState
+            icon={<span className="material-symbols-outlined text-[28px]">group</span>}
+            title="No users found"
+            description="Invite team members to get started."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left">
+              <thead className="border-b border-border bg-muted">
+                <tr>
+                  {["User", "Role", "Status", "Last Login", "Actions"].map((heading) => (
                     <th
                       key={heading}
                       className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted"
                     >
                       {heading}
                     </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {SETTINGS_USERS.map((user) => (
-                <tr key={user.email} className="hover:bg-muted/40">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                        {user.initials}
-                      </span>
-                      <span className="font-semibold">{user.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-text-secondary">{user.email}</td>
-                  <td className="px-5 py-4">
-                    <select className="input h-9 min-w-[150px]" defaultValue={user.role}>
-                      <option>Admin</option>
-                      <option>Sales Manager</option>
-                      <option>Sales Rep</option>
-                    </select>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusPill tone={user.status === "Active" ? "success" : "warning"}>
-                      {user.status}
-                    </StatusPill>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusPill tone={user.mfa === "Enrolled" ? "primary" : "warning"}>
-                      {user.mfa}
-                    </StatusPill>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-text-secondary">{user.lastLogin}</td>
-                  <td className="px-5 py-4">
-                    <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
-                  </td>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {users.map((user) => {
+                  const roleLabel =
+                    user.role === "admin"
+                      ? "Admin"
+                      : user.role === "manager"
+                        ? "Sales Manager"
+                        : "Sales Rep";
+                  const statusTone: "success" | "warning" =
+                    user.status === "active" ? "success" : "warning";
+                  return (
+                    <tr key={user.id} className="hover:bg-muted/40">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                            {user.initials}
+                          </span>
+                          <span className="font-semibold">{user.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <select
+                          className="input h-9 min-w-[150px]"
+                          defaultValue={user.role}
+                          onChange={async (e) => {
+                            try {
+                              await updateRole.mutateAsync({
+                                userId: user.id,
+                                role: e.target.value as "admin" | "manager" | "rep",
+                              });
+                              toast.success("Role updated");
+                            } catch (err) {
+                              toast.error("Could not update role", {
+                                description: (err as Error).message,
+                              });
+                            }
+                          }}
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="manager">Sales Manager</option>
+                          <option value="rep">Sales Rep</option>
+                        </select>
+                      </td>
+                      <td className="px-5 py-4">
+                        <StatusPill tone={statusTone}>{user.status}</StatusPill>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary">
+                        {user.last_login_at
+                          ? new Date(user.last_login_at).toLocaleDateString()
+                          : "Never"}
+                      </td>
+                      <td className="px-5 py-4">
+                        <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </SectionCard>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <RoleOverview icon="admin_panel_settings" title="Administrators" users="1 User" />
-        <RoleOverview icon="groups" title="Sales Managers" users="1 User" />
-        <RoleOverview icon="person" title="Sales Reps" users="1 User" />
+        <RoleOverview
+          icon="admin_panel_settings"
+          title="Administrators"
+          users={`${adminCount} User${adminCount !== 1 ? "s" : ""}`}
+        />
+        <RoleOverview
+          icon="groups"
+          title="Sales Managers"
+          users={`${managerCount} User${managerCount !== 1 ? "s" : ""}`}
+        />
+        <RoleOverview
+          icon="person"
+          title="Sales Reps"
+          users={`${repCount} User${repCount !== 1 ? "s" : ""}`}
+        />
       </div>
 
       {inviteOpen ? <InviteUserDialog onClose={() => setInviteOpen(false)} /> : null}
@@ -799,6 +838,29 @@ function AutomationsSettingsPanel() {
 }
 
 function LeadAssignmentPanel() {
+  const { data: reps = [], isLoading } = useAssignmentReps();
+  const { data: settings } = useAppSettings();
+  const saveSettings = useSaveAppSettings();
+
+  const [strategy, setStrategy] = useState<string>("round_robin");
+  const [strategyInit, setStrategyInit] = useState(false);
+
+  if (settings && !strategyInit) {
+    setStrategy(settings.assignment_strategy);
+    setStrategyInit(true);
+  }
+
+  const activeCount = reps.filter((r) => r.active).length;
+
+  async function handleSaveStrategy() {
+    try {
+      await saveSettings.mutateAsync({ assignment_strategy: strategy });
+      toast.success("Lead assignment logic saved");
+    } catch (err) {
+      toast.error("Could not save assignment logic", { description: (err as Error).message });
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
       <div className="space-y-4">
@@ -810,11 +872,14 @@ function LeadAssignmentPanel() {
             <StrategyOption
               title="Manual Assignment"
               description="Leads go to a general pool for manual selection."
+              active={strategy === "manual"}
+              onClick={() => setStrategy("manual")}
             />
             <StrategyOption
               title="Round-Robin"
               description="Automatically distribute leads in a sequential loop."
-              active
+              active={strategy === "round_robin"}
+              onClick={() => setStrategy("round_robin")}
             />
             <div className="rounded-lg border border-border bg-muted p-4 opacity-70">
               <div className="flex items-start justify-between gap-3">
@@ -840,46 +905,61 @@ function LeadAssignmentPanel() {
         title="Round-Robin Queue"
         description="Drag handles indicate assignment priority; inactive reps are skipped."
         bodyClassName="p-0"
-        actions={<Badge>{ASSIGNMENT_REPS.filter((rep) => rep.active).length} Active Reps</Badge>}
+        actions={
+          <Badge>
+            {activeCount} Active Rep{activeCount !== 1 ? "s" : ""}
+          </Badge>
+        }
       >
-        <div className="divide-y divide-border">
-          {ASSIGNMENT_REPS.map((rep, index) => (
-            <div
-              key={rep.name}
-              className="grid gap-4 px-5 py-4 transition-colors hover:bg-muted/50 md:grid-cols-[auto_44px_minmax(0,1fr)_120px_auto]"
-            >
-              <span className="material-symbols-outlined self-center text-text-muted">
-                drag_indicator
-              </span>
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                {rep.initials}
-              </span>
-              <div className="min-w-0">
-                <p className="font-semibold">{rep.name}</p>
-                <p className="text-sm text-text-secondary">{rep.title}</p>
+        {isLoading ? (
+          <TableSkeleton rows={4} columns={4} />
+        ) : reps.length === 0 ? (
+          <EmptyState
+            icon={<span className="material-symbols-outlined text-[28px]">group</span>}
+            title="No reps found"
+            description="Invite team members and assign the Sales Rep role to populate this queue."
+          />
+        ) : (
+          <div className="divide-y divide-border">
+            {reps.map((rep, index) => (
+              <div
+                key={rep.id}
+                className="grid gap-4 px-5 py-4 transition-colors hover:bg-muted/50 md:grid-cols-[auto_44px_minmax(0,1fr)_120px_auto]"
+              >
+                <span className="material-symbols-outlined self-center text-text-muted">
+                  drag_indicator
+                </span>
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                  {rep.initials}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold">{rep.name}</p>
+                  <p className="text-sm text-text-secondary capitalize">{rep.role}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                    Open Leads
+                  </p>
+                  <p className="text-[16px] font-semibold text-primary">{rep.openLeads} Leads</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-text-muted">#{index + 1}</span>
+                  <AutomationSwitch checked={rep.active} onChange={() => {}} />
+                </div>
               </div>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                  Current Load
-                </p>
-                <p className="text-[16px] font-semibold text-primary">{rep.load} Leads</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-text-muted">#{index + 1}</span>
-                <AutomationSwitch checked={rep.active} onChange={() => {}} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <footer className="flex flex-col justify-between gap-3 border-t border-border bg-muted px-5 py-4 sm:flex-row sm:items-center">
           <button className="text-sm font-semibold text-text-secondary hover:text-primary">
             Reset Queue Order
           </button>
           <button
-            onClick={() => toast.success("Lead assignment rules saved")}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            onClick={handleSaveStrategy}
+            disabled={saveSettings.isPending}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
           >
-            Save Assignment Logic
+            {saveSettings.isPending ? "Saving…" : "Save Assignment Logic"}
           </button>
         </footer>
       </SectionCard>
@@ -888,7 +968,104 @@ function LeadAssignmentPanel() {
 }
 
 function EmailNotificationsPanel() {
+  const { data: settings } = useAppSettings();
+  const saveSettings = useSaveAppSettings();
   const [showKey, setShowKey] = useState(false);
+  const [provider, setProvider] = useState("Resend");
+  const [fromName, setFromName] = useState("Tally CRM Sales");
+  const [fromEmail, setFromEmail] = useState("sales@tallycrm.io");
+  const [notifs, setNotifs] = useState({
+    newLeadEmail: true,
+    newLeadApp: true,
+    dealStageEmail: true,
+    dealStageApp: true,
+    slaEmail: true,
+    slaApp: true,
+    digestEmail: true,
+    digestApp: false,
+  });
+  const [emailInit, setEmailInit] = useState(false);
+
+  if (settings && !emailInit) {
+    setProvider(settings.email_provider);
+    setFromName(settings.from_name);
+    setFromEmail(settings.from_email);
+    setNotifs({
+      newLeadEmail: settings.notif_new_lead_email,
+      newLeadApp: settings.notif_new_lead_app,
+      dealStageEmail: settings.notif_deal_stage_email,
+      dealStageApp: settings.notif_deal_stage_app,
+      slaEmail: settings.notif_sla_email,
+      slaApp: settings.notif_sla_app,
+      digestEmail: settings.notif_digest_email,
+      digestApp: settings.notif_digest_app,
+    });
+    setEmailInit(true);
+  }
+
+  async function saveProvider() {
+    try {
+      await saveSettings.mutateAsync({
+        email_provider: provider,
+        from_name: fromName,
+        from_email: fromEmail,
+      });
+      toast.success("Provider settings saved");
+    } catch (err) {
+      toast.error("Could not save provider settings", { description: (err as Error).message });
+    }
+  }
+
+  async function saveNotifToggle(patch: Partial<typeof notifs>) {
+    const next = { ...notifs, ...patch };
+    setNotifs(next);
+    try {
+      await saveSettings.mutateAsync({
+        notif_new_lead_email: next.newLeadEmail,
+        notif_new_lead_app: next.newLeadApp,
+        notif_deal_stage_email: next.dealStageEmail,
+        notif_deal_stage_app: next.dealStageApp,
+        notif_sla_email: next.slaEmail,
+        notif_sla_app: next.slaApp,
+        notif_digest_email: next.digestEmail,
+        notif_digest_app: next.digestApp,
+      });
+    } catch (err) {
+      toast.error("Could not save notification settings", { description: (err as Error).message });
+    }
+  }
+
+  const matrixRows: Array<{
+    label: string;
+    detail: string;
+    emailKey: keyof typeof notifs;
+    appKey: keyof typeof notifs;
+  }> = [
+    {
+      label: "New Lead Assigned",
+      detail: "When a lead is manually or auto-assigned.",
+      emailKey: "newLeadEmail",
+      appKey: "newLeadApp",
+    },
+    {
+      label: "Deal Stage Change",
+      detail: "When a deal progresses or stalls.",
+      emailKey: "dealStageEmail",
+      appKey: "dealStageApp",
+    },
+    {
+      label: "SLA Breach Escalation",
+      detail: "When a lead or deal breaches its stage SLA.",
+      emailKey: "slaEmail",
+      appKey: "slaApp",
+    },
+    {
+      label: "Daily Digest",
+      detail: "Morning task, overdue, and new-lead summary.",
+      emailKey: "digestEmail",
+      appKey: "digestApp",
+    },
+  ];
 
   return (
     <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -900,8 +1077,8 @@ function EmailNotificationsPanel() {
           <div className="space-y-4">
             <SelectControl
               label="Email Provider"
-              value="Resend"
-              onChange={() => {}}
+              value={provider}
+              onChange={setProvider}
               options={["Resend", "SendGrid", "SMTP"]}
             />
             <label className="block space-y-1">
@@ -928,12 +1105,16 @@ function EmailNotificationsPanel() {
               </div>
             </label>
             <div className="grid gap-4 md:grid-cols-2">
-              <InputControl label="From Name" value="Tally CRM Sales" onChange={() => {}} />
-              <InputControl label="From Email" value="sales@tallycrm.io" onChange={() => {}} />
+              <InputControl label="From Name" value={fromName} onChange={setFromName} />
+              <InputControl label="From Email" value={fromEmail} onChange={setFromEmail} />
             </div>
             <div className="flex gap-2 border-t border-border pt-4">
-              <button className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">
-                Save Provider Settings
+              <button
+                onClick={saveProvider}
+                disabled={saveSettings.isPending}
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {saveSettings.isPending ? "Saving…" : "Save Provider Settings"}
               </button>
               <button
                 onClick={() => toast.success("Test email queued")}
@@ -959,7 +1140,7 @@ function EmailNotificationsPanel() {
         bodyClassName="p-0"
       >
         <div className="divide-y divide-border">
-          {NOTIFICATION_ROWS.map((row) => (
+          {matrixRows.map((row) => (
             <div
               key={row.label}
               className="grid gap-4 px-5 py-4 transition-colors hover:bg-muted/50 md:grid-cols-[minmax(0,1fr)_160px]"
@@ -969,15 +1150,37 @@ function EmailNotificationsPanel() {
                 <p className="text-sm text-text-secondary">{row.detail}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <ToggleWithLabel label="Email" checked={row.email} />
-                <ToggleWithLabel label="In-App" checked={row.app} />
+                <ToggleWithLabel
+                  label="Email"
+                  checked={notifs[row.emailKey]}
+                  onChange={(val) => saveNotifToggle({ [row.emailKey]: val })}
+                />
+                <ToggleWithLabel
+                  label="In-App"
+                  checked={notifs[row.appKey]}
+                  onChange={(val) => saveNotifToggle({ [row.appKey]: val })}
+                />
               </div>
             </div>
           ))}
         </div>
         <footer className="flex items-center justify-between border-t border-border bg-muted px-5 py-4">
-          <p className="text-sm text-text-secondary">Changes are saved automatically.</p>
-          <button className="text-sm font-semibold text-danger hover:underline">
+          <p className="text-sm text-text-secondary">Notification toggles save immediately.</p>
+          <button
+            onClick={() =>
+              saveNotifToggle({
+                newLeadEmail: true,
+                newLeadApp: true,
+                dealStageEmail: true,
+                dealStageApp: true,
+                slaEmail: true,
+                slaApp: true,
+                digestEmail: true,
+                digestApp: false,
+              })
+            }
+            className="text-sm font-semibold text-danger hover:underline"
+          >
             Reset to Default
           </button>
         </footer>
@@ -987,7 +1190,26 @@ function EmailNotificationsPanel() {
 }
 
 function LossReasonsPanel() {
-  const [reasons, setReasons] = useState(LOSS_REASONS);
+  const { data: reasons = [], isLoading, isError, error, refetch } = useLossReasons();
+  const createReason = useCreateLossReason();
+  const updateReason = useUpdateLossReason();
+  const deleteReason = useDeleteLossReason();
+
+  async function handleCreate() {
+    try {
+      await createReason.mutateAsync("New reason");
+    } catch (err) {
+      toast.error("Could not add reason", { description: (err as Error).message });
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteReason.mutateAsync(id);
+    } catch (err) {
+      toast.error("Could not delete reason", { description: (err as Error).message });
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -996,44 +1218,54 @@ function LossReasonsPanel() {
         description="Closed-Lost deals require a reason so win/loss reporting stays consistent."
         actions={
           <button
-            onClick={() => setReasons((items) => [...items, "Custom reason"])}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-light"
+            onClick={handleCreate}
+            disabled={createReason.isPending}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-light disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
             Add Reason
           </button>
         }
       >
-        <div className="space-y-3">
-          {reasons.map((reason, index) => (
-            <div
-              key={`${reason}-${index}`}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-xs)] hover:border-primary/40"
-            >
-              <span className="material-symbols-outlined text-text-muted">drag_indicator</span>
-              <input
-                value={reason}
-                onChange={(event) =>
-                  setReasons((items) =>
-                    items.map((item, itemIndex) =>
-                      itemIndex === index ? event.target.value : item,
-                    ),
-                  )
-                }
-                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none focus:ring-0"
-              />
-              {index === 0 ? <Badge>System</Badge> : null}
-              <IconButton
-                icon="delete"
-                label="Delete reason"
-                danger
-                onClick={() =>
-                  setReasons((items) => items.filter((_, itemIndex) => itemIndex !== index))
-                }
-              />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <TableSkeleton rows={6} columns={2} />
+        ) : isError ? (
+          <ErrorState
+            description={(error as Error)?.message ?? "Could not load loss reasons"}
+            onRetry={() => refetch()}
+          />
+        ) : (
+          <div className="space-y-3">
+            {reasons.map((reason, index) => (
+              <div
+                key={reason.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-[var(--shadow-xs)] hover:border-primary/40"
+              >
+                <span className="material-symbols-outlined text-text-muted">drag_indicator</span>
+                <input
+                  defaultValue={reason.label}
+                  onBlur={(e) => {
+                    if (e.target.value !== reason.label) {
+                      updateReason
+                        .mutateAsync({ id: reason.id, label: e.target.value })
+                        .catch((err) =>
+                          toast.error("Could not save", { description: (err as Error).message }),
+                        );
+                    }
+                  }}
+                  className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-medium outline-none focus:ring-0"
+                />
+                {index === 0 ? <Badge>System</Badge> : null}
+                <IconButton
+                  icon="delete"
+                  label="Delete reason"
+                  danger
+                  onClick={() => handleDelete(reason.id)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </SectionCard>
       <InfoPanel
         icon="bar_chart"
@@ -1045,24 +1277,20 @@ function LossReasonsPanel() {
 }
 
 function AuditLogPanel() {
+  const { data: rows = [], isLoading, isError, error, refetch } = useAuditLog();
+
   return (
     <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
       <SectionCard title="Filter Panel" description="Filter admin and automated system events.">
         <div className="space-y-4">
           <SelectControl
-            label="Actor"
-            value="All Users"
-            onChange={() => {}}
-            options={["All Users", "Sarah Jenkins", "Michael Chen", "System / Automation"]}
-          />
-          <SelectControl
             label="Entity Type"
             value="All Entities"
             onChange={() => {}}
-            options={["All Entities", "Lead", "Deal", "Task", "User Settings", "API Key"]}
+            options={["All Entities", "Lead", "Deal", "Task", "Contact", "Company"]}
           />
-          <InputControl label="Start Date" value="2024-10-01" onChange={() => {}} />
-          <InputControl label="End Date" value="2024-10-24" onChange={() => {}} />
+          <InputControl label="Start Date" value="" onChange={() => {}} />
+          <InputControl label="End Date" value="" onChange={() => {}} />
           <button className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">
             Apply Filters
           </button>
@@ -1080,52 +1308,66 @@ function AuditLogPanel() {
         }
         bodyClassName="p-0"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="border-b border-border bg-muted">
-              <tr>
-                {["Actor", "Action", "Entity", "Entity Name", "Timestamp", "IP Address"].map(
-                  (heading) => (
-                    <th
-                      key={heading}
-                      className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted"
-                    >
-                      {heading}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {AUDIT_LOG_ROWS.map((row) => (
-                <tr key={`${row.actor}-${row.timestamp}`} className="hover:bg-muted/40">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
-                        {row.initials}
-                      </span>
-                      <span>
-                        <span className="block text-sm font-semibold">{row.actor}</span>
-                        <span className="block text-xs text-text-muted">{row.email}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusPill tone={row.tone === "danger" ? "warning" : row.tone}>
-                      {row.action}
-                    </StatusPill>
-                  </td>
-                  <td className="px-5 py-4 text-sm">{row.entity}</td>
-                  <td className="px-5 py-4 text-sm font-semibold">{row.entityName}</td>
-                  <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary">
-                    {row.timestamp}
-                  </td>
-                  <td className="px-5 py-4 font-mono text-sm text-text-secondary">{row.ip}</td>
+        {isLoading ? (
+          <TableSkeleton rows={6} columns={6} />
+        ) : isError ? (
+          <ErrorState
+            description={(error as Error)?.message ?? "Could not load audit log"}
+            onRetry={() => refetch()}
+          />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={<span className="material-symbols-outlined text-[28px]">history_edu</span>}
+            title="No audit entries"
+            description="System and user actions will be logged here as they occur."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left">
+              <thead className="border-b border-border bg-muted">
+                <tr>
+                  {["Actor", "Action", "Entity", "Entity Name", "Timestamp", "IP Address"].map(
+                    (heading) => (
+                      <th
+                        key={heading}
+                        className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted"
+                      >
+                        {heading}
+                      </th>
+                    ),
+                  )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-muted/40">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
+                          {row.initials}
+                        </span>
+                        <span className="block text-sm font-semibold">{row.actor}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusPill tone={row.tone === "danger" ? "warning" : row.tone}>
+                        {row.action}
+                      </StatusPill>
+                    </td>
+                    <td className="px-5 py-4 text-sm">{row.entity}</td>
+                    <td className="px-5 py-4 text-sm font-semibold">{row.entity_name ?? "—"}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary">
+                      {new Date(row.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-5 py-4 font-mono text-sm text-text-secondary">
+                      {row.ip ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </SectionCard>
     </div>
   );
@@ -1193,13 +1435,16 @@ function StrategyOption({
   title,
   description,
   active,
+  onClick,
 }: {
   title: string;
   description: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <label
+      onClick={onClick}
       className={cn(
         "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
         active
@@ -1216,11 +1461,19 @@ function StrategyOption({
   );
 }
 
-function ToggleWithLabel({ label, checked }: { label: string; checked: boolean }) {
+function ToggleWithLabel({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange?: (checked: boolean) => void;
+}) {
   return (
     <label className="flex items-center justify-between gap-2 text-xs font-semibold text-text-secondary">
       {label}
-      <AutomationSwitch checked={checked} onChange={() => {}} />
+      <AutomationSwitch checked={checked} onChange={onChange ?? (() => {})} />
     </label>
   );
 }

@@ -15,29 +15,44 @@ export const Route = createFileRoute("/_authenticated/app/deals/")({
   component: DealsIndex,
 });
 
+type DealSort = "recent" | "value" | "probability" | "closeDate";
+
 function DealsIndex() {
   const { data, isLoading, isError, error, refetch } = useDealsBoard();
   const updateStage = useUpdateDealStage();
   const [search, setSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<DealSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
 
   const filteredDeals = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return data?.deals ?? [];
-    return (data?.deals ?? []).filter((deal) =>
-      [
-        deal.name,
-        deal.primary_contact?.first_name,
-        deal.primary_contact?.last_name,
-        deal.primary_contact?.email,
-        deal.company?.name,
-        deal.assigned_rep?.full_name,
-      ]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(q)),
-    );
-  }, [data?.deals, search]);
+    const list = (data?.deals ?? []).filter((deal) => {
+      const stageMatch = stageFilter === "all" || deal.stage_id === stageFilter;
+      const searchMatch =
+        !q ||
+        [
+          deal.name,
+          deal.primary_contact?.first_name,
+          deal.primary_contact?.last_name,
+          deal.primary_contact?.email,
+          deal.company?.name,
+          deal.assigned_rep?.full_name,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(q));
+      return stageMatch && searchMatch;
+    });
+
+    return list.sort((a, b) => {
+      if (sortKey === "value") return Number(b.value ?? 0) - Number(a.value ?? 0);
+      if (sortKey === "probability") return Number(b.probability ?? 0) - Number(a.probability ?? 0);
+      if (sortKey === "closeDate")
+        return dateRank(a.expected_close_date) - dateRank(b.expected_close_date);
+      return dateRank(b.created_at) - dateRank(a.created_at);
+    });
+  }, [data?.deals, search, sortKey, stageFilter]);
 
   function handleDrop(stageId: string) {
     if (!draggedDealId) return;
@@ -54,7 +69,9 @@ function DealsIndex() {
           <div>
             <h1 className="mb-1 text-[24px] font-semibold text-foreground">Sales Pipeline</h1>
             <p className="text-sm text-text-secondary">
-              Global Q4 Enterprise Strategy • Updated 2 mins ago
+              {data
+                ? `${data.deals.length} deal${data.deals.length !== 1 ? "s" : ""} across ${data.stages.length} stage${data.stages.length !== 1 ? "s" : ""}`
+                : "Loading pipeline…"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -70,8 +87,28 @@ function DealsIndex() {
                 type="search"
               />
             </div>
-            <ToolbarButton icon="filter_list">Filter</ToolbarButton>
-            <ToolbarButton icon="sort">Value</ToolbarButton>
+            <select
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value)}
+              className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">Stage: All</option>
+              {data?.stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as DealSort)}
+              className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="recent">Sort: Recently created</option>
+              <option value="value">Sort: Value</option>
+              <option value="probability">Sort: Probability</option>
+              <option value="closeDate">Sort: Close date</option>
+            </select>
             <button
               onClick={() => setAddOpen(true)}
               className="flex h-[38px] items-center gap-2 rounded-lg bg-danger px-5 text-xs font-bold uppercase tracking-wider text-white shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90"
@@ -101,6 +138,26 @@ function DealsIndex() {
             icon={<span className="material-symbols-outlined text-[28px]">handshake</span>}
             title="No pipeline stages configured"
             description="Create the default seven-stage deal pipeline before adding opportunities."
+          />
+        ) : data.deals.length === 0 ? (
+          <EmptyState
+            icon={<span className="material-symbols-outlined text-[28px]">handshake</span>}
+            title="No deals yet"
+            description="Add an opportunity or convert a qualified lead to begin tracking pipeline value."
+            action={
+              <button
+                onClick={() => setAddOpen(true)}
+                className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white"
+              >
+                Add Deal
+              </button>
+            }
+          />
+        ) : filteredDeals.length === 0 ? (
+          <EmptyState
+            icon={<span className="material-symbols-outlined text-[28px]">search_off</span>}
+            title="No deals match your filters"
+            description="Adjust search, stage, or sort criteria to widen the result set."
           />
         ) : (
           <div className="kanban-scroll-container flex flex-1 gap-4 overflow-x-auto pb-6">
@@ -255,6 +312,10 @@ function ToolbarButton({ icon, children }: { icon: string; children: ReactNode }
       {children}
     </button>
   );
+}
+
+function dateRank(value: string | null | undefined) {
+  return value ? new Date(value).getTime() : 0;
 }
 
 function stageTone(stage: PipelineStageRow) {

@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authenticated/app/activities/")({
 });
 
 type Filter = "all" | "call" | "email" | "task" | "meeting";
+type ActivitySort = "due" | "recent" | "owner";
 
 const filters: Array<{ label: string; value: Filter }> = [
   { label: "All Activities", value: "all" },
@@ -24,13 +25,14 @@ function ActivitiesIndex() {
   const { data: activities, isLoading, isError, error, refetch } = useActivities();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<ActivitySort>("due");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState<ActivityItem | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (activities ?? []).filter((item) => {
+    const list = (activities ?? []).filter((item) => {
       const typeMatch = filter === "all" || item.type === filter;
       const searchMatch =
         !q ||
@@ -47,7 +49,14 @@ function ActivitiesIndex() {
           .some((value) => value!.toLowerCase().includes(q));
       return typeMatch && searchMatch;
     });
-  }, [activities, filter, search]);
+
+    return list.sort((a, b) => {
+      if (sortKey === "owner")
+        return (a.owner?.full_name ?? "").localeCompare(b.owner?.full_name ?? "");
+      if (sortKey === "recent") return dateRank(b.created_at) - dateRank(a.created_at);
+      return dateRank(a.due_at) - dateRank(b.due_at);
+    });
+  }, [activities, filter, search, sortKey]);
 
   const stats = useMemo(() => buildStats(activities ?? []), [activities]);
 
@@ -131,6 +140,15 @@ function ActivitiesIndex() {
               <button className="rounded p-1 text-text-muted hover:text-foreground">
                 <span className="material-symbols-outlined">more_vert</span>
               </button>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as ActivitySort)}
+                className="h-8 rounded-lg border border-border bg-card px-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="due">Due date</option>
+                <option value="recent">Recent</option>
+                <option value="owner">Owner</option>
+              </select>
             </div>
           </div>
 
@@ -383,7 +401,9 @@ function StatusBadge({ status }: { status: ActivityItem["status"] }) {
         ? { label: "In Progress", tone: "bg-amber-100 text-amber-700" }
         : { label: "Pending", tone: "bg-primary-light text-primary" };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${meta.tone}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${meta.tone}`}
+    >
       {meta.label}
     </span>
   );
@@ -480,4 +500,8 @@ function buildStats(items: ActivityItem[]) {
     overdue: items.filter(isOverdue).length,
     nextPriority: incomplete[0] ?? null,
   };
+}
+
+function dateRank(value: string | null | undefined) {
+  return value ? new Date(value).getTime() : 0;
 }

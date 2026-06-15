@@ -1,17 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EmptyState, ErrorState, GridSkeleton, TableSkeleton } from "@/components/common";
 import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency } from "@/lib/format";
 import {
-  ANALYTICS_KPIS,
-  FUNNEL_STAGES,
-  LEAD_SOURCES,
-  LOSS_REASONS,
-  REP_PERFORMANCE,
-  REVENUE_POINTS,
+  useAnalyticsKpis,
+  useConversionFunnel,
+  useLeadSources,
+  useLossReasonAnalytics,
+  useRepLeaderboard,
+  useRevenueChart,
+  type AnalyticsKpi,
   type AnalyticsPeriod,
+  type FunnelStage,
+  type LeadSourceMetric,
+  type LossReasonMetric,
+  type RepPerformance,
   type RevenuePoint,
 } from "@/lib/analytics-data";
 import { cn } from "@/lib/utils";
@@ -31,7 +37,6 @@ function AnalyticsOverviewPage() {
   const { user } = useAuth();
   const [period, setPeriod] = useState<AnalyticsPeriod>("month");
   const [lastUpdated, setLastUpdated] = useState(() => new Date());
-  const revenueData = useMemo(() => periodRevenuePoints(period), [period]);
 
   if (user?.role === "rep") {
     return (
@@ -109,14 +114,10 @@ function AnalyticsOverviewPage() {
         </p>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {ANALYTICS_KPIS.map((kpi) => (
-          <KpiTile key={kpi.label} kpi={kpi} />
-        ))}
-      </section>
+      <KpiSection period={period} />
 
       <div className="mt-5">
-        <RevenuePerformanceChart data={revenueData} />
+        <RevenuePerformanceChart period={period} />
       </div>
 
       <div className="mt-5">
@@ -127,7 +128,7 @@ function AnalyticsOverviewPage() {
         <section className="xl:col-span-2">
           <RepLeaderboard />
         </section>
-        <WinLossAnalysis />
+        <WinLossAnalysis period={period} />
       </div>
 
       <div className="mt-5">
@@ -137,7 +138,26 @@ function AnalyticsOverviewPage() {
   );
 }
 
-function KpiTile({ kpi }: { kpi: (typeof ANALYTICS_KPIS)[number] }) {
+function KpiSection({ period }: { period: AnalyticsPeriod }) {
+  const { data = [], isLoading, isError, error, refetch } = useAnalyticsKpis(period);
+  if (isLoading) return <GridSkeleton count={4} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4" />;
+  if (isError)
+    return (
+      <ErrorState
+        description={(error as Error)?.message ?? "Could not load KPIs"}
+        onRetry={() => refetch()}
+      />
+    );
+  return (
+    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {data.map((kpi) => (
+        <KpiTile key={kpi.label} kpi={kpi} />
+      ))}
+    </section>
+  );
+}
+
+function KpiTile({ kpi }: { kpi: AnalyticsKpi }) {
   const toneClasses = {
     primary: "bg-primary-light text-primary",
     accent: "bg-accent-light text-accent-dark",
@@ -176,7 +196,8 @@ function KpiTile({ kpi }: { kpi: (typeof ANALYTICS_KPIS)[number] }) {
   );
 }
 
-function RevenuePerformanceChart({ data }: { data: RevenuePoint[] }) {
+function RevenuePerformanceChart({ period }: { period: AnalyticsPeriod }) {
+  const { data = [], isLoading, isError, error, refetch } = useRevenueChart(period);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const { actual, target, area, actualPoints, targetPoints, max } = useMemo(
     () => buildChartPaths(data),
@@ -185,6 +206,19 @@ function RevenuePerformanceChart({ data }: { data: RevenuePoint[] }) {
   const activePoint = activeIndex === null ? null : data[activeIndex];
   const activeActual = activeIndex === null ? null : actualPoints[activeIndex];
   const activeTarget = activeIndex === null ? null : targetPoints[activeIndex];
+
+  if (isLoading)
+    return (
+      <SectionCard title="Revenue Performance" description="Closed Won value vs monthly growth target">
+        <TableSkeleton rows={5} columns={12} />
+      </SectionCard>
+    );
+  if (isError)
+    return (
+      <SectionCard title="Revenue Performance" description="Closed Won value vs monthly growth target">
+        <ErrorState description={(error as Error)?.message ?? "Could not load revenue data"} onRetry={() => refetch()} />
+      </SectionCard>
+    );
 
   return (
     <SectionCard
@@ -370,7 +404,27 @@ function RevenuePerformanceChart({ data }: { data: RevenuePoint[] }) {
 }
 
 function ConversionFunnel() {
-  const max = FUNNEL_STAGES[0]?.count ?? 1;
+  const { data: stages = [], isLoading, isError, error, refetch } = useConversionFunnel();
+  const max = stages[0]?.count ?? 1;
+
+  if (isLoading)
+    return (
+      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
+        <TableSkeleton rows={1} columns={5} />
+      </SectionCard>
+    );
+  if (isError)
+    return (
+      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
+        <ErrorState description={(error as Error)?.message ?? "Could not load funnel"} onRetry={() => refetch()} />
+      </SectionCard>
+    );
+  if (stages.length === 0)
+    return (
+      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
+        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">filter_alt</span>} title="No funnel data yet" description="Leads and deals will populate the funnel as activity is recorded." />
+      </SectionCard>
+    );
 
   return (
     <SectionCard
@@ -379,7 +433,7 @@ function ConversionFunnel() {
       bodyClassName="overflow-x-auto"
     >
       <div className="flex min-w-[860px] items-center">
-        {FUNNEL_STAGES.map((stage, index) => {
+        {stages.map((stage, index) => {
           const width = Math.max(42, (stage.count / max) * 100);
           return (
             <div key={stage.name} className="relative flex flex-1 flex-col items-center">
@@ -389,7 +443,7 @@ function ConversionFunnel() {
                   width: `${width}%`,
                   background: `color-mix(in oklab, var(--color-primary) ${100 - index * 8}%, white)`,
                   clipPath:
-                    index === FUNNEL_STAGES.length - 1
+                    index === stages.length - 1
                       ? "polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)"
                       : "polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%, 8% 50%)",
                 }}
@@ -411,17 +465,40 @@ function ConversionFunnel() {
 }
 
 function RepLeaderboard() {
+  const { data: reps = [], isLoading, isError, error, refetch } = useRepLeaderboard();
+
+  if (isLoading)
+    return (
+      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+        <TableSkeleton rows={4} columns={7} />
+      </SectionCard>
+    );
+  if (isError)
+    return (
+      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+        <ErrorState description={(error as Error)?.message ?? "Could not load leaderboard"} onRetry={() => refetch()} />
+      </SectionCard>
+    );
+  if (reps.length === 0)
+    return (
+      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">leaderboard</span>} title="No rep data yet" description="Revenue data will appear here once deals are closed." />
+      </SectionCard>
+    );
+
   return (
     <SectionCard
       title="Rep Leaderboard"
       actions={
-        <Link
-          to="/app/analytics/$repId"
-          params={{ repId: REP_PERFORMANCE[0].id }}
-          className="text-[12px] font-semibold text-primary hover:underline"
-        >
-          View top rep
-        </Link>
+        reps[0] ? (
+          <Link
+            to="/app/analytics/$repId"
+            params={{ repId: reps[0].id }}
+            className="text-[12px] font-semibold text-primary hover:underline"
+          >
+            View top rep
+          </Link>
+        ) : null
       }
       bodyClassName="overflow-x-auto p-0"
     >
@@ -438,7 +515,7 @@ function RepLeaderboard() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {REP_PERFORMANCE.map((rep) => (
+          {reps.map((rep) => (
             <tr key={rep.id} className="transition-colors hover:bg-surface-hover">
               <td className="px-5 py-4 text-center">
                 <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-muted px-2 text-[12px] font-bold text-text-secondary">
@@ -495,7 +572,29 @@ function RepLeaderboard() {
   );
 }
 
-function WinLossAnalysis() {
+function WinLossAnalysis({ period }: { period: AnalyticsPeriod }) {
+  const { data: kpis = [] } = useAnalyticsKpis(period);
+  const { data: lossReasons = [], isLoading, isError, error, refetch } = useLossReasonAnalytics();
+
+  const winRateKpi = kpis[2];
+  const winRate = winRateKpi?.progress ?? 0;
+  const circumference = 239;
+  const winArc = Math.round((winRate / 100) * circumference);
+  const lossArc = circumference - winArc;
+
+  if (isLoading)
+    return (
+      <SectionCard title="Win/Loss Analysis" description="Top reasons for lost opportunities">
+        <TableSkeleton rows={5} columns={2} />
+      </SectionCard>
+    );
+  if (isError)
+    return (
+      <SectionCard title="Win/Loss Analysis" description="Top reasons for lost opportunities">
+        <ErrorState description={(error as Error)?.message ?? "Could not load data"} onRetry={() => refetch()} />
+      </SectionCard>
+    );
+
   return (
     <SectionCard title="Win/Loss Analysis" description="Top reasons for lost opportunities">
       <div className="flex flex-col items-center">
@@ -509,48 +608,58 @@ function WinLossAnalysis() {
               stroke="var(--color-border)"
               strokeWidth="12"
             />
-            <circle
-              cx="50"
-              cy="50"
-              r="38"
-              fill="transparent"
-              stroke="var(--color-primary)"
-              strokeDasharray="164 239"
-              strokeLinecap="round"
-              strokeWidth="12"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="38"
-              fill="transparent"
-              stroke="var(--color-danger)"
-              strokeDasharray="75 239"
-              strokeDashoffset="-164"
-              strokeLinecap="round"
-              strokeWidth="12"
-            />
+            {winArc > 0 && (
+              <circle
+                cx="50"
+                cy="50"
+                r="38"
+                fill="transparent"
+                stroke="var(--color-primary)"
+                strokeDasharray={`${winArc} ${circumference}`}
+                strokeLinecap="round"
+                strokeWidth="12"
+              />
+            )}
+            {lossArc > 0 && winArc > 0 && (
+              <circle
+                cx="50"
+                cy="50"
+                r="38"
+                fill="transparent"
+                stroke="var(--color-danger)"
+                strokeDasharray={`${lossArc} ${circumference}`}
+                strokeDashoffset={-winArc}
+                strokeLinecap="round"
+                strokeWidth="12"
+              />
+            )}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-semibold">68.5%</span>
+            <span className="text-xl font-semibold">
+              {winRateKpi?.value ?? "—"}
+            </span>
             <span className="text-[12px] font-semibold text-text-muted">Win Rate</span>
           </div>
         </div>
         <div className="w-full space-y-3">
-          {LOSS_REASONS.map((item) => (
-            <div key={item.reason} className="flex items-center justify-between gap-3">
-              <span className="text-[13px] text-text-secondary">{item.reason}</span>
-              <div className="flex min-w-[130px] items-center gap-2">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-danger"
-                    style={{ width: `${item.percent}%` }}
-                  />
+          {lossReasons.length === 0 ? (
+            <p className="text-center text-sm text-text-muted">No closed-lost deals yet</p>
+          ) : (
+            lossReasons.map((item) => (
+              <div key={item.reason} className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-text-secondary">{item.reason}</span>
+                <div className="flex min-w-[130px] items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-danger"
+                      style={{ width: `${item.percent}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right text-[11px] font-bold">{item.percent}%</span>
                 </div>
-                <span className="w-8 text-right text-[11px] font-bold">{item.percent}%</span>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </SectionCard>
@@ -558,7 +667,27 @@ function WinLossAnalysis() {
 }
 
 function LeadSourceEfficiency() {
-  const max = Math.max(...LEAD_SOURCES.map((source) => source.leads));
+  const { data: sources = [], isLoading, isError, error, refetch } = useLeadSources();
+  const max = sources.length > 0 ? Math.max(...sources.map((s) => s.leads)) : 1;
+
+  if (isLoading)
+    return (
+      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
+        <GridSkeleton count={4} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4" />
+      </SectionCard>
+    );
+  if (isError)
+    return (
+      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
+        <ErrorState description={(error as Error)?.message ?? "Could not load data"} onRetry={() => refetch()} />
+      </SectionCard>
+    );
+  if (sources.length === 0)
+    return (
+      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
+        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">ads_click</span>} title="No lead source data" description="Lead source data will appear here once leads have been captured." />
+      </SectionCard>
+    );
 
   return (
     <SectionCard
@@ -572,7 +701,7 @@ function LeadSourceEfficiency() {
       }
     >
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {LEAD_SOURCES.map((source) => (
+        {sources.map((source) => (
           <article key={source.source} className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-end justify-between gap-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
@@ -673,12 +802,4 @@ function periodLabel(period: AnalyticsPeriod) {
   if (period === "quarter") return "this quarter";
   if (period === "year") return "this year";
   return "this month";
-}
-
-function periodRevenuePoints(period: AnalyticsPeriod) {
-  if (period === "week")
-    return REVENUE_POINTS.slice(-4).map((point, index) => ({ ...point, label: `W${index + 1}` }));
-  if (period === "quarter") return REVENUE_POINTS.slice(-3);
-  if (period === "year") return REVENUE_POINTS;
-  return REVENUE_POINTS.slice(-6);
 }

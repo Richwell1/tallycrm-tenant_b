@@ -1,3 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/format";
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
 export type AnalyticsPeriod = "week" | "month" | "quarter" | "year";
 
 export interface AnalyticsKpi {
@@ -69,233 +75,625 @@ export interface RepOutcome {
   date: string;
 }
 
-export const ANALYTICS_KPIS: AnalyticsKpi[] = [
-  {
-    label: "Total Pipeline Value",
-    value: "GHS 2.5M",
-    delta: "+12.4%",
-    trend: "up",
-    icon: "payments",
-    caption: "Target coverage at 75%",
-    tone: "primary",
-    progress: 75,
-  },
-  {
-    label: "Avg Deal Size",
-    value: "GHS 42.5K",
-    delta: "+4.2%",
-    trend: "up",
-    icon: "monitoring",
-    caption: "Target: GHS 40.0K",
-    tone: "accent",
-    progress: 82,
-  },
-  {
-    label: "Win Rate",
-    value: "34.8%",
-    delta: "-2.1%",
-    trend: "down",
-    icon: "workspace_premium",
-    caption: "Review proposal stage losses",
-    tone: "warning",
-    progress: 35,
-  },
-  {
-    label: "Avg Deal Velocity",
-    value: "42 Days",
-    delta: "Improving",
-    trend: "flat",
-    icon: "speed",
-    caption: "Previous: 45 days",
-    tone: "success",
-    progress: 68,
-  },
-];
+// ── Shared helpers ─────────────────────────────────────────────────────────────
 
-export const REVENUE_POINTS: RevenuePoint[] = [
-  { label: "Jan", actual: 142000, target: 165000 },
-  { label: "Feb", actual: 188000, target: 178000 },
-  { label: "Mar", actual: 242000, target: 205000 },
-  { label: "Apr", actual: 218000, target: 232000 },
-  { label: "May", actual: 296000, target: 270000 },
-  { label: "Jun", actual: 342000, target: 305000 },
-  { label: "Jul", actual: 326000, target: 330000 },
-  { label: "Aug", actual: 389000, target: 355000 },
-  { label: "Sep", actual: 421000, target: 390000 },
-  { label: "Oct", actual: 466000, target: 420000 },
-  { label: "Nov", actual: 492000, target: 455000 },
-  { label: "Dec", actual: 540000, target: 490000 },
-];
+function periodRange(period: AnalyticsPeriod): { start: string; end: string } {
+  const now = new Date();
+  const end = now.toISOString();
+  let start: Date;
+  switch (period) {
+    case "week":
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "quarter": {
+      const q = Math.floor(now.getMonth() / 3);
+      start = new Date(now.getFullYear(), q * 3, 1);
+      break;
+    }
+    case "year":
+      start = new Date(now.getFullYear(), 0, 1);
+      break;
+    default:
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return { start: start.toISOString(), end };
+}
 
-export const FUNNEL_STAGES: FunnelStage[] = [
-  { name: "Leads", count: 1240, dropoff: 72 },
-  { name: "Contacted", count: 892, dropoff: 45 },
-  { name: "Qualified", count: 401, dropoff: 32 },
-  { name: "Demo", count: 128, dropoff: 54 },
-  { name: "Proposal", count: 69, dropoff: 84 },
-  { name: "Won", count: 58 },
-];
+function nameInitials(name: string | null | undefined): string {
+  if (!name) return "??";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
-export const REP_PERFORMANCE: RepPerformance[] = [
-  {
-    id: "sarah-jenkins",
-    name: "Sarah Jenkins",
-    role: "Senior AE",
-    region: "Enterprise",
-    location: "Accra, GH",
-    initials: "SJ",
-    leads: 142,
-    closed: 28,
-    revenue: 842000,
-    winRate: 38.4,
-    trend: "up",
-    rank: 1,
-    quota: 94,
-    pipeline: 1240000,
-    dealSize: 42500,
-    velocityDays: 24,
-  },
-  {
-    id: "michael-chen",
-    name: "Michael Chen",
-    role: "Enterprise AE",
-    region: "Mid Market",
-    location: "Kumasi, GH",
-    initials: "MC",
-    leads: 98,
-    closed: 19,
-    revenue: 615200,
-    winRate: 32.1,
-    trend: "up",
-    rank: 2,
-    quota: 88,
-    pipeline: 940000,
-    dealSize: 39800,
-    velocityDays: 29,
-  },
-  {
-    id: "emily-stone",
-    name: "Emily Stone",
-    role: "Commercial AE",
-    region: "Commercial",
-    location: "Takoradi, GH",
-    initials: "ES",
-    leads: 115,
-    closed: 14,
-    revenue: 412000,
-    winRate: 24.5,
-    trend: "flat",
-    rank: 3,
-    quota: 71,
-    pipeline: 680000,
-    dealSize: 31200,
-    velocityDays: 37,
-  },
-  {
-    id: "marcus-rogers",
-    name: "Marcus Rogers",
-    role: "Account Executive",
-    region: "SMB",
-    location: "Tema, GH",
-    initials: "MR",
-    leads: 88,
-    closed: 11,
-    revenue: 385000,
-    winRate: 18.2,
-    trend: "down",
-    rank: 4,
-    quota: 64,
-    pipeline: 520000,
-    dealSize: 28600,
-    velocityDays: 43,
-  },
-];
+// ── Deals fetch helper (shared by several hooks) ───────────────────────────────
 
-export const LEAD_SOURCES: LeadSourceMetric[] = [
-  { source: "Tally Landing Page", leads: 642, conversion: 18.4 },
-  { source: "Referral", leads: 284, conversion: 34.2 },
-  { source: "Manual Outreach", leads: 314, conversion: 12.8 },
-  { source: "Partner Event", leads: 176, conversion: 22.6 },
-];
+async function fetchDealsWithStages() {
+  const { data, error } = await supabase
+    .from("deals")
+    .select(
+      "id, value, actual_value, actual_close_date, created_at, assigned_to, lost_reason, stage:pipeline_stages!stage_id(is_won, is_closed)",
+    )
+    .is("deleted_at", null);
+  if (error) throw error;
+  type Row = (typeof data)[number] & {
+    stage: { is_won: boolean; is_closed: boolean } | null;
+  };
+  return (data ?? []) as Row[];
+}
 
-export const LOSS_REASONS: LossReasonMetric[] = [
-  { reason: "Pricing Strategy", percent: 42 },
-  { reason: "Competitor Features", percent: 28 },
-  { reason: "Budget Constrained", percent: 15 },
-  { reason: "Timeline Mismatch", percent: 10 },
-  { reason: "Product Fit", percent: 5 },
-];
+// ── Analytics KPIs ─────────────────────────────────────────────────────────────
 
-export const REP_ACTIVITIES: RepActivity[] = [
-  {
-    type: "call",
-    title: "Outbound Call - Acme Retail",
-    description: "Negotiation follow-up. Callback scheduled with finance lead.",
-    time: "Today, 10:45 AM",
-  },
-  {
-    type: "email",
-    title: "Proposal Sent - Northstar Foods",
-    description: "Enterprise TallyPrime quote sent to procurement.",
-    time: "Yesterday, 4:12 PM",
-  },
-  {
-    type: "meeting",
-    title: "Demo Held - Global Trade",
-    description: "Discovery session with 3 stakeholders. Needs analysis completed.",
-    time: "Jun 12, 11:00 AM",
-  },
-  {
-    type: "task",
-    title: "Task Completed",
-    description: "Updated lead scoring for high-intent landing page prospects.",
-    time: "Jun 11, 2:30 PM",
-  },
-];
+export function useAnalyticsKpis(period: AnalyticsPeriod) {
+  return useQuery({
+    queryKey: ["analytics", "kpis", period],
+    queryFn: async (): Promise<AnalyticsKpi[]> => {
+      const { start, end } = periodRange(period);
+      const all = await fetchDealsWithStages();
 
-export const REP_OUTCOMES: RepOutcome[] = [
-  {
-    company: "CyberDyne Systems",
-    contact: "Miles Bennett",
-    value: 125000,
-    status: "won",
-    reason: "Strong Product Fit",
-    date: "Jun 10, 2026",
-  },
-  {
-    company: "Initech Solutions",
-    contact: "Peter Gibbons",
-    value: 45000,
-    status: "lost",
-    reason: "Budget Constraint",
-    date: "Jun 8, 2026",
-  },
-  {
-    company: "Hooli",
-    contact: "Gavin Belson",
-    value: 210000,
-    status: "won",
-    reason: "Service Reputation",
-    date: "Jun 5, 2026",
-  },
-  {
-    company: "Wayne Enterprises",
-    contact: "Lucius Fox",
-    value: 38000,
-    status: "draft",
-    reason: "Pending approval",
-    date: "Jun 3, 2026",
-  },
-  {
-    company: "Dunder Mifflin",
-    contact: "Jim Halpert",
-    value: 12000,
-    status: "pending",
-    reason: "Final Negotiation",
-    date: "Jun 1, 2026",
-  },
-];
+      const openDeals = all.filter((d) => !d.stage?.is_closed);
+      const periodWon = all.filter(
+        (d) =>
+          d.stage?.is_won &&
+          d.actual_close_date &&
+          d.actual_close_date >= start &&
+          d.actual_close_date <= end,
+      );
+      const periodLost = all.filter(
+        (d) =>
+          d.stage?.is_closed &&
+          !d.stage?.is_won &&
+          d.actual_close_date &&
+          d.actual_close_date >= start &&
+          d.actual_close_date <= end,
+      );
 
-export function findRep(repId: string | undefined) {
-  return REP_PERFORMANCE.find((rep) => rep.id === repId) ?? REP_PERFORMANCE[0];
+      const totalPipeline = openDeals.reduce((s, d) => s + (d.value ?? 0), 0);
+      const avgDealSize =
+        all.length > 0 ? all.reduce((s, d) => s + (d.value ?? 0), 0) / all.length : 0;
+      const totalClosed = periodWon.length + periodLost.length;
+      const winRate = totalClosed > 0 ? (periodWon.length / totalClosed) * 100 : 0;
+
+      const wonWithDates = periodWon.filter((d) => d.actual_close_date && d.created_at);
+      const avgVelocity =
+        wonWithDates.length > 0
+          ? wonWithDates.reduce((s, d) => {
+              const days =
+                (new Date(d.actual_close_date!).getTime() -
+                  new Date(d.created_at).getTime()) /
+                86_400_000;
+              return s + days;
+            }, 0) / wonWithDates.length
+          : 0;
+
+      return [
+        {
+          label: "Total Pipeline Value",
+          value: formatCurrency(totalPipeline),
+          delta: `${openDeals.length} open`,
+          trend: openDeals.length > 0 ? "up" : "flat",
+          icon: "payments",
+          caption: `${openDeals.length} active deal${openDeals.length !== 1 ? "s" : ""}`,
+          tone: "primary",
+          progress: Math.min(100, Math.round((totalPipeline / 3_000_000) * 100)),
+        },
+        {
+          label: "Avg Deal Size",
+          value: formatCurrency(avgDealSize),
+          delta: `${all.length} deals`,
+          trend: avgDealSize > 40_000 ? "up" : avgDealSize > 25_000 ? "flat" : "down",
+          icon: "monitoring",
+          caption: `Across ${all.length} deal${all.length !== 1 ? "s" : ""}`,
+          tone: "accent",
+          progress: Math.min(100, Math.round((avgDealSize / 50_000) * 100)),
+        },
+        {
+          label: "Win Rate",
+          value: totalClosed > 0 ? `${winRate.toFixed(1)}%` : "—",
+          delta:
+            totalClosed > 0 ? `${periodWon.length}/${totalClosed}` : "No closes this period",
+          trend: winRate >= 35 ? "up" : winRate >= 25 ? "flat" : "down",
+          icon: "workspace_premium",
+          caption: `${periodWon.length} won · ${periodLost.length} lost this period`,
+          tone: "warning",
+          progress: Math.round(winRate),
+        },
+        {
+          label: "Avg Deal Velocity",
+          value: avgVelocity > 0 ? `${Math.round(avgVelocity)} Days` : "—",
+          delta: wonWithDates.length > 0 ? `${wonWithDates.length} closes` : "No closes yet",
+          trend: avgVelocity > 0 && avgVelocity <= 30 ? "up" : avgVelocity > 45 ? "down" : "flat",
+          icon: "speed",
+          caption: `${wonWithDates.length} closed-won this period`,
+          tone: "success",
+          progress:
+            avgVelocity > 0
+              ? Math.min(100, Math.round(((60 - Math.min(avgVelocity, 60)) / 60) * 100))
+              : 0,
+        },
+      ];
+    },
+  });
+}
+
+// ── Revenue Chart ──────────────────────────────────────────────────────────────
+
+export function useRevenueChart(period: AnalyticsPeriod) {
+  return useQuery({
+    queryKey: ["analytics", "revenue", period],
+    queryFn: async (): Promise<RevenuePoint[]> => {
+      const { data: wonDeals, error } = await supabase
+        .from("deals")
+        .select(
+          "actual_value, actual_close_date, stage:pipeline_stages!stage_id(is_won)",
+        )
+        .is("deleted_at", null)
+        .not("actual_close_date", "is", null);
+      if (error) throw error;
+
+      type Row = (typeof wonDeals)[number] & {
+        stage: { is_won: boolean } | null;
+      };
+      const won = ((wonDeals ?? []) as Row[]).filter(
+        (d) => d.stage?.is_won && d.actual_close_date,
+      );
+
+      const now = new Date();
+
+      // Build time buckets based on period
+      const buckets: Array<{ label: string; start: Date; end: Date }> = [];
+
+      if (period === "year") {
+        for (let m = 0; m < 12; m++) {
+          const s = new Date(now.getFullYear(), m, 1);
+          const e = new Date(now.getFullYear(), m + 1, 0, 23, 59, 59);
+          buckets.push({
+            label: s.toLocaleString("default", { month: "short" }),
+            start: s,
+            end: e,
+          });
+        }
+      } else if (period === "quarter") {
+        for (let i = 2; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          buckets.push({
+            label: d.toLocaleString("default", { month: "short" }),
+            start: new Date(d.getFullYear(), d.getMonth(), 1),
+            end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59),
+          });
+        }
+      } else if (period === "month") {
+        const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+        const me = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        for (let w = 0; w < 4; w++) {
+          const ws = new Date(ms.getTime() + w * 7 * 86_400_000);
+          const we = new Date(Math.min(ws.getTime() + 7 * 86_400_000 - 1, me.getTime()));
+          buckets.push({ label: `W${w + 1}`, start: ws, end: we });
+        }
+      } else {
+        // week: last 7 days
+        for (let d = 6; d >= 0; d--) {
+          const day = new Date(now.getTime() - d * 86_400_000);
+          day.setHours(0, 0, 0, 0);
+          const dayEnd = new Date(day.getTime() + 86_400_000 - 1);
+          buckets.push({
+            label: day.toLocaleString("default", { weekday: "short" }),
+            start: day,
+            end: dayEnd,
+          });
+        }
+      }
+
+      const points = buckets.map((bucket) => {
+        const actual = won
+          .filter((d) => {
+            const date = new Date(d.actual_close_date!);
+            return date >= bucket.start && date <= bucket.end;
+          })
+          .reduce((s, d) => s + (d.actual_value ?? 0), 0);
+        return { label: bucket.label, actual };
+      });
+
+      // Target = average of all buckets * 1.15 (monthly growth target)
+      const totalActual = points.reduce((s, p) => s + p.actual, 0);
+      const avgActual = points.length > 0 ? totalActual / points.length : 0;
+      const target = Math.round(avgActual * 1.15);
+
+      return points.map((p) => ({ ...p, target }));
+    },
+  });
+}
+
+// ── Conversion Funnel ──────────────────────────────────────────────────────────
+
+export function useConversionFunnel() {
+  return useQuery({
+    queryKey: ["analytics", "funnel"],
+    queryFn: async (): Promise<FunnelStage[]> => {
+      const [leadsRes, dealsRes] = await Promise.all([
+        supabase.from("leads").select("status").is("deleted_at", null),
+        supabase
+          .from("deals")
+          .select("stage:pipeline_stages!stage_id(is_won, is_closed)")
+          .is("deleted_at", null),
+      ]);
+      if (leadsRes.error) throw leadsRes.error;
+      if (dealsRes.error) throw dealsRes.error;
+
+      const leads = leadsRes.data ?? [];
+      type DealRow = (typeof dealsRes.data)[number] & {
+        stage: { is_won: boolean; is_closed: boolean } | null;
+      };
+      const deals = (dealsRes.data ?? []) as DealRow[];
+
+      const totalLeads = leads.length;
+      const contacted = leads.filter((l) =>
+        ["contacted", "qualified", "converted"].includes(l.status),
+      ).length;
+      const qualified = leads.filter((l) =>
+        ["qualified", "converted"].includes(l.status),
+      ).length;
+      const openDeals = deals.filter((d) => !d.stage?.is_closed).length;
+      const wonDeals = deals.filter((d) => d.stage?.is_won).length;
+
+      const rawStages: FunnelStage[] = [
+        { name: "Leads", count: totalLeads },
+        { name: "Contacted", count: contacted },
+        { name: "Qualified", count: qualified },
+        { name: "Active Deals", count: openDeals },
+        { name: "Won", count: wonDeals },
+      ].filter((s) => s.count > 0);
+
+      return rawStages.map((stage, index) => {
+        if (index === rawStages.length - 1) return stage;
+        const next = rawStages[index + 1];
+        const dropoff =
+          stage.count > 0
+            ? Math.round(((stage.count - next.count) / stage.count) * 100)
+            : undefined;
+        return { ...stage, dropoff };
+      });
+    },
+  });
+}
+
+// ── Rep Leaderboard ────────────────────────────────────────────────────────────
+
+export function useRepLeaderboard() {
+  return useQuery({
+    queryKey: ["analytics", "leaderboard"],
+    queryFn: async (): Promise<RepPerformance[]> => {
+      const [rolesRes, dealsRes, leadsRes] = await Promise.all([
+        supabase.from("user_roles").select("user_id, role"),
+        supabase
+          .from("deals")
+          .select(
+            "assigned_to, value, actual_value, actual_close_date, created_at, stage:pipeline_stages!stage_id(is_won, is_closed)",
+          )
+          .is("deleted_at", null),
+        supabase.from("leads").select("assigned_to, status").is("deleted_at", null),
+      ]);
+      if (rolesRes.error) throw rolesRes.error;
+      if (dealsRes.error) throw dealsRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+
+      const roles = rolesRes.data ?? [];
+      if (roles.length === 0) return [];
+
+      const userIds = roles.map((r) => r.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+      type DealRow = (typeof dealsRes.data)[number] & {
+        stage: { is_won: boolean; is_closed: boolean } | null;
+      };
+      const allDeals = (dealsRes.data ?? []) as DealRow[];
+      const allLeads = leadsRes.data ?? [];
+
+      const repMetrics = roles
+        .map(({ user_id, role }) => {
+          const profile = profileMap.get(user_id);
+          const name = profile?.full_name ?? "Unknown";
+          if (name === "Unknown") return null;
+
+          const repDeals = allDeals.filter((d) => d.assigned_to === user_id);
+          const openDeals = repDeals.filter((d) => !d.stage?.is_closed);
+          const wonDeals = repDeals.filter((d) => d.stage?.is_won);
+          const lostDeals = repDeals.filter((d) => d.stage?.is_closed && !d.stage?.is_won);
+          const pipeline = openDeals.reduce((s, d) => s + (d.value ?? 0), 0);
+          const revenue = wonDeals.reduce((s, d) => s + (d.actual_value ?? d.value ?? 0), 0);
+          const avgDealSize =
+            repDeals.length > 0
+              ? repDeals.reduce((s, d) => s + (d.value ?? 0), 0) / repDeals.length
+              : 0;
+          const closed = wonDeals.length + lostDeals.length;
+          const winRate = closed > 0 ? (wonDeals.length / closed) * 100 : 0;
+
+          const wonWithDates = wonDeals.filter((d) => d.actual_close_date && d.created_at);
+          const avgVelocity =
+            wonWithDates.length > 0
+              ? wonWithDates.reduce((s, d) => {
+                  const days =
+                    (new Date(d.actual_close_date!).getTime() -
+                      new Date(d.created_at).getTime()) /
+                    86_400_000;
+                  return s + days;
+                }, 0) / wonWithDates.length
+              : 0;
+
+          const repLeads = allLeads.filter((l) => l.assigned_to === user_id);
+
+          return {
+            id: user_id,
+            name,
+            role:
+              role === "admin"
+                ? "Admin"
+                : role === "manager"
+                  ? "Sales Manager"
+                  : "Sales Rep",
+            region: "",
+            location: "",
+            initials: nameInitials(name),
+            leads: repLeads.length,
+            closed: wonDeals.length,
+            revenue,
+            winRate,
+            trend: "flat" as const,
+            rank: 0,
+            quota: Math.min(100, Math.round((revenue / 500_000) * 100)),
+            pipeline,
+            dealSize: avgDealSize,
+            velocityDays: Math.round(avgVelocity),
+          };
+        })
+        .filter(Boolean) as RepPerformance[];
+
+      return repMetrics
+        .sort((a, b) => b.revenue - a.revenue)
+        .map((rep, index) => ({ ...rep, rank: index + 1 }));
+    },
+  });
+}
+
+// ── Lead Source Breakdown ──────────────────────────────────────────────────────
+
+export function useLeadSources() {
+  return useQuery({
+    queryKey: ["analytics", "lead_sources"],
+    queryFn: async (): Promise<LeadSourceMetric[]> => {
+      const { data: leads, error } = await supabase
+        .from("leads")
+        .select("source, status")
+        .is("deleted_at", null);
+      if (error) throw error;
+
+      const sourceMap = new Map<string, { total: number; converted: number }>();
+      for (const lead of leads ?? []) {
+        const src = lead.source || "Unknown";
+        const curr = sourceMap.get(src) ?? { total: 0, converted: 0 };
+        curr.total++;
+        if (lead.status === "converted") curr.converted++;
+        sourceMap.set(src, curr);
+      }
+
+      return Array.from(sourceMap.entries())
+        .map(([source, { total, converted }]) => ({
+          source,
+          leads: total,
+          conversion: total > 0 ? (converted / total) * 100 : 0,
+        }))
+        .sort((a, b) => b.leads - a.leads)
+        .slice(0, 6);
+    },
+  });
+}
+
+// ── Loss Reason Analytics ──────────────────────────────────────────────────────
+
+export function useLossReasonAnalytics() {
+  return useQuery({
+    queryKey: ["analytics", "loss_reasons"],
+    queryFn: async (): Promise<LossReasonMetric[]> => {
+      const [reasonsRes, dealsRes] = await Promise.all([
+        supabase.from("loss_reasons").select("id, label, position").order("position"),
+        supabase
+          .from("deals")
+          .select(
+            "lost_reason, stage:pipeline_stages!stage_id(is_closed, is_won)",
+          )
+          .is("deleted_at", null)
+          .not("lost_reason", "is", null),
+      ]);
+      if (reasonsRes.error) throw reasonsRes.error;
+      if (dealsRes.error) throw dealsRes.error;
+
+      const reasons = reasonsRes.data ?? [];
+      type DealRow = (typeof dealsRes.data)[number] & {
+        stage: { is_closed: boolean; is_won: boolean } | null;
+      };
+      const lostDeals = ((dealsRes.data ?? []) as DealRow[]).filter(
+        (d) => d.stage?.is_closed && !d.stage?.is_won,
+      );
+      const total = lostDeals.length || 1;
+
+      const items = reasons
+        .map((r) => ({
+          reason: r.label,
+          percent: Math.round(
+            (lostDeals.filter((d) => d.lost_reason === r.label).length / total) * 100,
+          ),
+        }))
+        .filter((r) => r.percent > 0)
+        .sort((a, b) => b.percent - a.percent);
+
+      // Fallback: if no loss data yet, return empty array (component handles empty)
+      return items;
+    },
+  });
+}
+
+// ── Rep Detail (for $repId page) ───────────────────────────────────────────────
+
+export function useRepDetails(repId: string | undefined) {
+  return useQuery({
+    queryKey: ["analytics", "rep", repId],
+    enabled: Boolean(repId),
+    queryFn: async (): Promise<RepPerformance | null> => {
+      const [profileRes, dealsRes, rolesRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .eq("id", repId!)
+          .maybeSingle(),
+        supabase
+          .from("deals")
+          .select(
+            "value, actual_value, actual_close_date, created_at, stage:pipeline_stages!stage_id(is_won, is_closed)",
+          )
+          .is("deleted_at", null)
+          .eq("assigned_to", repId!),
+        supabase.from("user_roles").select("role").eq("user_id", repId!).maybeSingle(),
+      ]);
+      if (profileRes.error) throw profileRes.error;
+      const profile = profileRes.data;
+      if (!profile) return null;
+
+      const role = rolesRes.data?.role ?? "rep";
+      type DealRow = {
+        value: number;
+        actual_value: number | null;
+        actual_close_date: string | null;
+        created_at: string;
+        stage: { is_won: boolean; is_closed: boolean } | null;
+      };
+      const repDeals = (dealsRes.data ?? []) as DealRow[];
+      const openDeals = repDeals.filter((d) => !d.stage?.is_closed);
+      const wonDeals = repDeals.filter((d) => d.stage?.is_won);
+      const lostDeals = repDeals.filter((d) => d.stage?.is_closed && !d.stage?.is_won);
+      const pipeline = openDeals.reduce((s, d) => s + (d.value ?? 0), 0);
+      const revenue = wonDeals.reduce((s, d) => s + (d.actual_value ?? d.value ?? 0), 0);
+      const avgDealSize =
+        repDeals.length > 0
+          ? repDeals.reduce((s, d) => s + (d.value ?? 0), 0) / repDeals.length
+          : 0;
+      const closed = wonDeals.length + lostDeals.length;
+      const winRate = closed > 0 ? (wonDeals.length / closed) * 100 : 0;
+      const wonWithDates = wonDeals.filter((d) => d.actual_close_date && d.created_at);
+      const avgVelocity =
+        wonWithDates.length > 0
+          ? wonWithDates.reduce((s, d) => {
+              const days =
+                (new Date(d.actual_close_date!).getTime() -
+                  new Date(d.created_at).getTime()) /
+                86_400_000;
+              return s + days;
+            }, 0) / wonWithDates.length
+          : 0;
+
+      const name = profile.full_name ?? "Unknown Rep";
+      return {
+        id: repId!,
+        name,
+        role: role === "manager" ? "Sales Manager" : "Sales Rep",
+        region: "",
+        location: "",
+        initials: nameInitials(name),
+        leads: 0,
+        closed: wonDeals.length,
+        revenue,
+        winRate,
+        trend: "flat",
+        rank: 1,
+        quota: Math.min(100, Math.round((revenue / 500_000) * 100)),
+        pipeline,
+        dealSize: avgDealSize,
+        velocityDays: Math.round(avgVelocity),
+      };
+    },
+  });
+}
+
+export function useRepActivities(repId: string | undefined) {
+  return useQuery({
+    queryKey: ["analytics", "rep_activities", repId],
+    enabled: Boolean(repId),
+    queryFn: async (): Promise<RepActivity[]> => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("type, title, notes, created_at")
+        .eq("owner_id", repId!)
+        .order("created_at", { ascending: false })
+        .limit(4);
+      if (error) throw error;
+
+      const typeMap: Record<string, RepActivity["type"]> = {
+        call: "call",
+        email: "email",
+        meeting: "meeting",
+        demo: "meeting",
+        proposal: "task",
+        note: "task",
+      };
+      return (data ?? []).map((a) => ({
+        type: typeMap[a.type] ?? "task",
+        title: a.title,
+        description: a.notes ?? a.type,
+        time: new Date(a.created_at).toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+      }));
+    },
+  });
+}
+
+export function useRepDeals(repId: string | undefined) {
+  return useQuery({
+    queryKey: ["analytics", "rep_deals", repId],
+    enabled: Boolean(repId),
+    queryFn: async (): Promise<RepOutcome[]> => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select(
+          "name, value, actual_value, lost_reason, actual_close_date, stage:pipeline_stages!stage_id(is_won, is_closed, name), contact:contacts!primary_contact_id(first_name, last_name), company:companies!company_id(name)",
+        )
+        .is("deleted_at", null)
+        .eq("assigned_to", repId!)
+        .order("updated_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+
+      return (data ?? []).map((d) => {
+        const stg = d.stage as { is_won: boolean; is_closed: boolean; name: string } | null;
+        const status: RepOutcome["status"] = stg?.is_won
+          ? "won"
+          : stg?.is_closed
+            ? "lost"
+            : "pending";
+        const contact = d.contact as { first_name: string; last_name: string } | null;
+        const company = d.company as { name: string } | null;
+        return {
+          company: company?.name ?? d.name,
+          contact: contact ? `${contact.first_name} ${contact.last_name}` : "—",
+          value: d.actual_value ?? d.value ?? 0,
+          status,
+          reason: d.lost_reason ?? (stg?.is_won ? "Closed Won" : (stg?.name ?? "—")),
+          date: d.actual_close_date
+            ? new Date(d.actual_close_date).toLocaleDateString()
+            : "—",
+        };
+      });
+    },
+  });
 }

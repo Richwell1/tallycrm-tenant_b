@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { EmptyState, ErrorState, GridSkeleton, TableSkeleton } from "@/components/common";
 import { AddContactModal } from "@/components/contacts/AddContactModal";
-import { type ContactSummary, useContacts } from "@/lib/contacts-data";
+import { EditContactModal } from "@/components/contacts/EditContactModal";
+import { useCurrentRole } from "@/lib/auth-context";
+import { type ContactSummary, useContacts, useDeleteContact } from "@/lib/contacts-data";
 import { formatRelative } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/app/contacts/")({
@@ -10,31 +13,60 @@ export const Route = createFileRoute("/_authenticated/app/contacts/")({
 });
 
 type View = "grid" | "table";
+type ContactSort = "recent" | "name" | "company" | "lastActivity";
 
 function ContactsIndex() {
   const { data: contacts, isLoading, isError, error, refetch } = useContacts();
+  const role = useCurrentRole();
+  const deleteContact = useDeleteContact();
   const [view, setView] = useState<View>("grid");
   const [search, setSearch] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<ContactSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
+  const [editContact, setEditContact] = useState<ContactSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ContactSummary | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const canDelete = role === "admin" || role === "manager";
+
+  const companyOptions = useMemo(
+    () =>
+      Array.from(new Set((contacts ?? []).map((contact) => contact.company?.name).filter(Boolean)))
+        .sort()
+        .map((name) => name!),
+    [contacts],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return contacts ?? [];
-    return (contacts ?? []).filter((contact) =>
-      [
-        contact.first_name,
-        contact.last_name,
-        contact.email,
-        contact.phone,
-        contact.job_title,
-        contact.company?.name,
-        contact.company?.country,
-      ]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(q)),
-    );
-  }, [contacts, search]);
+    const list = (contacts ?? []).filter((contact) => {
+      const companyMatch = companyFilter === "all" || contact.company?.name === companyFilter;
+      const searchMatch =
+        !q ||
+        [
+          contact.first_name,
+          contact.last_name,
+          contact.email,
+          contact.phone,
+          contact.job_title,
+          contact.company?.name,
+          contact.company?.country,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(q));
+      return companyMatch && searchMatch;
+    });
+
+    return list.sort((a, b) => {
+      if (sortKey === "name")
+        return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+      if (sortKey === "company")
+        return (a.company?.name ?? "").localeCompare(b.company?.name ?? "");
+      if (sortKey === "lastActivity")
+        return dateRank(b.last_activity_at) - dateRank(a.last_activity_at);
+      return dateRank(b.created_at) - dateRank(a.created_at);
+    });
+  }, [companyFilter, contacts, search, sortKey]);
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -118,14 +150,28 @@ function ContactsIndex() {
               type="search"
             />
           </div>
-          <div className="h-6 w-px bg-border" />
-          <div className="flex items-center gap-2">
-            <FilterChip>Status: Active</FilterChip>
-            <button className="flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-1 text-[11px] font-semibold text-text-muted transition-colors hover:border-primary hover:text-primary">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              Add Filter
-            </button>
-          </div>
+          <select
+            value={companyFilter}
+            onChange={(e) => setCompanyFilter(e.target.value)}
+            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">Company: All</option>
+            {companyOptions.map((company) => (
+              <option key={company} value={company}>
+                {company}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as ContactSort)}
+            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="recent">Sort: Recently created</option>
+            <option value="name">Sort: Name</option>
+            <option value="company">Sort: Company</option>
+            <option value="lastActivity">Sort: Last activity</option>
+          </select>
         </div>
         <button className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
           <span className="material-symbols-outlined text-[18px]">tune</span>
@@ -158,14 +204,26 @@ function ContactsIndex() {
             </button>
           }
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">search_off</span>}
+          title="No contacts match your filters"
+          description="Adjust search, company, or sort criteria to widen the result set."
+        />
       ) : view === "grid" ? (
-        <ContactsGrid contacts={filtered} />
+        <ContactsGrid
+          contacts={filtered}
+          onEdit={setEditContact}
+          onDelete={canDelete ? setDeleteTarget : undefined}
+        />
       ) : (
         <ContactsTable
           contacts={filtered}
           selected={selected}
           onToggle={toggle}
           onToggleAll={toggleAll}
+          onEdit={setEditContact}
+          onDelete={canDelete ? setDeleteTarget : undefined}
         />
       )}
 
@@ -179,21 +237,57 @@ function ContactsIndex() {
 
       <BulkActions count={selected.size} onClose={() => setSelected(new Set())} />
       <AddContactModal open={addOpen} onOpenChange={setAddOpen} />
+      {editContact && (
+        <EditContactModal
+          contact={editContact}
+          open={!!editContact}
+          onOpenChange={(open) => !open && setEditContact(null)}
+        />
+      )}
+      {deleteTarget && (
+        <ConfirmDelete
+          name={`${deleteTarget.first_name} ${deleteTarget.last_name}`}
+          isPending={deleteContact.isPending}
+          onConfirm={() => {
+            deleteContact.mutate(deleteTarget.id, {
+              onSuccess: () => {
+                toast.success("Contact deleted");
+                setDeleteTarget(null);
+              },
+              onError: (error) =>
+                toast.error("Could not delete contact", {
+                  description: (error as Error).message,
+                }),
+            });
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </>
   );
 }
 
-function ContactsGrid({ contacts }: { contacts: ContactSummary[] }) {
+function ContactsGrid({
+  contacts,
+  onEdit,
+  onDelete,
+}: {
+  contacts: ContactSummary[];
+  onEdit: (contact: ContactSummary) => void;
+  onDelete?: (contact: ContactSummary) => void;
+}) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
       {contacts.map((contact) => (
-        <Link
+        <div
           key={contact.id}
-          to="/app/contacts/$id"
-          params={{ id: contact.id }}
           className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-[var(--shadow-xs)] transition-all hover:-translate-y-1 hover:border-primary"
         >
-          <div className="flex-1 p-6">
+          <Link
+            to="/app/contacts/$id"
+            params={{ id: contact.id }}
+            className="flex-1 p-6"
+          >
             <div className="mb-4 flex items-start justify-between">
               <Avatar contact={contact} size="md" />
               <Tags tags={contact.tags ?? fallbackTags(contact)} compact />
@@ -213,21 +307,29 @@ function ContactsGrid({ contacts }: { contacts: ContactSummary[] }) {
                   "No location"}
               </IconLine>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center justify-between border-t border-border bg-muted/40 px-6 py-4">
-            <div className="flex items-center gap-2 text-text-muted">
-              {["email", "call", "chat", "attach_file"].map((icon) => (
-                <span
-                  key={icon}
-                  className="material-symbols-outlined text-[20px] transition-colors hover:text-primary"
+            <div className="flex items-center gap-1 text-text-muted">
+              <button
+                onClick={() => onEdit(contact)}
+                className="rounded p-1 transition-colors hover:bg-muted hover:text-primary"
+                title="Edit"
+              >
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+              </button>
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(contact)}
+                  className="rounded p-1 transition-colors hover:bg-muted hover:text-danger"
+                  title="Delete"
                 >
-                  {icon}
-                </span>
-              ))}
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              )}
             </div>
             <RepAvatar rep={contact.assigned_rep} />
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );
@@ -238,11 +340,15 @@ function ContactsTable({
   selected,
   onToggle,
   onToggleAll,
+  onEdit,
+  onDelete,
 }: {
   contacts: ContactSummary[];
   selected: Set<string>;
   onToggle: (id: string) => void;
   onToggleAll: () => void;
+  onEdit: (contact: ContactSummary) => void;
+  onDelete?: (contact: ContactSummary) => void;
 }) {
   return (
     <div className="flex min-h-[540px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xs)]">
@@ -322,9 +428,24 @@ function ContactsTable({
                   {new Date(contact.created_at).toLocaleDateString()}
                 </td>
                 <td className="p-4 text-right">
-                  <button className="rounded p-1 text-text-muted transition-colors hover:text-foreground">
-                    <span className="material-symbols-outlined">more_vert</span>
-                  </button>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onEdit(contact)}
+                      className="rounded p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(contact)}
+                        className="rounded p-1 text-text-muted transition-colors hover:bg-muted hover:text-danger"
+                        title="Delete"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -495,10 +616,56 @@ function BulkActions({ count, onClose }: { count: number; onClose: () => void })
   );
 }
 
+function ConfirmDelete({
+  name,
+  isPending,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[400px] rounded-xl bg-card p-6 shadow-2xl">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger/10">
+          <span className="material-symbols-outlined text-danger">delete</span>
+        </div>
+        <h3 className="mb-2 text-lg font-semibold text-foreground">Delete Contact</h3>
+        <p className="mb-6 text-sm text-text-secondary">
+          Are you sure you want to delete <span className="font-semibold">{name}</span>? This action
+          cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="rounded bg-danger px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-60"
+          >
+            {isPending ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function fallbackTags(contact: ContactSummary) {
   if (contact.open_deal_count > 0) return ["Decision Maker", "High Value"];
   if (contact.tags?.length) return contact.tags;
   return ["Collab"];
+}
+
+function dateRank(value: string | null | undefined) {
+  return value ? new Date(value).getTime() : 0;
 }
 
 function initials(name: string) {

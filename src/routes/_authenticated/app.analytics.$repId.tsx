@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { TableSkeleton, ErrorState } from "@/components/common";
 import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency } from "@/lib/format";
 import {
-  FUNNEL_STAGES,
-  REP_ACTIVITIES,
-  REP_OUTCOMES,
-  REVENUE_POINTS,
-  findRep,
+  useRepDetails,
+  useRepActivities,
+  useRepDeals,
+  useRevenueChart,
+  useConversionFunnel,
   type RepActivity,
   type RepOutcome,
 } from "@/lib/analytics-data";
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/app/analytics/$repId")({
 function RepAnalyticsPage() {
   const { repId } = Route.useParams();
   const { user } = useAuth();
-  const rep = findRep(repId);
+  const { data: rep, isLoading, isError, error } = useRepDetails(repId);
 
   if (user?.role === "rep") {
     return (
@@ -49,6 +50,21 @@ function RepAnalyticsPage() {
       </>
     );
   }
+
+  if (isLoading)
+    return (
+      <>
+        <PageHeader title="Rep Performance Deep-Dive" breadcrumbs={[{ label: "CRM" }, { label: "Analytics", to: "/app/analytics" }, { label: "Loading..." }]} />
+        <TableSkeleton rows={8} />
+      </>
+    );
+  if (isError || !rep)
+    return (
+      <>
+        <PageHeader title="Rep Performance Deep-Dive" breadcrumbs={[{ label: "CRM" }, { label: "Analytics", to: "/app/analytics" }, { label: "Error" }]} />
+        <ErrorState description={(error as Error)?.message ?? "Rep not found"} />
+      </>
+    );
 
   return (
     <>
@@ -157,10 +173,10 @@ function RepAnalyticsPage() {
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
         <section className="xl:col-span-4">
-          <ActivitySummary />
+          <ActivitySummary repId={repId} />
         </section>
         <section className="xl:col-span-8">
-          <RecentOutcomes />
+          <RecentOutcomes repId={repId} />
         </section>
       </div>
 
@@ -237,8 +253,9 @@ function RepKpi({
 }
 
 function PerformanceBars() {
-  const visible = REVENUE_POINTS.slice(0, 6);
-  const max = Math.max(...visible.flatMap((point) => [point.actual, point.target]));
+  const { data = [] } = useRevenueChart("year");
+  const visible = data.slice(0, 6);
+  const max = Math.max(1, ...visible.flatMap((point) => [point.actual, point.target]));
 
   return (
     <SectionCard
@@ -289,10 +306,7 @@ function PerformanceBars() {
 }
 
 function PersonalFunnel() {
-  const stages = FUNNEL_STAGES.map((stage, index) => ({
-    ...stage,
-    count: Math.max(14, Math.round(stage.count * [0.34, 0.21, 0.16, 0.12, 0.09, 0.07][index])),
-  }));
+  const { data: stages = [] } = useConversionFunnel();
   const max = stages[0]?.count ?? 1;
 
   return (
@@ -337,7 +351,8 @@ function PersonalFunnel() {
   );
 }
 
-function ActivitySummary() {
+function ActivitySummary({ repId }: { repId: string }) {
+  const { data: activities = [] } = useRepActivities(repId);
   return (
     <SectionCard
       title="Activity Log Summary"
@@ -346,13 +361,17 @@ function ActivitySummary() {
       }
       bodyClassName="space-y-4"
     >
-      {REP_ACTIVITIES.map((activity, index) => (
-        <ActivityRow
-          key={activity.title}
-          activity={activity}
-          isLast={index === REP_ACTIVITIES.length - 1}
-        />
-      ))}
+      {activities.length === 0 ? (
+        <p className="text-center text-sm text-text-muted">No recent activities</p>
+      ) : (
+        activities.map((activity, index) => (
+          <ActivityRow
+            key={`${activity.title}-${index}`}
+            activity={activity}
+            isLast={index === activities.length - 1}
+          />
+        ))
+      )}
     </SectionCard>
   );
 }
@@ -393,35 +412,38 @@ function ActivityRow({ activity, isLast }: { activity: RepActivity; isLast: bool
   );
 }
 
-function RecentOutcomes() {
+function RecentOutcomes({ repId }: { repId: string }) {
+  const { data: outcomes = [] } = useRepDeals(repId);
   return (
     <SectionCard
       title="Recent Outcomes"
       actions={
         <div className="flex rounded-md bg-muted p-0.5 text-[12px] font-semibold">
           <button className="rounded bg-card px-3 py-1 shadow-[var(--shadow-xs)]">All</button>
-          <button className="px-3 py-1 text-text-muted hover:text-foreground">Wins</button>
-          <button className="px-3 py-1 text-text-muted hover:text-foreground">Losses</button>
         </div>
       }
       bodyClassName="overflow-x-auto p-0"
     >
-      <table className="w-full min-w-[760px] text-left">
-        <thead className="bg-primary-light text-[11px] uppercase tracking-wider text-text-secondary">
-          <tr>
-            <th className="px-5 py-3 font-bold">Company / Contact</th>
-            <th className="px-4 py-3 text-right font-bold">Value</th>
-            <th className="px-4 py-3 text-center font-bold">Status</th>
-            <th className="px-4 py-3 font-bold">Closing Reason</th>
-            <th className="px-4 py-3 font-bold">Date</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {REP_OUTCOMES.map((outcome) => (
-            <OutcomeRow key={`${outcome.company}-${outcome.date}`} outcome={outcome} />
-          ))}
-        </tbody>
-      </table>
+      {outcomes.length === 0 ? (
+        <p className="px-5 py-8 text-center text-sm text-text-muted">No deals assigned to this rep</p>
+      ) : (
+        <table className="w-full min-w-[760px] text-left">
+          <thead className="bg-primary-light text-[11px] uppercase tracking-wider text-text-secondary">
+            <tr>
+              <th className="px-5 py-3 font-bold">Company / Contact</th>
+              <th className="px-4 py-3 text-right font-bold">Value</th>
+              <th className="px-4 py-3 text-center font-bold">Status</th>
+              <th className="px-4 py-3 font-bold">Closing Reason</th>
+              <th className="px-4 py-3 font-bold">Date</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {outcomes.map((outcome) => (
+              <OutcomeRow key={`${outcome.company}-${outcome.date}`} outcome={outcome} />
+            ))}
+          </tbody>
+        </table>
+      )}
     </SectionCard>
   );
 }

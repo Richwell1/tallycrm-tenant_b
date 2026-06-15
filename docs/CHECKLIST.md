@@ -149,7 +149,7 @@
 - [x] Rep leaderboard (crown for top)
 - [x] Lead-source breakdown + win/loss donut + top loss reasons
 - [x] Individual rep report
-
+cod
 ## 14. Settings (Admin only)
 
 - [x] General (currency=GHS, timezone, date format, logo)
@@ -171,10 +171,10 @@
 
 ## 16. Cross-cutting states & UX
 
-- [ ] Every list: search + filter + sort within permitted scope
-- [ ] Every entity: empty, loading (skeleton), error states
-- [ ] Every modal: Cancel + Confirm, Escape closes, keyboard trap
-- [ ] Every form: required-field + format validation
+- [x] Every list: search + filter + sort within permitted scope
+- [x] Every entity: empty, loading (skeleton), error states
+- [x] Every modal: Cancel + Confirm, Escape closes, keyboard trap
+- [x] Every form: required-field + format validation
 - [x] Every destructive action: confirm dialog
 - [x] Toasts for success/error; optimistic UI with revert
 

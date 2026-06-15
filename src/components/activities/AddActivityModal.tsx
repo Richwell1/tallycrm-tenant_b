@@ -1,4 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useModalA11y } from "@/components/common/use-modal-a11y";
 import {
   type ActivityType,
   useActivityFormOptions,
@@ -42,6 +44,7 @@ export function AddActivityModal({ open, onOpenChange }: AddActivityModalProps) 
   const [notes, setNotes] = useState("");
   const [outcome, setOutcome] = useState("");
   const [reminder, setReminder] = useState(true);
+  const modal = useModalA11y(open, onOpenChange, { disabled: createActivity.isPending });
 
   useEffect(() => {
     if (!open || dueDate) return;
@@ -52,35 +55,58 @@ export function AddActivityModal({ open, onOpenChange }: AddActivityModalProps) 
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    await createActivity.mutateAsync({
-      title,
-      type,
-      dueDate,
-      dueTime,
-      durationMinutes: type === "task" ? null : Number(duration),
-      ownerId: ownerId || null,
-      contactId: contactId || null,
-      dealId: dealId || null,
-      notes: notes || null,
-      outcome: outcome || null,
-      reminder,
-    });
-    onOpenChange(false);
-    setTitle("");
-    setNotes("");
-    setOutcome("");
-    setContactId("");
-    setDealId("");
+    if (!title.trim()) {
+      toast.error("Activity title is required");
+      return;
+    }
+    if (!dueDate) {
+      toast.error("Due date is required");
+      return;
+    }
+
+    try {
+      await createActivity.mutateAsync({
+        title: title.trim(),
+        type,
+        dueDate,
+        dueTime,
+        durationMinutes: type === "task" ? null : Number(duration),
+        ownerId: ownerId || null,
+        contactId: contactId || null,
+        dealId: dealId || null,
+        notes: notes.trim() || null,
+        outcome: outcome.trim() || null,
+        reminder,
+      });
+      toast.success("Activity saved");
+      onOpenChange(false);
+      setTitle("");
+      setNotes("");
+      setOutcome("");
+      setContactId("");
+      setDealId("");
+    } catch (error) {
+      toast.error("Could not save activity", { description: (error as Error).message });
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-activity-title"
+      ref={modal.ref}
+      onKeyDown={modal.onKeyDown}
+    >
       <form
         onSubmit={handleSubmit}
         className="flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl"
       >
         <header className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="text-[20px] font-semibold text-foreground">Add Activity</h2>
+          <h2 id="add-activity-title" className="text-[20px] font-semibold text-foreground">
+            Add Activity
+          </h2>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
