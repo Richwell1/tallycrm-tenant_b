@@ -214,7 +214,7 @@ export function useCreateDeal() {
           value: input.value,
           currency: input.currency,
           stage_id: input.stage_id,
-          probability: input.probability ?? null,
+          probability: input.probability ?? undefined,
           expected_close_date: input.expected_close_date,
           assigned_to: input.assigned_to || null,
           description: input.description || null,

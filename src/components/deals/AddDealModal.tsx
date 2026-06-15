@@ -233,7 +233,7 @@ export function AddDealModal({ open, onOpenChange }: AddDealModalProps) {
                   <option value="">Current user</option>
                   {options?.profiles.map((profile) => (
                     <option key={profile.id} value={profile.id}>
-                      {profile.full_name} ({profile.role})
+                      {profile.full_name}
                     </option>
                   ))}
                 </select>

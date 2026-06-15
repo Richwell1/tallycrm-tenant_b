@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { usePipelineStages, useUpdateDealStage } from "@/lib/deals-data";
+import { useDealFormOptions, useUpdateDealStage } from "@/lib/deals-data";
 import { formatCurrency } from "@/lib/format";
 import type { DealRow } from "@/lib/deals-data";
 
@@ -11,7 +11,8 @@ type DealWithRefs = DealRow & {
 };
 
 export function DealKanban({ deals }: { deals: DealWithRefs[] }) {
-  const { data: stages } = usePipelineStages();
+  const { data: options } = useDealFormOptions();
+  const stages = options?.stages;
   const update = useUpdateDealStage();
   const [dragOver, setDragOver] = useState<string | null>(null);
 
@@ -23,7 +24,7 @@ export function DealKanban({ deals }: { deals: DealWithRefs[] }) {
     if (!id || stageId === from) return;
     const stage = stages?.find((s) => s.id === stageId);
     update.mutate(
-      { id, from_stage: from || null, to_stage: stageId, probability: stage?.default_probability },
+      { dealId: id, stageId },
       {
         onSuccess: () => toast.success(`Moved to ${stage?.name}`),
         onError: (err) => toast.error("Could not move deal", { description: (err as Error).message }),
