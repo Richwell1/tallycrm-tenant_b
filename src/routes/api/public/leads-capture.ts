@@ -123,7 +123,7 @@ export const Route = createFileRoute("/api/public/leads-capture")({
 
         // Audit log entry.
         await supabaseAdmin.from("audit_log").insert({
-          entity_type: "lead",
+          entity: "lead",
           entity_id: lead.id,
           action: "create",
           actor_id: null,

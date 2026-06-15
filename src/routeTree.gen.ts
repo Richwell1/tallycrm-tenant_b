@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api/public/leads-capture'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -39,16 +40,23 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
+  id: '/api/public/leads-capture',
+  path: '/api/public/leads-capture',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/app': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRoutesById {
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/app' | '/app/'
+  fullPaths: '/' | '/auth' | '/app' | '/api/public/leads-capture' | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/app'
+  to: '/' | '/auth' | '/api/public/leads-capture' | '/app'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/app'
+    | '/api/public/leads-capture'
     | '/_authenticated/app/'
   fileRoutesById: FileRoutesById
 }
@@ -77,6 +87,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicLeadsCaptureRoute: typeof ApiPublicLeadsCaptureRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/public/leads-capture': {
+      id: '/api/public/leads-capture'
+      path: '/api/public/leads-capture'
+      fullPath: '/api/public/leads-capture'
+      preLoaderRoute: typeof ApiPublicLeadsCaptureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -145,6 +163,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicLeadsCaptureRoute: ApiPublicLeadsCaptureRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
