@@ -54,9 +54,15 @@ function createSupabaseClient() {
 
 function createDemoSupabaseClient() {
   const emptyListResponse = { data: [], error: null, count: 0, status: 200, statusText: "OK" };
-  const emptyObjectResponse = { data: null, error: null, count: 0, status: 200, statusText: "OK" };
+  const emptyObjectResponse: typeof emptyListResponse = {
+    data: [] as never[],
+    error: null,
+    count: 0,
+    status: 200,
+    statusText: "OK",
+  };
 
-  function builder(response = emptyListResponse): unknown {
+  function builder(response: typeof emptyListResponse = emptyListResponse): unknown {
     return new Proxy(
       {
         then: (resolve: (value: typeof response) => void, reject?: (reason: unknown) => void) =>
@@ -82,6 +88,17 @@ function createDemoSupabaseClient() {
       getUser: async () => ({ data: { user: null }, error: null }),
       getSession: async () => ({ data: { session: null }, error: null }),
       getClaims: async () => ({ data: { claims: null }, error: null }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: async () => ({
+          data: { currentLevel: "aal1", nextLevel: "aal1", currentAuthenticationMethods: [] },
+          error: null,
+        }),
+        listFactors: async () => ({ data: { all: [], totp: [] }, error: null }),
+        enroll: async () => ({ data: null, error: new Error(missingSupabaseConfigMessage()) }),
+        challenge: async () => ({ data: null, error: new Error(missingSupabaseConfigMessage()) }),
+        verify: async () => ({ data: null, error: new Error(missingSupabaseConfigMessage()) }),
+        unenroll: async () => ({ data: null, error: null }),
+      },
       signInWithPassword: async () => ({
         data: { user: null, session: null },
         error: new Error(missingSupabaseConfigMessage()),
@@ -104,7 +121,7 @@ function createDemoSupabaseClient() {
       }),
     },
     from: () => builder(),
-  } as ReturnType<typeof createClient<Database>>;
+  } as unknown as ReturnType<typeof createClient<Database>>;
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;

@@ -62,7 +62,7 @@ const DEMO_PROFILE = {
   avatar_url: null,
   email: "admin@example.com",
   status: "active",
-} as ProfileRow;
+} as unknown as ProfileRow;
 
 const DEMO_CONTACT = {
   id: "demo-contact-1",
@@ -224,7 +224,7 @@ export function useCreateTask() {
       const dueAt = combineDateTime(input.dueDate, input.dueTime);
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = input.ownerId || userData.user?.id || null;
-      const completedAt = input.status === "done" ? new Date().toISOString() : null;
+      const completedAt = null;
 
       const { data, error } = await supabase
         .from("tasks")

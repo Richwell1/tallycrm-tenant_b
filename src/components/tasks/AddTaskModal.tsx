@@ -189,7 +189,7 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
                 <span className="text-xs font-semibold text-text-secondary">Status</span>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  onChange={(e) => setStatus(e.target.value as "pending" | "in_progress")}
                   className="input"
                 >
                   <option value="pending">Pending</option>
