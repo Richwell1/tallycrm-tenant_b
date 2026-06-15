@@ -44,6 +44,15 @@ function MfaPage() {
   async function initialize() {
     setErrorMsg(null);
     try {
+      // Ensure the session is fully loaded from storage before any MFA call.
+      // (Supabase's MFA endpoints require an active session + bound user, not just a valid JWT.)
+      const { data: sessionRes } = await supabase.auth.getSession();
+      if (!sessionRes.session) {
+        navigate({ to: "/auth", replace: true });
+        return;
+      }
+      // Refresh the access token so the session_id in the JWT matches a live row.
+      await supabase.auth.refreshSession();
       const { data: userRes, error: userErr } = await supabase.auth.getUser();
       if (userErr || !userRes.user) {
         navigate({ to: "/auth", replace: true });
