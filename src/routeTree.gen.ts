@@ -15,7 +15,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
-import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api/public/leads-capture'
+import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
+import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 
@@ -48,6 +49,12 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const ApiPublicLeadsCaptureSubmitRoute =
+  ApiPublicLeadsCaptureSubmitRouteImport.update({
+    id: '/api/public/leads-capture-submit',
+    path: '/api/public/leads-capture-submit',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
   id: '/api/public/leads-capture',
   path: '/api/public/leads-capture',
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
+  '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
@@ -80,6 +88,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
+  '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
@@ -92,6 +101,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
+  '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/app'
     | '/api/public/leads-capture'
+    | '/api/public/leads-capture-submit'
     | '/app/'
     | '/app/leads/$id'
     | '/app/leads/'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/api/public/leads-capture'
+    | '/api/public/leads-capture-submit'
     | '/app'
     | '/app/leads/$id'
     | '/app/leads'
@@ -124,6 +136,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/app'
     | '/api/public/leads-capture'
+    | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
     | '/_authenticated/app/leads/$id'
     | '/_authenticated/app/leads/'
@@ -135,6 +148,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicLeadsCaptureRoute: typeof ApiPublicLeadsCaptureRoute
+  ApiPublicLeadsCaptureSubmitRoute: typeof ApiPublicLeadsCaptureSubmitRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,6 +194,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/api/public/leads-capture-submit': {
+      id: '/api/public/leads-capture-submit'
+      path: '/api/public/leads-capture-submit'
+      fullPath: '/api/public/leads-capture-submit'
+      preLoaderRoute: typeof ApiPublicLeadsCaptureSubmitRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/leads-capture': {
       id: '/api/public/leads-capture'
@@ -237,6 +258,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicLeadsCaptureRoute: ApiPublicLeadsCaptureRoute,
+  ApiPublicLeadsCaptureSubmitRoute: ApiPublicLeadsCaptureSubmitRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
