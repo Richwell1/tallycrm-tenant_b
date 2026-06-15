@@ -45,7 +45,7 @@ export function AddTaskModal({ open, onOpenChange }: AddTaskModalProps) {
   const [type, setType] = useState<TaskType>("meeting");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("09:00");
-  const [status, setStatus] = useState<TaskStatus>("pending");
+  const [status, setStatus] = useState<Exclude<TaskStatus, "done" | "cancelled">>("pending");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [ownerId, setOwnerId] = useState("");
   const [contactId, setContactId] = useState("");
