@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
@@ -50,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthMfaRoute = AuthMfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
@@ -157,9 +163,10 @@ const AuthenticatedAppAnalyticsRepIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/app': typeof AuthenticatedAppRouteWithChildren
+  '/auth/mfa': typeof AuthMfaRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -180,8 +187,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/auth/mfa': typeof AuthMfaRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -204,9 +212,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/auth/mfa': typeof AuthMfaRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/app'
+    | '/auth/mfa'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app/'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/auth/mfa'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/app'
+    | '/auth/mfa'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
@@ -300,7 +312,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicLeadsCaptureRoute: typeof ApiPublicLeadsCaptureRoute
   ApiPublicLeadsCaptureSubmitRoute: typeof ApiPublicLeadsCaptureSubmitRoute
@@ -335,6 +347,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/mfa': {
+      id: '/auth/mfa'
+      path: '/mfa'
+      fullPath: '/auth/mfa'
+      preLoaderRoute: typeof AuthMfaRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_authenticated/app': {
       id: '/_authenticated/app'
@@ -515,10 +534,20 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthMfaRoute: typeof AuthMfaRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthMfaRoute: AuthMfaRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicLeadsCaptureRoute: ApiPublicLeadsCaptureRoute,
   ApiPublicLeadsCaptureSubmitRoute: ApiPublicLeadsCaptureSubmitRoute,
@@ -526,13 +555,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
