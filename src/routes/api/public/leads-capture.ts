@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 const corsHeaders = {
@@ -31,6 +31,9 @@ function redirectHome(request: Request) {
 }
 
 export const Route = createFileRoute("/api/public/leads-capture")({
+  beforeLoad: () => {
+    throw redirect({ to: "/" });
+  },
   server: {
     handlers: {
       GET: async ({ request }) => redirectHome(request),
@@ -147,5 +150,4 @@ export const Route = createFileRoute("/api/public/leads-capture")({
       },
     },
   },
-  component: () => <Navigate to="/" replace />,
 });
