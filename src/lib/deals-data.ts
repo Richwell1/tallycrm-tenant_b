@@ -118,7 +118,7 @@ export function useUpdateDealStage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; from_stage: string | null; to_stage: string; probability?: number }) => {
-      const updates: Record<string, unknown> = { stage_id: vars.to_stage };
+      const updates: { stage_id: string; probability?: number } = { stage_id: vars.to_stage };
       if (vars.probability !== undefined) updates.probability = vars.probability;
       const { error } = await supabase.from("deals").update(updates).eq("id", vars.id);
       if (error) throw error;
