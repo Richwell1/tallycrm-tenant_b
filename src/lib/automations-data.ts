@@ -661,9 +661,11 @@ export function createRuleFromTemplate(template: AutomationTemplate): Automation
   };
 }
 
-type AutomationPayload = Awaited<
-  ReturnType<NonNullable<ReturnType<typeof useAutomations>["queryFn"]>>
->;
+interface AutomationPayload {
+  rules: AutomationRule[];
+  runs: AutomationRun[];
+  stats: AutomationStats;
+}
 
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
