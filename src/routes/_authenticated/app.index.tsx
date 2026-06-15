@@ -32,11 +32,6 @@ function DashboardPage() {
       <PageHeader
         title={`${greeting()}, ${firstName}`}
         breadcrumbs={[{ label: "CRM" }, { label: "Dashboard" }]}
-        description={
-          user?.role === "rep"
-            ? "Your pipeline, tasks and recent activity."
-            : "Team pipeline, KPIs and recent activity across all reps."
-        }
         actions={
           <>
             <ToolbarButton icon="ios_share">Export</ToolbarButton>
