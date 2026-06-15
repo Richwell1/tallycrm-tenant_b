@@ -74,14 +74,10 @@ function MfaPage() {
         setMode("verify");
         return;
       }
-      // Reuse first unverified factor (avoid hitting Supabase's factor cap on repeated visits)
+      // Always wipe any leftover unverified factors so enroll never hits a name/cap conflict.
       const unverified = factors?.totp?.filter((f) => f.status !== "verified") ?? [];
-      const reuse = unverified[0];
-      if (reuse) {
-        // We don't have the QR for an existing unverified factor, so unenroll and re-enroll.
-        for (const f of unverified) {
-          await supabase.auth.mfa.unenroll({ factorId: f.id });
-        }
+      for (const f of unverified) {
+        await supabase.auth.mfa.unenroll({ factorId: f.id });
       }
       setMode("enroll");
       await beginEnrollment();
