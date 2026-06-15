@@ -17,10 +17,13 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
+import { Route as AuthenticatedAppTasksIndexRouteImport } from './routes/_authenticated/app.tasks.index'
+import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_authenticated/app.pipeline.index'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
 import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_authenticated/app.contacts.index'
 import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
+import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_authenticated/app.activities.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
 import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authenticated/app.contacts.$id'
@@ -66,6 +69,18 @@ const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
   path: '/api/public/leads-capture',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppTasksIndexRoute =
+  AuthenticatedAppTasksIndexRouteImport.update({
+    id: '/tasks/',
+    path: '/tasks/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppPipelineIndexRoute =
+  AuthenticatedAppPipelineIndexRouteImport.update({
+    id: '/pipeline/',
+    path: '/pipeline/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppLeadsIndexRoute =
   AuthenticatedAppLeadsIndexRouteImport.update({
     id: '/leads/',
@@ -88,6 +103,12 @@ const AuthenticatedAppCompaniesIndexRoute =
   AuthenticatedAppCompaniesIndexRouteImport.update({
     id: '/companies/',
     path: '/companies/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppActivitiesIndexRoute =
+  AuthenticatedAppActivitiesIndexRouteImport.update({
+    id: '/activities/',
+    path: '/activities/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
@@ -125,10 +146,13 @@ export interface FileRoutesByFullPath {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
+  '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -141,10 +165,13 @@ export interface FileRoutesByTo {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/activities': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
+  '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,10 +187,13 @@ export interface FileRoutesById {
   '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/_authenticated/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
+  '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,10 +209,13 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/activities/'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
     | '/app/leads/'
+    | '/app/pipeline/'
+    | '/app/tasks/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -195,10 +228,13 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/activities'
     | '/app/companies'
     | '/app/contacts'
     | '/app/deals'
     | '/app/leads'
+    | '/app/pipeline'
+    | '/app/tasks'
   id:
     | '__root__'
     | '/'
@@ -213,10 +249,13 @@ export interface FileRouteTypes {
     | '/_authenticated/app/contacts/$id'
     | '/_authenticated/app/deals/$id'
     | '/_authenticated/app/leads/$id'
+    | '/_authenticated/app/activities/'
     | '/_authenticated/app/companies/'
     | '/_authenticated/app/contacts/'
     | '/_authenticated/app/deals/'
     | '/_authenticated/app/leads/'
+    | '/_authenticated/app/pipeline/'
+    | '/_authenticated/app/tasks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -286,6 +325,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLeadsCaptureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/tasks/': {
+      id: '/_authenticated/app/tasks/'
+      path: '/tasks'
+      fullPath: '/app/tasks/'
+      preLoaderRoute: typeof AuthenticatedAppTasksIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/pipeline/': {
+      id: '/_authenticated/app/pipeline/'
+      path: '/pipeline'
+      fullPath: '/app/pipeline/'
+      preLoaderRoute: typeof AuthenticatedAppPipelineIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/leads/': {
       id: '/_authenticated/app/leads/'
       path: '/leads'
@@ -312,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/companies'
       fullPath: '/app/companies/'
       preLoaderRoute: typeof AuthenticatedAppCompaniesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/activities/': {
+      id: '/_authenticated/app/activities/'
+      path: '/activities'
+      fullPath: '/app/activities/'
+      preLoaderRoute: typeof AuthenticatedAppActivitiesIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/leads/$id': {
@@ -351,10 +411,13 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
   AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
+  AuthenticatedAppActivitiesIndexRoute: typeof AuthenticatedAppActivitiesIndexRoute
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
   AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
+  AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
+  AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -363,10 +426,13 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
   AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
+  AuthenticatedAppActivitiesIndexRoute: AuthenticatedAppActivitiesIndexRoute,
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
   AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
+  AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
+  AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
