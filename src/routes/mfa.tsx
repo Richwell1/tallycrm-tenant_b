@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/auth/mfa")({
+export const Route = createFileRoute("/mfa")({
   ssr: false,
   head: () => ({ meta: [{ title: "Two-factor authentication — Tally CRM" }] }),
   component: MfaPage,
