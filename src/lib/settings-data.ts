@@ -9,7 +9,7 @@ type UserStatus = Database["public"]["Enums"]["user_status"];
 
 export type AppSettings = {
   id: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 const SETTINGS_ROW_ID = "00000000-0000-0000-0000-000000000001";
