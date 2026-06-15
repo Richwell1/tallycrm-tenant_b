@@ -7,7 +7,10 @@ type UserStatus = Database["public"]["Enums"]["user_status"];
 
 // ── App Settings (singleton row) ───────────────────────────────────────────────
 
-export type AppSettings = Database["public"]["Tables"]["app_settings"]["Row"];
+export type AppSettings = {
+  id: string;
+  [key: string]: unknown;
+};
 
 const SETTINGS_ROW_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -15,13 +18,13 @@ export function useAppSettings() {
   return useQuery({
     queryKey: ["app_settings"],
     queryFn: async (): Promise<AppSettings> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("app_settings")
         .select("*")
         .eq("id", SETTINGS_ROW_ID)
         .single();
       if (error) throw error;
-      return data;
+      return data as AppSettings;
     },
   });
 }
@@ -30,7 +33,7 @@ export function useSaveAppSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (patch: Partial<Omit<AppSettings, "id" | "updated_at">>) => {
-      const { error } = await supabase.from("app_settings").update(patch).eq("id", SETTINGS_ROW_ID);
+      const { error } = await (supabase as any).from("app_settings").update(patch).eq("id", SETTINGS_ROW_ID);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["app_settings"] }),
