@@ -2,6 +2,16 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  ShieldCheck,
+  Copy as CopyIcon,
+  Info,
+  LogOut,
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  KeyRound,
+} from "lucide-react";
 
 export const Route = createFileRoute("/mfa")({
   ssr: false,
@@ -44,48 +54,48 @@ function MfaPage() {
   async function initialize() {
     setErrorMsg(null);
     try {
-      // Ensure the session is fully loaded from storage before any MFA call.
-      // (Supabase's MFA endpoints require an active session + bound user, not just a valid JWT.)
       const { data: sessionRes } = await supabase.auth.getSession();
       if (!sessionRes.session) {
         navigate({ to: "/auth", replace: true });
         return;
       }
-      // Refresh the access token so the session_id in the JWT matches a live row.
-      await supabase.auth.refreshSession();
-      const { data: userRes, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !userRes.user) {
+      // Run user, AAL, and factor list in parallel — much faster than sequential.
+      const [userRes, aalRes, factorsRes] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+      ]);
+
+      if (userRes.error || !userRes.data.user) {
         navigate({ to: "/auth", replace: true });
         return;
       }
-      setEmail(userRes.user.email ?? "");
+      setEmail(userRes.data.user.email ?? "");
 
-      const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal.data?.currentLevel === "aal2") {
+      if (aalRes.data?.currentLevel === "aal2") {
         navigate({ to: "/app", replace: true });
         return;
       }
 
-      const { data: factors, error: listErr } = await supabase.auth.mfa.listFactors();
-      if (listErr) throw listErr;
-      const verified = factors?.totp?.find((f) => f.status === "verified");
+      if (factorsRes.error) throw factorsRes.error;
+      const verified = factorsRes.data?.totp?.find((f) => f.status === "verified");
       if (verified) {
         setFactorId(verified.id);
         setMode("verify");
         return;
       }
-      // Always wipe any leftover unverified factors so enroll never hits a name/cap conflict.
-      const unverified = factors?.totp?.filter((f) => f.status !== "verified") ?? [];
-      for (const f of unverified) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id });
-      }
+      // Wipe leftover unverified factors so enroll never hits a name/cap conflict.
+      const unverified = factorsRes.data?.totp?.filter((f) => f.status !== "verified") ?? [];
+      await Promise.all(
+        unverified.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })),
+      );
       setMode("enroll");
       await beginEnrollment();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not initialise two-factor setup";
       console.error("[mfa] init failed", err);
       setErrorMsg(msg);
-      setMode("enroll"); // give the user a retry button
+      setMode("enroll");
     }
   }
 
@@ -98,14 +108,13 @@ function MfaPage() {
         factorType: "totp",
         friendlyName,
       });
-      // If we hit a friendly-name conflict, wipe ALL unverified factors and retry once.
       if (error && (error as { code?: string }).code === "mfa_factor_name_conflict") {
         const { data: factors } = await supabase.auth.mfa.listFactors();
-        for (const f of factors?.totp ?? []) {
-          if (f.status !== "verified") {
-            await supabase.auth.mfa.unenroll({ factorId: f.id });
-          }
-        }
+        await Promise.all(
+          (factors?.totp ?? [])
+            .filter((f) => f.status !== "verified")
+            .map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })),
+        );
         const retry = await supabase.auth.mfa.enroll({
           factorType: "totp",
           friendlyName: `Tally CRM ${Date.now()}`,
@@ -113,9 +122,7 @@ function MfaPage() {
         data = retry.data;
         error = retry.error;
       }
-      if (error || !data) {
-        throw error ?? new Error("Enrollment failed");
-      }
+      if (error || !data) throw error ?? new Error("Enrollment failed");
       setEnrollData({
         factorId: data.id,
         qrSvg: data.totp.qr_code,
@@ -163,9 +170,9 @@ function MfaPage() {
     setBusy(true);
     try {
       const { data: factors } = await supabase.auth.mfa.listFactors();
-      for (const f of factors?.totp ?? []) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id });
-      }
+      await Promise.all(
+        (factors?.totp ?? []).map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })),
+      );
       setFactorId(null);
       setEnrollData(null);
       setMode("enroll");
@@ -181,132 +188,198 @@ function MfaPage() {
     navigate({ to: "/auth", replace: true });
   }
 
+  function copySecret() {
+    if (!enrollData) return;
+    navigator.clipboard.writeText(enrollData.secret);
+    toast.success("Key copied to clipboard");
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 shadow-[var(--shadow-md)]">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-black tracking-tight text-foreground">
-            Tally <span className="text-accent-dark">CRM</span>
-          </h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            {mode === "verify"
-              ? "Enter your 6-digit authenticator code"
-              : "Set up two-factor authentication"}
-          </p>
-          {email ? <p className="mt-1 text-xs text-text-muted">{email}</p> : null}
-        </div>
-
-        {mode === "loading" ? (
-          <p className="py-8 text-center text-sm text-text-secondary">Loading…</p>
-        ) : null}
-
-        {errorMsg ? (
-          <div className="mb-4 rounded-lg border border-danger/30 bg-danger-light px-4 py-3 text-sm text-danger">
-            <p className="font-semibold">Something went wrong</p>
-            <p className="mt-1 text-text-secondary">{errorMsg}</p>
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-muted/40">
+      {/* Header */}
+      <header className="border-b border-border/60 bg-surface/80 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <span className="text-lg font-bold tracking-tight text-foreground">
+              Tally<span className="text-primary">CRM</span>
+            </span>
           </div>
-        ) : null}
+          {email ? (
+            <span className="hidden text-xs text-text-secondary sm:block">{email}</span>
+          ) : null}
+        </div>
+      </header>
 
-        {mode === "enroll" ? (
-          enrollBusy && !enrollData ? (
-            <p className="py-8 text-center text-sm text-text-secondary">
-              Generating your QR code…
-            </p>
-          ) : enrollData ? (
-            <div className="space-y-4">
-              <ol className="list-decimal space-y-1 pl-5 text-sm text-text-secondary">
-                <li>Install Google Authenticator, Authy, or 1Password.</li>
-                <li>Scan the QR code below (or enter the key manually).</li>
-                <li>Enter the 6-digit code the app generates to finish setup.</li>
-              </ol>
-              <div className="flex justify-center rounded-xl border border-border bg-white p-4">
-                <div
-                  className="h-44 w-44"
-                  dangerouslySetInnerHTML={{ __html: enrollData.qrSvg }}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-text-secondary">
-                  Manual setup key
-                </label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 select-all break-all rounded-lg border border-border bg-muted px-3 py-2 font-mono text-xs">
-                    {enrollData.secret}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(enrollData.secret);
-                      toast.success("Secret copied");
-                    }}
-                    className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
-                  >
-                    Copy
-                  </button>
+      {/* Main */}
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--shadow-md)]">
+            {/* Title strip */}
+            <div className="border-b border-border bg-gradient-to-r from-primary/10 via-surface to-surface px-7 py-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  {mode === "verify" ? (
+                    <KeyRound className="h-5 w-5" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5" />
+                  )}
                 </div>
-                <p className="mt-2 rounded-lg border border-warning/30 bg-warning-light px-3 py-2 text-xs text-warning">
-                  Save this key somewhere safe. If you lose your device, an admin can reset 2FA so
-                  you can enroll a new authenticator.
-                </p>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">
+                    {mode === "verify" ? "Two-Factor Authentication" : "Secure Your Account"}
+                  </h1>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {mode === "verify"
+                      ? "Enter the 6-digit code from your authenticator app to sign in."
+                      : "Scan the QR code with Google Authenticator, Authy, or 1Password to enable 2FA."}
+                  </p>
+                </div>
               </div>
-              <CodeForm
-                code={code}
-                setCode={setCode}
-                busy={busy}
-                onSubmit={handleVerify}
-                label="Activate 2FA"
-              />
             </div>
-          ) : (
-            <div className="space-y-3 text-center">
-              <p className="text-sm text-text-secondary">
-                We couldn't generate your authenticator QR code.
-              </p>
-              <button
-                type="button"
-                onClick={() => beginEnrollment()}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-dark"
-              >
-                Try again
-              </button>
-            </div>
-          )
-        ) : null}
 
-        {mode === "verify" ? (
-          <div className="space-y-4">
-            <CodeForm
-              code={code}
-              setCode={setCode}
-              busy={busy}
-              onSubmit={handleVerify}
-              label="Verify"
-            />
-            <div className="flex flex-col gap-2 text-center text-xs">
-              <button
-                type="button"
-                onClick={handleResetFactor}
-                disabled={busy}
-                className="text-primary hover:underline disabled:opacity-50"
-              >
-                Lost your device? Re-enroll a new authenticator
-              </button>
-              <p className="text-text-muted">
-                If you can't re-enroll, ask an admin to reset 2FA from Users & Roles.
-              </p>
+            <div className="px-7 py-6">
+              {mode === "loading" ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-sm text-text-secondary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading…
+                </div>
+              ) : null}
+
+              {errorMsg ? (
+                <div className="mb-5 flex gap-2 rounded-lg border border-danger/30 bg-danger-light px-4 py-3 text-sm text-danger">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Something went wrong</p>
+                    <p className="mt-0.5 text-text-secondary">{errorMsg}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {mode === "enroll" ? (
+                enrollBusy && !enrollData ? (
+                  <div className="flex flex-col items-center gap-3 py-12 text-sm text-text-secondary">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    Generating your QR code…
+                  </div>
+                ) : enrollData ? (
+                  <div className="space-y-5">
+                    <div className="flex justify-center">
+                      <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
+                        <div
+                          className="h-44 w-44 [&_svg]:h-full [&_svg]:w-full"
+                          dangerouslySetInnerHTML={{ __html: enrollData.qrSvg }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                        Manual setup key
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 select-all break-all rounded-lg border border-border bg-muted px-3 py-2.5 font-mono text-xs">
+                          {enrollData.secret}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={copySecret}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2.5 text-xs font-semibold transition hover:bg-muted"
+                        >
+                          <CopyIcon className="h-3.5 w-3.5" />
+                          Copy
+                        </button>
+                      </div>
+                      <div className="mt-2.5 flex gap-2 rounded-lg border border-warning/30 bg-warning-light px-3 py-2 text-xs text-text-secondary">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                        <span>
+                          Save this key somewhere safe. If you lose your device, an admin can reset
+                          2FA so you can enroll a new authenticator.
+                        </span>
+                      </div>
+                    </div>
+
+                    <CodeForm
+                      code={code}
+                      setCode={setCode}
+                      busy={busy}
+                      onSubmit={handleVerify}
+                      label="Activate 2FA"
+                      icon={<ShieldCheck className="h-4 w-4" />}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3 text-center">
+                    <p className="text-sm text-text-secondary">
+                      We couldn't generate your authenticator QR code.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => beginEnrollment()}
+                      className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-dark"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )
+              ) : null}
+
+              {mode === "verify" ? (
+                <div className="space-y-4">
+                  <CodeForm
+                    code={code}
+                    setCode={setCode}
+                    busy={busy}
+                    onSubmit={handleVerify}
+                    label="Verify & Sign In"
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                  />
+                  <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-center text-xs text-text-secondary">
+                    <p className="font-semibold text-foreground">Lost access to your device?</p>
+                    <p className="mt-1">
+                      Ask an admin to reset 2FA from Users &amp; Roles, or{" "}
+                      <button
+                        type="button"
+                        onClick={handleResetFactor}
+                        disabled={busy}
+                        className="font-semibold text-primary hover:underline disabled:opacity-50"
+                      >
+                        re-enroll a new authenticator
+                      </button>
+                      .
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {mode !== "loading" ? (
+                <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-xs">
+                  <button
+                    onClick={handleSignOut}
+                    className="inline-flex items-center gap-1.5 text-text-secondary transition hover:text-foreground"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign out
+                  </button>
+                  <Link
+                    to="/auth"
+                    className="inline-flex items-center gap-1.5 text-text-secondary transition hover:text-foreground"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Back to sign in
+                  </Link>
+                </div>
+              ) : null}
             </div>
           </div>
-        ) : null}
 
-        <div className="mt-6 flex items-center justify-between text-xs">
-          <button onClick={handleSignOut} className="text-text-secondary hover:text-foreground">
-            Sign out
-          </button>
-          <Link to="/auth" className="text-text-secondary hover:text-foreground">
-            ← Back to sign in
-          </Link>
+          <p className="mt-6 text-center text-xs text-text-muted">
+            Enterprise Security Standard • © {new Date().getFullYear()} Tally CRM
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
@@ -317,17 +390,19 @@ function CodeForm({
   busy,
   onSubmit,
   label,
+  icon,
 }: {
   code: string;
   setCode: (v: string) => void;
   busy: boolean;
   onSubmit: (e: React.FormEvent) => void;
   label: string;
+  icon?: React.ReactNode;
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
-        <label className="mb-1 block text-xs font-semibold text-text-secondary">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
           6-digit code
         </label>
         <input
@@ -338,17 +413,28 @@ function CodeForm({
           required
           autoFocus
           autoComplete="one-time-code"
+          placeholder="000000"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.4em] focus:border-primary focus:outline-none"
+          className="w-full rounded-lg border border-border bg-background px-3 py-3 text-center font-mono text-xl tracking-[0.5em] placeholder:text-text-muted/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
       </div>
       <button
         type="submit"
         disabled={busy || code.length !== 6}
-        className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? "Verifying…" : label}
+        {busy ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verifying…
+          </>
+        ) : (
+          <>
+            {icon}
+            {label}
+          </>
+        )}
       </button>
     </form>
   );
