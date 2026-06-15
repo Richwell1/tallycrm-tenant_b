@@ -1,21 +1,66 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { z } from "zod";
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Star,
+  Check,
+  CheckCircle2,
+  ShieldCheck,
+  Calculator,
+  FileText,
+  Receipt,
+  Boxes,
+  Landmark,
+  Users,
+  BarChart3,
+  Lock,
+  Sparkles,
+  Cloud,
+  MessageCircle,
+  CreditCard,
+  FileSpreadsheet,
+  Award,
+  Wrench,
+  GraduationCap,
+  Headphones,
+  Send,
+  ArrowRight,
+  ArrowDown,
+  Menu,
+  X,
+  ChevronDown,
+  Building2,
+  ShoppingBag,
+  Factory,
+  Briefcase,
+  Stethoscope,
+  HardHat,
+  HandHeart,
+  Loader2,
+  Facebook,
+  Linkedin,
+  Instagram,
+  Twitter,
+  TrendingUp,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tally CRM — TallyPrime sales, organised" },
+      { title: "TallyPrime in Ghana — Authorized Partner | Free Demo & Setup" },
       {
         name: "description",
         content:
-          "A lightweight CRM purpose-built for TallyPrime resellers. Capture every inbound lead and close every deal you should.",
+          "Run your entire business on TallyPrime — accounting, invoicing, inventory, VAT compliance and payroll. Authorized partner in Ghana with free demo, local setup, training and support.",
       },
-      { property: "og:title", content: "Tally CRM — TallyPrime sales, organised" },
+      { property: "og:title", content: "TallyPrime in Ghana — Authorized Partner" },
       {
         property: "og:description",
         content:
-          "Capture every Tally lead. Qualify, convert, and close — all in one place.",
+          "Accounting, invoicing, inventory, VAT and payroll in one platform. Free demo, on-site setup, local support in Ghana.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
@@ -41,254 +86,1058 @@ const formSchema = z.object({
 type FormShape = z.infer<typeof formSchema>;
 type FieldErrors = Partial<Record<keyof FormShape, string>>;
 
-const BENEFITS = [
-  {
-    icon: "bolt",
-    title: "Zero leakage",
-    body: "Every inbound enquiry lands in your pipeline within seconds — never an inbox you forgot to check.",
-  },
-  {
-    icon: "insights",
-    title: "Clear pipeline",
-    body: "See exactly where each Tally deal sits, who owns it, and what to do next.",
-  },
-  {
-    icon: "groups",
-    title: "Built for resellers",
-    body: "Designed around the way TallyPrime partners actually sell — light, fast, and on-brand.",
-  },
-];
-
-const FEATURES = [
-  { icon: "filter_alt", title: "Lead capture & dedupe", body: "One form, server-side validation, no duplicate contacts." },
-  { icon: "view_kanban", title: "Kanban pipeline", body: "Drag deals between stages; history is logged automatically." },
-  { icon: "task_alt", title: "Tasks & reminders", body: "Never forget a follow-up. Overdue items surface in red." },
-  { icon: "lock", title: "Role-based security", body: "Reps see their own; managers see everything. RLS on every table." },
-  { icon: "bar_chart", title: "Dashboards", body: "Pipeline value, conversion %, source mix — at a glance." },
-  { icon: "mail", title: "Email confirmations", body: "Leads receive an instant acknowledgement after submission." },
-];
-
-const PRICING = [
-  { name: "Starter", price: "Free", tag: "Up to 3 reps", features: ["Lead capture", "Pipeline kanban", "Tasks"] },
-  { name: "Team", price: "GHS 250", tag: "per rep / month", features: ["Everything in Starter", "Dashboards", "Email automations"], featured: true },
-  { name: "Partner", price: "Custom", tag: "Unlimited reps", features: ["Everything in Team", "Custom pipeline", "Audit log + SSO"] },
-];
+/* ──────────────────────────────────────────────────────────────────── */
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
+    <div className="min-h-screen bg-background text-foreground antialiased">
+      <AnnouncementBar />
+      <Navbar />
       <Hero />
-      <Benefits />
+      <TrustBar />
+      <WhatIs />
       <Features />
-      <Pricing />
-      <SocialProof />
-      <ContactSection />
+      <Benefits />
+      <Industries />
+      <Editions />
+      <WhatsNew />
+      <WhyUs />
+      <HowItWorks />
+      <Testimonials />
+      <ImpactStats />
+      <FAQ />
+      <LeadCapture />
+      <FinalCTA />
       <Footer />
+      <MobileStickyCta />
     </div>
   );
 }
 
-function Header() {
+/* ── Announcement + Navbar ─────────────────────────────────────────── */
+
+function AnnouncementBar() {
+  const [open, setOpen] = useState(true);
+  if (!open) return null;
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <a href="#top" className="text-xl font-black tracking-tight">
-          Tally <span className="text-accent-dark">CRM</span>
-        </a>
-        <nav className="hidden items-center gap-6 text-sm md:flex">
-          <a href="#features" className="text-text-secondary hover:text-primary">Features</a>
-          <a href="#pricing" className="text-text-secondary hover:text-primary">Pricing</a>
-          <a href="#contact" className="text-text-secondary hover:text-primary">Contact</a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link to="/auth" className="hidden rounded-lg px-3.5 py-2 text-sm font-semibold text-text-secondary hover:text-primary md:inline">
-            Sign in
-          </Link>
-          <a href="#contact" className="inline-flex items-center gap-2 rounded-lg bg-cta px-4 py-2 text-sm font-semibold text-cta-foreground shadow-[var(--shadow-sm)] hover:bg-cta-hover">
-            Get started
+    <div className="bg-navy text-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 text-xs sm:text-sm">
+        <p className="flex items-center gap-2">
+          <Star className="h-3.5 w-3.5 text-accent" fill="currentColor" />
+          <span>
+            Authorized TallyPrime Partner in Ghana — Free demo &amp; on-site setup
+          </span>
+        </p>
+        <div className="flex items-center gap-3">
+          <a
+            href="tel:+233000000000"
+            className="hidden items-center gap-1.5 hover:text-accent sm:flex"
+          >
+            <Phone className="h-3.5 w-3.5" /> +233 ___ ___ ___
           </a>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Dismiss"
+            className="opacity-70 hover:opacity-100"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const links = [
+    ["Home", "#top"],
+    ["Features", "#features"],
+    ["Editions", "#editions"],
+    ["Industries", "#industries"],
+    ["Why TallyPrime", "#why-tally"],
+    ["Resources", "#faq"],
+    ["Contact", "#contact"],
+  ];
+
+  return (
+    <header
+      className={`sticky top-0 z-40 bg-surface transition-shadow ${
+        scrolled ? "shadow-[var(--shadow-sm)]" : ""
+      }`}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:py-4">
+        <a href="#top" className="flex items-center gap-2">
+          <span className="text-xl font-black tracking-tight text-primary">
+            TallyPrime
+            <span className="ml-0.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
+          </span>
+          <span className="hidden text-sm font-semibold text-text-secondary sm:inline">
+            Partner
+          </span>
+        </a>
+
+        <nav className="hidden items-center gap-6 lg:flex">
+          {links.map(([label, href]) => (
+            <a
+              key={href}
+              href={href}
+              className="text-sm font-medium text-text-secondary transition hover:text-primary"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="tel:+233000000000"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-primary hover:bg-primary-light md:inline-flex"
+          >
+            <Phone className="h-4 w-4" />
+            Call Sales
+          </a>
+          <a
+            href="#contact"
+            className="hidden items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-sm)] transition hover:bg-primary-dark md:inline-flex"
+          >
+            Get a Free Demo
+            <ArrowRight className="h-4 w-4" />
+          </a>
+          <button
+            onClick={() => setOpen((s) => !s)}
+            className="rounded-md p-2 text-text-secondary lg:hidden"
+            aria-label="Menu"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="border-t border-border bg-surface lg:hidden">
+          <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
+            {links.map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                className="rounded-md px-3 py-2 text-sm font-medium text-text-secondary hover:bg-primary-light hover:text-primary"
+              >
+                {label}
+              </a>
+            ))}
+            <a
+              href="#contact"
+              onClick={() => setOpen(false)}
+              className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              Get a Free Demo <ArrowRight className="h-4 w-4" />
+            </a>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
 
+/* ── Hero ──────────────────────────────────────────────────────────── */
+
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden border-b border-border bg-gradient-to-br from-surface to-background">
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28">
+    <section
+      id="top"
+      className="relative overflow-hidden bg-gradient-to-br from-surface via-primary-light/30 to-surface"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 top-10 h-[500px] w-[500px] rounded-full bg-primary/15 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-24 bottom-0 h-[420px] w-[420px] rounded-full bg-accent/15 blur-3xl"
+      />
+
+      <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.1fr_0.9fr] md:py-24 lg:py-28">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">For TallyPrime sales teams</p>
-          <h1 className="mt-4 text-5xl font-black leading-[1.05] tracking-tight md:text-6xl">
-            Capture every Tally lead.<br />
-            <span className="text-primary">Close every deal</span> you should.
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-light px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent-dark">
+            <Award className="h-3.5 w-3.5" />
+            Authorized TallyPrime Partner
+          </span>
+          <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+            Run Your Entire Business on{" "}
+            <span className="relative inline-block">
+              One Powerful Platform
+              <svg
+                aria-hidden
+                viewBox="0 0 320 14"
+                className="absolute -bottom-2 left-0 w-full text-accent"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M3 9 C 80 2, 160 14, 317 6"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-text-secondary">
-            A lightweight CRM purpose-built for TallyPrime resellers — from inbound lead capture all the way to closed-won.
+            TallyPrime brings accounting, invoicing, inventory, banking, payroll, and tax
+            compliance together in one simple, reliable system trusted by millions of
+            businesses. We help you buy, set up, and master it — with local support every
+            step of the way.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#contact" className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 font-semibold text-cta-foreground shadow-[var(--shadow-sm)] hover:bg-cta-hover">
-              <span className="material-symbols-outlined">rocket_launch</span>
-              Request a demo
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition hover:bg-primary-dark"
+            >
+              Get a Free Demo
+              <ArrowRight className="h-4 w-4" />
             </a>
-            <Link to="/auth" className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-5 py-3 font-semibold hover:bg-surface-hover">
-              <span className="material-symbols-outlined">login</span>
-              Sign in
-            </Link>
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-primary bg-surface px-6 py-3.5 text-sm font-semibold text-primary transition hover:bg-primary-light"
+            >
+              Talk to a Tally Expert
+              <Phone className="h-4 w-4" />
+            </a>
           </div>
-          <p className="mt-4 text-sm text-text-muted">No credit card. 10-second setup.</p>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs text-text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              2.5M+ businesses trust Tally
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              36+ years of trusted software
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-primary" />
+              Authorized partner &amp; local support
+            </span>
+          </div>
         </div>
-        <div className="hidden md:block">
-          <PipelinePreview />
-        </div>
+
+        <HeroVisual />
       </div>
     </section>
   );
 }
 
-function PipelinePreview() {
-  const cols = [
-    { name: "New", count: 12, color: "bg-info-light text-info" },
-    { name: "Contacted", count: 7, color: "bg-warning-light text-warning" },
-    { name: "Qualified", count: 4, color: "bg-success-light text-success" },
-  ];
+function HeroVisual() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-lg)]">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm font-bold">Pipeline preview</p>
-        <span className="rounded-full bg-success-light px-2 py-0.5 text-xs font-bold text-success">LIVE</span>
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        {cols.map((c) => (
-          <div key={c.name} className="rounded-lg border border-border bg-surface p-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-text-secondary">{c.name}</p>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${c.color}`}>{c.count}</span>
+    <div className="relative hidden min-h-[420px] md:block">
+      {/* Main dashboard card */}
+      <div className="absolute right-0 top-4 w-[92%] rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-lg)]">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold">Business Overview</p>
+          <span className="inline-flex items-center gap-1 rounded-full bg-success-light px-2 py-0.5 text-[10px] font-bold uppercase text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" /> Live
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {[
+            { label: "Sales", value: "GHS 248k", tone: "text-primary" },
+            { label: "Receivable", value: "GHS 62k", tone: "text-accent-dark" },
+            { label: "Stock", value: "1,284", tone: "text-success" },
+          ].map((kpi) => (
+            <div key={kpi.label} className="rounded-lg bg-primary-light/60 p-3">
+              <p className="text-[11px] font-medium text-text-secondary">{kpi.label}</p>
+              <p className={`mt-1 text-lg font-black ${kpi.tone}`}>{kpi.value}</p>
             </div>
-            <div className="mt-3 space-y-2">
-              <div className="h-2 rounded bg-muted" />
-              <div className="h-2 w-4/5 rounded bg-muted" />
-              <div className="h-2 w-3/5 rounded bg-muted" />
-            </div>
+          ))}
+        </div>
+        <div className="mt-4 h-32 rounded-lg bg-gradient-to-b from-primary-light/40 to-transparent p-3">
+          <div className="flex h-full items-end gap-2">
+            {[40, 65, 50, 80, 60, 90, 75].map((h, i) => (
+              <div
+                key={i}
+                style={{ height: `${h}%` }}
+                className="flex-1 rounded-t bg-primary/80"
+              />
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-border bg-surface p-3">
-          <p className="text-xs text-text-secondary">Conversion</p>
-          <p className="text-2xl font-black text-primary">24%</p>
+
+      {/* Floating mini-card: receivables */}
+      <div className="absolute -left-2 top-44 w-56 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-lg)]">
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-light text-accent-dark">
+            <TrendingUp className="h-4 w-4" />
+          </span>
+          <p className="text-xs font-semibold text-text-secondary">This Month</p>
         </div>
-        <div className="rounded-lg border border-border bg-surface p-3">
-          <p className="text-xs text-text-secondary">Open value</p>
-          <p className="text-2xl font-black">GHS 84k</p>
-        </div>
+        <p className="mt-2 text-2xl font-black text-foreground">+18.4%</p>
+        <p className="text-[11px] text-text-muted">Sales vs last month</p>
+      </div>
+
+      {/* Floating chip: VAT */}
+      <div className="absolute bottom-2 right-8 flex items-center gap-2 rounded-full bg-card px-3 py-2 shadow-[var(--shadow-md)]">
+        <ShieldCheck className="h-4 w-4 text-success" />
+        <p className="text-xs font-bold text-foreground">VAT returns ready</p>
       </div>
     </div>
   );
 }
 
-function Benefits() {
+/* ── Trust bar ─────────────────────────────────────────────────────── */
+
+function TrustBar() {
+  const stats = [
+    { value: "2.5M+", label: "Businesses powered by Tally" },
+    { value: "36+", label: "Years of proven reliability" },
+    { value: "100%", label: "Built for compliance & accuracy" },
+    { value: "7+", label: "Industries served locally" },
+  ];
   return (
-    <section className="border-b border-border bg-background py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-6 md:grid-cols-3">
-          {BENEFITS.map((b) => (
-            <div key={b.title} className="rounded-xl border border-border bg-card p-6">
-              <span className="material-symbols-outlined text-3xl text-primary">{b.icon}</span>
-              <h3 className="mt-3 text-lg font-bold">{b.title}</h3>
-              <p className="mt-2 text-sm text-text-secondary">{b.body}</p>
-            </div>
+    <section className="border-y border-primary/10 bg-primary-light">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4 md:divide-x md:divide-primary/15">
+        {stats.map((s) => (
+          <div key={s.label} className="text-center md:px-4">
+            <p className="text-3xl font-black text-primary md:text-4xl">{s.value}</p>
+            <p className="mt-1 text-xs font-medium text-text-secondary sm:text-sm">
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="px-4 pb-6 text-center text-xs text-text-muted">
+        Trusted by businesses across Ghana
+      </p>
+    </section>
+  );
+}
+
+/* ── What is TallyPrime ────────────────────────────────────────────── */
+
+function WhatIs() {
+  const pillars = ["Accounting", "Inventory", "Compliance", "Reports"];
+  return (
+    <section id="why-tally" className="bg-background py-20">
+      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <p className="text-xs font-bold uppercase tracking-widest text-primary">
+          Why TallyPrime
+        </p>
+        <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+          Everything Your Business Needs to Run — In One Place
+        </h2>
+        <p className="mt-5 text-base text-text-secondary sm:text-lg">
+          TallyPrime is a complete business-management software built for small and medium
+          businesses. Instead of juggling spreadsheets and disconnected tools, you manage
+          your accounts, sales, purchases, stock, cash flow, and statutory compliance from
+          a single, intuitive screen — with real-time reports that show exactly how your
+          business is doing, anytime.
+        </p>
+        <div className="mt-7 flex flex-wrap justify-center gap-2">
+          {pillars.map((p) => (
+            <span
+              key={p}
+              className="rounded-full border border-primary/20 bg-primary-light px-4 py-1.5 text-sm font-semibold text-primary"
+            >
+              {p}
+            </span>
           ))}
         </div>
       </div>
     </section>
   );
 }
+
+/* ── Features grid ─────────────────────────────────────────────────── */
+
+const FEATURES = [
+  {
+    icon: Calculator,
+    title: "Smart Accounting",
+    body:
+      "Record entries, manage ledgers, and close your books faster with automation that cuts errors and manual work.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "VAT & Tax Compliance",
+    body:
+      "Stay compliant with Ghana's VAT and statutory requirements through accurate, automated invoicing and returns.",
+  },
+  {
+    icon: Receipt,
+    title: "Invoicing & Billing",
+    body:
+      "Create professional, branded invoices in seconds and get paid faster with clear receivables tracking.",
+  },
+  {
+    icon: Boxes,
+    title: "Inventory Management",
+    body:
+      "Track stock across multiple warehouses, manage orders, and avoid shortages with real-time visibility.",
+  },
+  {
+    icon: Landmark,
+    title: "Banking & Payments",
+    body:
+      "Reconcile statements, view live balances, and manage payments with connected, automated banking.",
+  },
+  {
+    icon: Users,
+    title: "Payroll Made Easy",
+    body:
+      "Process salaries, manage employee records, and stay on top of payroll obligations without the headache.",
+  },
+  {
+    icon: BarChart3,
+    title: "Insightful Dashboards & Reports",
+    body:
+      "Customizable, real-time reports on cash flow, profit, inventory, and more — for confident decisions.",
+  },
+  {
+    icon: Lock,
+    title: "Secure Remote Access",
+    body:
+      "Access your business data securely from anywhere, with encryption and role-based permissions.",
+  },
+  {
+    icon: Sparkles,
+    title: "Built to Scale",
+    body:
+      "Start simple and switch on advanced capabilities as you grow — TallyPrime grows with your business.",
+  },
+];
 
 function Features() {
   return (
-    <section id="features" className="border-b border-border bg-surface py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-xs font-bold uppercase tracking-widest text-primary">Features</p>
-        <h2 className="mt-3 max-w-2xl text-4xl font-bold tracking-tight">Everything a Tally reseller actually needs.</h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-xl border border-border bg-card p-5 transition hover:border-primary">
-              <span className="material-symbols-outlined text-2xl text-accent-dark">{f.icon}</span>
-              <h3 className="mt-3 font-bold">{f.title}</h3>
-              <p className="mt-1 text-sm text-text-secondary">{f.body}</p>
-            </div>
-          ))}
+    <section id="features" className="border-y border-border bg-surface py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Features
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Powerful Features, Beautifully Simple
+          </h2>
+        </div>
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.title}
+                className="group rounded-xl border border-border bg-card p-6 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-md)]"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-light text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 text-lg font-bold">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                  {f.body}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function Pricing() {
+/* ── Benefits / outcomes ──────────────────────────────────────────── */
+
+const BENEFIT_ROWS = [
+  {
+    eyebrow: "Productivity",
+    title: "Save Hours Every Week",
+    body:
+      "Automate repetitive accounting, invoicing, and reconciliation so your team spends time growing the business, not chasing paperwork.",
+    points: [
+      "Faster month-end close",
+      "Fewer manual errors",
+      "Automated bank reconciliation",
+    ],
+    visual: "productivity" as const,
+  },
+  {
+    eyebrow: "Visibility",
+    title: "See Your Business in Real Time",
+    body:
+      "Know your cash position, profitability, and stock levels the moment you need them — not weeks later.",
+    points: [
+      "Live dashboards",
+      "Customizable reports",
+      "Multi-company consolidation",
+    ],
+    visual: "visibility" as const,
+  },
+  {
+    eyebrow: "Compliance",
+    title: "Stay Compliant, Stress-Free",
+    body:
+      "Meet your VAT and tax obligations accurately and on time, with audit-ready records you can trust.",
+    points: [
+      "Automated tax invoicing",
+      "Accurate returns",
+      "Secure, audit-ready data",
+    ],
+    visual: "compliance" as const,
+  },
+];
+
+function Benefits() {
   return (
-    <section id="pricing" className="border-b border-border bg-background py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-xs font-bold uppercase tracking-widest text-primary">Pricing</p>
-        <h2 className="mt-3 text-4xl font-bold tracking-tight">Simple, per-seat pricing.</h2>
-        <p className="mt-2 text-text-secondary">Start free. Upgrade when your team grows.</p>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {PRICING.map((p) => (
+    <section className="bg-background py-20">
+      <div className="mx-auto max-w-7xl space-y-20 px-4 sm:px-6">
+        {BENEFIT_ROWS.map((row, i) => {
+          const flip = i % 2 === 1;
+          return (
             <div
-              key={p.name}
-              className={`rounded-2xl border p-6 ${
-                p.featured ? "border-primary bg-card shadow-[var(--shadow-lg)] ring-2 ring-primary/20" : "border-border bg-card"
+              key={row.title}
+              className={`grid items-center gap-10 md:grid-cols-2 ${
+                flip ? "md:[&>*:first-child]:order-2" : ""
               }`}
             >
-              <p className="text-sm font-bold uppercase tracking-wider text-text-secondary">{p.name}</p>
-              <p className="mt-3 text-4xl font-black">{p.price}</p>
-              <p className="text-sm text-text-muted">{p.tag}</p>
-              <ul className="mt-5 space-y-2 text-sm">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-base text-success">check_circle</span>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-accent-dark">
+                  {row.eyebrow}
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+                  {row.title}
+                </h3>
+                <p className="mt-4 text-base text-text-secondary">{row.body}</p>
+                <ul className="mt-6 space-y-2.5">
+                  {row.points.map((p) => (
+                    <li key={p} className="flex items-start gap-2.5">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
+                      <span className="text-sm font-medium">{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <BenefitVisual kind={row.visual} />
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function BenefitVisual({ kind }: { kind: "productivity" | "visibility" | "compliance" }) {
+  return (
+    <div className="relative rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-md)]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-1 -z-10 rounded-2xl bg-gradient-to-br from-primary/10 via-transparent to-accent/10 blur-2xl"
+      />
+      {kind === "productivity" && (
+        <div className="space-y-3">
+          {[
+            { label: "Invoice #INV-2041", status: "Sent" },
+            { label: "Bank reconciliation", status: "Auto" },
+            { label: "Payroll — June", status: "Done" },
+          ].map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between rounded-lg bg-primary-light/60 px-4 py-3"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <CheckCircle2 className="h-4 w-4 text-success" /> {row.label}
+              </span>
+              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-bold text-primary">
+                {row.status}
+              </span>
+            </div>
+          ))}
+          <p className="pt-2 text-center text-xs font-semibold text-text-muted">
+            12 hours saved this week
+          </p>
+        </div>
+      )}
+      {kind === "visibility" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-primary-light/60 p-4">
+              <p className="text-xs text-text-secondary">Cash position</p>
+              <p className="mt-1 text-2xl font-black text-primary">GHS 184k</p>
+            </div>
+            <div className="rounded-lg bg-accent-light p-4">
+              <p className="text-xs text-text-secondary">Profit margin</p>
+              <p className="mt-1 text-2xl font-black text-accent-dark">22.8%</p>
+            </div>
+          </div>
+          <div className="h-28 rounded-lg bg-gradient-to-b from-primary-light/40 to-transparent p-3">
+            <div className="flex h-full items-end gap-1.5">
+              {[35, 55, 45, 70, 60, 85, 75, 95, 70, 88].map((h, i) => (
+                <div
+                  key={i}
+                  style={{ height: `${h}%` }}
+                  className="flex-1 rounded-t bg-primary/70"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {kind === "compliance" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-lg bg-success-light px-4 py-3">
+            <ShieldCheck className="h-5 w-5 text-success" />
+            <div>
+              <p className="text-sm font-bold">VAT return — May</p>
+              <p className="text-xs text-text-secondary">Filed on time</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg bg-primary-light/60 px-4 py-3">
+            <FileText className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-bold">Audit trail</p>
+              <p className="text-xs text-text-secondary">Every change logged</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg bg-accent-light px-4 py-3">
+            <Lock className="h-5 w-5 text-accent-dark" />
+            <div>
+              <p className="text-sm font-bold">Role-based access</p>
+              <p className="text-xs text-text-secondary">Your data, your rules</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Industries ────────────────────────────────────────────────────── */
+
+const INDUSTRIES = [
+  { icon: ShoppingBag, label: "Retail & POS" },
+  { icon: Building2, label: "Wholesale & Distribution" },
+  { icon: Factory, label: "Manufacturing" },
+  { icon: Briefcase, label: "Services & Consulting" },
+  { icon: Stethoscope, label: "Healthcare & Pharma" },
+  { icon: GraduationCap, label: "Education" },
+  { icon: HardHat, label: "Construction" },
+  { icon: HandHeart, label: "NGOs & Non-profits" },
+];
+
+function Industries() {
+  return (
+    <section id="industries" className="border-y border-border bg-surface py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Industries
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Built for the Way You Do Business
+          </h2>
+        </div>
+        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {INDUSTRIES.map((ind) => {
+            const Icon = ind.icon;
+            return (
+              <div
+                key={ind.label}
+                className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center transition hover:border-primary hover:bg-primary-light/60"
+              >
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-primary-light text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Icon className="h-6 w-6" />
+                </span>
+                <p className="text-sm font-semibold">{ind.label}</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-8 text-center text-sm text-text-secondary">
+          Don&apos;t see your industry?{" "}
+          <a href="#contact" className="font-bold text-primary hover:underline">
+            Talk to us
+          </a>
+          .
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── Editions ──────────────────────────────────────────────────────── */
+
+const EDITIONS = [
+  {
+    name: "TallyPrime Silver",
+    tagline: "Single user, single PC. For solo owners and small teams getting started.",
+    features: [
+      "Full accounting & inventory",
+      "Invoicing & reports",
+      "Remote access identity",
+    ],
+    cta: "Request a Quote",
+    featured: false,
+  },
+  {
+    name: "TallyPrime Gold",
+    tagline:
+      "Unlimited users on your network (LAN). For growing teams who work on the same data together.",
+    features: [
+      "Everything in Silver",
+      "Multi-user / multi-PC",
+      "Enhanced performance",
+    ],
+    cta: "Request a Quote",
+    featured: true,
+  },
+  {
+    name: "TallyPrime Server / Cloud",
+    tagline:
+      "For larger or multi-location businesses. High-volume, high-performance, anytime-anywhere access.",
+    features: [
+      "Everything in Gold",
+      "Server-grade performance",
+      "Cloud access options",
+    ],
+    cta: "Talk to Sales",
+    featured: false,
+  },
+];
+
+function Editions() {
+  return (
+    <section id="editions" className="bg-background py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Editions
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Find the Right Fit for Your Business
+          </h2>
+          <p className="mt-4 text-text-secondary">
+            Pricing is tailored to your edition and setup. Request a quote and we&apos;ll
+            share current local pricing in GHS.
+          </p>
+        </div>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {EDITIONS.map((ed) => (
+            <div
+              key={ed.name}
+              className={`relative flex flex-col rounded-2xl border p-7 transition ${
+                ed.featured
+                  ? "border-primary bg-card shadow-[var(--shadow-lg)] md:-translate-y-2"
+                  : "border-border bg-card hover:shadow-[var(--shadow-sm)]"
+              }`}
+            >
+              {ed.featured && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent px-3 py-1 text-xs font-black uppercase tracking-wider text-accent-foreground shadow-[var(--shadow-sm)]">
+                  Most Popular
+                </span>
+              )}
+              <h3 className="text-xl font-black text-foreground">{ed.name}</h3>
+              <p className="mt-2 text-sm text-text-secondary">{ed.tagline}</p>
+              <ul className="mt-6 flex-1 space-y-3">
+                {ed.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
                     {f}
                   </li>
                 ))}
               </ul>
               <a
                 href="#contact"
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold ${
-                  p.featured
-                    ? "bg-cta text-cta-foreground hover:bg-cta-hover"
-                    : "border border-border bg-surface hover:bg-surface-hover"
+                className={`mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                  ed.featured
+                    ? "bg-primary text-primary-foreground hover:bg-primary-dark"
+                    : "border-2 border-primary text-primary hover:bg-primary-light"
                 }`}
               >
-                Get started
+                {ed.cta}
+                <ArrowRight className="h-4 w-4" />
               </a>
             </div>
           ))}
+        </div>
+        <p className="mx-auto mt-8 max-w-3xl text-center text-xs text-text-muted">
+          Available as a one-time (perpetual) license or flexible subscription. Add{" "}
+          <strong className="text-text-secondary">TSS</strong> (Tally Software Services)
+          for ongoing updates, compliance, and connected features. Contact us for current
+          local pricing in GHS.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── What's New ────────────────────────────────────────────────────── */
+
+const WHATS_NEW = [
+  {
+    icon: Cloud,
+    title: "Secure Cloud Backup",
+    body: "Keep your data safe and accessible with automatic, encrypted cloud backup.",
+  },
+  {
+    icon: MessageCircle,
+    title: "WhatsApp for Business",
+    body: "Send invoices, reminders, and reports to customers straight from Tally.",
+  },
+  {
+    icon: CreditCard,
+    title: "Connected Banking & Payments",
+    body: "Live balances, reconciliation, and payments without leaving Tally.",
+  },
+  {
+    icon: FileSpreadsheet,
+    title: "Excel Import & Smart Find",
+    body: "Bring in data from Excel and find anything instantly across your books.",
+  },
+];
+
+function WhatsNew() {
+  return (
+    <section className="bg-navy py-20 text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent">
+            The Latest
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Modern Tools for Modern Businesses
+          </h2>
+        </div>
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {WHATS_NEW.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm transition hover:border-accent/40 hover:bg-white/10"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent/15 text-accent">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 text-base font-bold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/70">{item.body}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function SocialProof() {
-  const quotes = [
-    { name: "Akosua M.", role: "Sales Lead, Accra", quote: "We stopped losing leads to email folders. Everything just shows up in the pipeline." },
-    { name: "Daniel O.", role: "Reseller Partner", quote: "Setup took an afternoon. The team adopted it in a day." },
-    { name: "Priya R.", role: "Ops Manager", quote: "Finally a CRM that doesn't try to be Salesforce. Fast, focused, fits how we sell Tally." },
-  ];
+/* ── Why Us ────────────────────────────────────────────────────────── */
+
+const VALUE_CARDS = [
+  {
+    icon: Award,
+    title: "Authorized & Trusted",
+    body: "Genuine licenses, official partner.",
+  },
+  {
+    icon: Wrench,
+    title: "On-site & Remote Setup",
+    body: "We install and configure for you.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Hands-on Training",
+    body: "Your team learns fast.",
+  },
+  {
+    icon: Headphones,
+    title: "Local Support",
+    body: "Real people, quick response, your timezone.",
+  },
+];
+
+function WhyUs() {
   return (
-    <section className="border-b border-border bg-surface py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-xs font-bold uppercase tracking-widest text-primary">Loved by Tally partners</p>
-        <h2 className="mt-3 text-4xl font-bold tracking-tight">Built with resellers, for resellers.</h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {quotes.map((q) => (
-            <figure key={q.name} className="rounded-xl border border-border bg-card p-6">
-              <span className="material-symbols-outlined text-3xl text-accent-dark">format_quote</span>
-              <blockquote className="mt-2 text-sm text-foreground">"{q.quote}"</blockquote>
-              <figcaption className="mt-4">
-                <p className="text-sm font-bold">{q.name}</p>
-                <p className="text-xs text-text-muted">{q.role}</p>
+    <section className="bg-background py-20">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 md:grid-cols-2">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Why Choose Us
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            More Than Software — A Partner Who Sets You Up to Win
+          </h2>
+          <p className="mt-5 text-base text-text-secondary">
+            As an authorized TallyPrime partner, we don&apos;t just sell you a license. We
+            help you choose the right edition, install and configure it for your business,
+            train your team, and stand by you with responsive local support — so you get
+            value from day one.
+          </p>
+          <a
+            href="#contact"
+            className="mt-7 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-sm)] hover:bg-primary-dark"
+          >
+            Book Your Free Consultation
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {VALUE_CARDS.map((v) => {
+            const Icon = v.icon;
+            return (
+              <div
+                key={v.title}
+                className="rounded-xl border border-border bg-card p-5 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-md)]"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-light text-accent-dark">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-3 text-base font-bold">{v.title}</h3>
+                <p className="mt-1.5 text-sm text-text-secondary">{v.body}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── How It Works ──────────────────────────────────────────────────── */
+
+const STEPS = [
+  {
+    n: 1,
+    title: "Tell Us Your Needs",
+    body: "Share your business size and goals through the form below.",
+  },
+  {
+    n: 2,
+    title: "See a Free Demo",
+    body: "We show you TallyPrime working for a business like yours.",
+  },
+  {
+    n: 3,
+    title: "Set Up & Train",
+    body: "We install, configure, and train your team.",
+  },
+  {
+    n: 4,
+    title: "Grow with Support",
+    body: "Ongoing local support keeps you compliant and confident.",
+  },
+];
+
+function HowItWorks() {
+  return (
+    <section className="border-y border-border bg-surface py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Get Started
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Up and Running in 4 Simple Steps
+          </h2>
+        </div>
+        <div className="relative mt-14">
+          <div
+            aria-hidden
+            className="absolute left-8 top-0 hidden h-full w-px bg-border md:left-0 md:top-12 md:h-px md:w-full"
+          />
+          <div className="grid gap-8 md:grid-cols-4">
+            {STEPS.map((s) => (
+              <div key={s.n} className="relative flex md:block">
+                <div className="flex md:flex-col md:items-center md:text-center">
+                  <span className="z-10 grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-primary text-base font-black text-primary-foreground shadow-[var(--shadow-md)] ring-4 ring-surface">
+                    {s.n}
+                  </span>
+                  <div className="ml-5 md:ml-0 md:mt-5">
+                    <h3 className="text-base font-bold">{s.title}</h3>
+                    <p className="mt-1.5 text-sm text-text-secondary">{s.body}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Testimonials ──────────────────────────────────────────────────── */
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "Switching to TallyPrime cut our month-end close from days to hours. The team set everything up and trained us — we were productive immediately.",
+    name: "Kwame A.",
+    role: "Owner, Retail Business",
+    location: "Accra",
+  },
+  {
+    quote:
+      "Real-time stock and cash reports changed how we make decisions. We finally see the whole business at a glance.",
+    name: "Ama B.",
+    role: "Finance Manager, Distribution Company",
+    location: "Kumasi",
+  },
+  {
+    quote:
+      "Compliance used to stress us out. Now invoicing and returns are accurate and on time, and support is always a call away.",
+    name: "Kojo D.",
+    role: "Director, Services Firm",
+    location: "Tema",
+  },
+];
+
+function Testimonials() {
+  return (
+    <section className="bg-background py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Testimonials
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Businesses Like Yours Trust TallyPrime
+          </h2>
+          <p className="mt-2 text-xs text-text-muted">
+            Placeholder quotes — replace with real client testimonials before launch.
+          </p>
+        </div>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {TESTIMONIALS.map((t) => (
+            <figure
+              key={t.name}
+              className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-sm)]"
+            >
+              <div className="flex gap-0.5 text-accent">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4" fill="currentColor" />
+                ))}
+              </div>
+              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground">
+                &ldquo;{t.quote}&rdquo;
+              </blockquote>
+              <figcaption className="mt-5 flex items-center gap-3 border-t border-border pt-4">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-light text-sm font-bold text-primary">
+                  {t.name
+                    .split(" ")
+                    .map((p) => p[0])
+                    .join("")}
+                </span>
+                <div>
+                  <p className="text-sm font-bold">{t.name}</p>
+                  <p className="text-xs text-text-muted">
+                    {t.role} · {t.location}
+                  </p>
+                </div>
               </figcaption>
             </figure>
           ))}
@@ -298,32 +1147,176 @@ function SocialProof() {
   );
 }
 
-function ContactSection() {
+/* ── Impact stats ──────────────────────────────────────────────────── */
+
+function ImpactStats() {
+  const items = [
+    { value: "12+", label: "Hours saved on accounting each week" },
+    { value: "3×", label: "Faster, error-free invoicing" },
+    { value: "100%", label: "Real-time visibility into every figure" },
+    { value: "Year-round", label: "Audit-ready compliance" },
+  ];
   return (
-    <section id="contact" className="bg-background py-20">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Get in touch</p>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight">Tell us about your team.</h2>
-          <p className="mt-4 text-text-secondary">
-            Drop your details and we'll get back within one business day with a tailored walkthrough.
-          </p>
-          <ul className="mt-6 space-y-3 text-sm">
-            <li className="flex gap-3">
-              <span className="material-symbols-outlined text-primary">mail</span>
-              <span>hello@tally-crm.app</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="material-symbols-outlined text-primary">schedule</span>
-              <span>Mon–Fri, 9am–6pm GMT</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="material-symbols-outlined text-primary">verified_user</span>
-              <span>Your data stays private. We never share or resell.</span>
-            </li>
-          </ul>
+    <section className="bg-primary-light py-14">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 sm:px-6 md:grid-cols-4">
+        {items.map((s) => (
+          <div key={s.label} className="text-center">
+            <p className="text-3xl font-black text-primary sm:text-4xl">{s.value}</p>
+            <p className="mt-1 text-xs font-medium text-text-secondary sm:text-sm">
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── FAQ ───────────────────────────────────────────────────────────── */
+
+const FAQS = [
+  {
+    q: "Is TallyPrime suitable for a small business?",
+    a: "Yes. It scales from a single user to large multi-location teams; you only switch on what you need.",
+  },
+  {
+    q: "Do I need accounting expertise to use it?",
+    a: "No. Guided workflows and dashboards make it simple; we also train your team.",
+  },
+  {
+    q: "Will it handle Ghana's VAT requirements?",
+    a: "Yes — it's built for accurate, compliant invoicing and returns. We configure it for your region.",
+  },
+  {
+    q: "Can my team work together on the same data?",
+    a: "Yes, with the Gold (multi-user) edition over your network, or via cloud access.",
+  },
+  {
+    q: "Is my data secure?",
+    a: "Your data is encrypted, backed up, and protected with role-based access — it stays yours alone.",
+  },
+  {
+    q: "How much does it cost?",
+    a: "Pricing depends on edition and setup. Request a quote and we'll share current local pricing in GHS.",
+  },
+  {
+    q: "What support do you provide?",
+    a: "Installation, configuration, training, and ongoing local support as an authorized partner.",
+  },
+  {
+    q: "Can I migrate from my current accounting system?",
+    a: "Yes. We help you move your master data and opening balances safely — just ask us.",
+  },
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section id="faq" className="border-y border-border bg-surface py-20">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6">
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">FAQ</p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            Questions? We&apos;ve Got Answers
+          </h2>
         </div>
-        <ContactForm />
+        <div className="mt-10 divide-y divide-border rounded-2xl border border-border bg-card">
+          {FAQS.map((item, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={item.q}>
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
+                  aria-expanded={isOpen}
+                >
+                  <span className="text-sm font-bold sm:text-base">{item.q}</span>
+                  <ChevronDown
+                    className={`h-5 w-5 flex-shrink-0 text-primary transition ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 text-sm text-text-secondary sm:px-6">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-6 text-center text-sm text-text-secondary">
+          Still have questions?{" "}
+          <a href="#contact" className="font-bold text-primary hover:underline">
+            Send us a message
+          </a>
+          .
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── Lead capture ──────────────────────────────────────────────────── */
+
+function LeadCapture() {
+  return (
+    <section id="contact" className="bg-primary-light py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid gap-10 rounded-3xl bg-navy p-6 text-white shadow-[var(--shadow-lg)] sm:p-10 md:grid-cols-2 lg:p-14">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-accent">
+              Get a Free Demo
+            </p>
+            <h2 id="demo" className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              Ready to Transform Your Business with TallyPrime?
+            </h2>
+            <p className="mt-5 text-base text-white/80">
+              Tell us a little about your business and our Tally experts will reach out
+              with a free demo and a tailored recommendation — no pressure, no obligation.
+            </p>
+            <ul className="mt-7 space-y-3 text-sm">
+              {[
+                "Free, no-obligation demo",
+                "Genuine authorized licenses",
+                "Local setup, training & support",
+              ].map((p) => (
+                <li key={p} className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-accent" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 space-y-3 border-t border-white/10 pt-7 text-sm">
+              <a
+                href="tel:+233000000000"
+                className="flex items-center gap-3 hover:text-accent"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/10">
+                  <Phone className="h-4 w-4" />
+                </span>
+                +233 ___ ___ ___
+              </a>
+              <a
+                href="mailto:hello@partner.com"
+                className="flex items-center gap-3 hover:text-accent"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/10">
+                  <Mail className="h-4 w-4" />
+                </span>
+                hello@partner.com
+              </a>
+              <p className="flex items-center gap-3">
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/10">
+                  <MapPin className="h-4 w-4" />
+                </span>
+                Accra, Ghana
+              </p>
+            </div>
+          </div>
+          <ContactForm />
+        </div>
       </div>
     </section>
   );
@@ -366,7 +1359,11 @@ function ContactForm() {
       const res = await fetch("/api/public/leads-capture-submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...parsed.data, website: values.website }),
+        body: JSON.stringify({
+          ...parsed.data,
+          website: values.website,
+          source: "Tally Landing Page",
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setState("success");
@@ -378,16 +1375,27 @@ function ContactForm() {
 
   if (state === "success") {
     return (
-      <div className="rounded-2xl border border-success bg-success-light p-8 text-center">
-        <span className="material-symbols-outlined text-5xl text-success">check_circle</span>
-        <h3 className="mt-3 text-2xl font-bold">Thanks — we've got it.</h3>
-        <p className="mt-2 text-text-secondary">
-          One of our team will be in touch within one business day. Check your inbox for a confirmation.
+      <div className="rounded-2xl bg-surface p-8 text-center text-foreground shadow-[var(--shadow-md)]">
+        <span className="grid mx-auto h-14 w-14 place-items-center rounded-full bg-success-light text-success">
+          <CheckCircle2 className="h-8 w-8" />
+        </span>
+        <h3 className="mt-4 text-2xl font-black">Thanks — we&apos;ve got it.</h3>
+        <p className="mt-2 text-sm text-text-secondary">
+          A Tally expert will be in touch shortly. Check your inbox for a confirmation
+          email.
         </p>
         <button
           type="button"
           onClick={() => {
-            setValues({ first_name: "", last_name: "", email: "", phone: "", company_name: "", message: "", website: "" });
+            setValues({
+              first_name: "",
+              last_name: "",
+              email: "",
+              phone: "",
+              company_name: "",
+              message: "",
+              website: "",
+            });
             setState("idle");
           }}
           className="mt-6 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold hover:bg-surface-hover"
@@ -399,9 +1407,13 @@ function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-md)] md:p-8">
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      className="relative rounded-2xl bg-surface p-6 text-foreground shadow-[var(--shadow-lg)] sm:p-8"
+    >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="First name *" error={errors.first_name}>
+        <Field label="First Name *" error={errors.first_name}>
           <input
             type="text"
             value={values.first_name}
@@ -411,7 +1423,7 @@ function ContactForm() {
             required
           />
         </Field>
-        <Field label="Last name *" error={errors.last_name}>
+        <Field label="Last Name *" error={errors.last_name}>
           <input
             type="text"
             value={values.last_name}
@@ -438,9 +1450,10 @@ function ContactForm() {
             onChange={(e) => update("phone", e.target.value)}
             className="input"
             autoComplete="tel"
+            placeholder="+233 ___ ___ ___"
           />
         </Field>
-        <Field label="Company" error={errors.company_name}>
+        <Field label="Company Name" error={errors.company_name}>
           <input
             type="text"
             value={values.company_name}
@@ -449,18 +1462,22 @@ function ContactForm() {
             autoComplete="organization"
           />
         </Field>
-        <Field label="Message" error={errors.message} className="sm:col-span-2">
+        <Field
+          label="What do you need help with?"
+          error={errors.message}
+          className="sm:col-span-2"
+        >
           <textarea
             rows={4}
             value={values.message}
             onChange={(e) => update("message", e.target.value)}
             className="input resize-y"
-            placeholder="Team size, current tools, what you're looking for…"
+            placeholder="Business size, current tools, what you're looking for…"
           />
         </Field>
       </div>
 
-      {/* Honeypot — hidden from humans */}
+      {/* Honeypot */}
       <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
         <label>
           Website
@@ -476,30 +1493,31 @@ function ContactForm() {
 
       {state === "error" && (
         <div className="mt-4 rounded-lg border border-danger bg-danger-light px-4 py-3 text-sm text-danger">
-          We couldn't submit your request{serverError ? ` (${serverError})` : ""}. Please try again or email
-          hello@tally-crm.app.
+          We couldn&apos;t submit your request
+          {serverError ? ` (${serverError})` : ""}. Please try again or call us directly.
         </div>
       )}
 
       <button
         type="submit"
         disabled={state === "submitting"}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cta px-5 py-3 font-semibold text-cta-foreground shadow-[var(--shadow-sm)] hover:bg-cta-hover disabled:opacity-60"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3.5 text-base font-bold text-primary-foreground shadow-[var(--shadow-md)] transition hover:bg-primary-dark disabled:opacity-60"
       >
         {state === "submitting" ? (
           <>
-            <span className="material-symbols-outlined animate-spin">progress_activity</span>
+            <Loader2 className="h-4 w-4 animate-spin" />
             Sending…
           </>
         ) : (
           <>
-            <span className="material-symbols-outlined">send</span>
-            Request a demo
+            <Send className="h-4 w-4" />
+            Request My Free Demo
           </>
         )}
       </button>
       <p className="mt-3 text-center text-xs text-text-muted">
-        By submitting you agree to our terms. We'll only use your details to reply.
+        By submitting you agree to be contacted about TallyPrime. We never share your
+        details.
       </p>
     </form>
   );
@@ -525,15 +1543,227 @@ function Field({
   );
 }
 
+/* ── Final CTA ─────────────────────────────────────────────────────── */
+
+function FinalCTA() {
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-navy py-20 text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent/20 blur-3xl"
+      />
+      <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <h2 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+          Join Millions of Businesses Running Smarter with TallyPrime
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-base text-white/80">
+          Book a free demo today and see how TallyPrime fits your business.
+        </p>
+        <a
+          href="#contact"
+          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-accent px-7 py-3.5 text-base font-bold text-accent-foreground shadow-[var(--shadow-lg)] transition hover:bg-accent-dark"
+        >
+          Get Your Free Demo Today
+          <ArrowRight className="h-5 w-5" />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+
 function Footer() {
   return (
-    <footer className="border-t border-border bg-sidebar py-10 text-sidebar-foreground">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
-        <p className="text-sm font-bold">
-          Tally <span className="text-accent">CRM</span>
-        </p>
-        <p className="text-xs opacity-70">© {new Date().getFullYear()} Tally CRM. All rights reserved.</p>
+    <footer className="relative overflow-hidden bg-navy text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-20 left-1/2 hidden -translate-x-1/2 select-none text-[14rem] font-black tracking-tighter text-white/[0.03] md:block"
+      >
+        TallyPrime
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        {/* Top: brand + newsletter */}
+        <div className="grid gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.2fr_1fr]">
+          <div>
+            <p className="text-2xl font-black tracking-tight">
+              TallyPrime
+              <span className="ml-0.5 inline-block h-2 w-2 rounded-full bg-accent align-middle" />
+              <span className="ml-2 text-sm font-semibold text-white/60">Partner</span>
+            </p>
+            <p className="mt-4 max-w-md text-sm text-white/70">
+              Your authorized TallyPrime partner — helping businesses across Ghana run
+              simpler, smarter, and fully compliant.
+            </p>
+          </div>
+          <NewsletterForm />
+        </div>
+
+        {/* Middle: link columns */}
+        <div className="grid gap-10 py-12 sm:grid-cols-2 md:grid-cols-4">
+          <FooterCol
+            title="Product"
+            links={[
+              ["Features", "#features"],
+              ["Editions", "#editions"],
+              ["What's New", "#why-tally"],
+              ["Industries", "#industries"],
+            ]}
+          />
+          <FooterCol
+            title="Company"
+            links={[
+              ["About Us", "#why-tally"],
+              ["Why Choose Us", "#why-tally"],
+              ["Resources", "#faq"],
+              ["Contact", "#contact"],
+            ]}
+          />
+          <FooterCol
+            title="Support"
+            links={[
+              ["Book a Demo", "#contact"],
+              ["Help & FAQ", "#faq"],
+              ["Training", "#contact"],
+              ["Get Support", "#contact"],
+            ]}
+          />
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wider text-white/90">
+              Contact
+            </p>
+            <ul className="mt-4 space-y-3 text-sm text-white/70">
+              <li className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 text-accent" /> +233 ___ ___ ___
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 text-accent" /> hello@partner.com
+              </li>
+              <li className="flex items-start gap-2.5">
+                <MapPin className="mt-0.5 h-4 w-4 text-accent" /> Accra, Ghana
+              </li>
+            </ul>
+            <div className="mt-5 flex gap-2">
+              {[Facebook, Linkedin, Instagram, Twitter].map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-white/80 transition hover:bg-accent hover:text-accent-foreground"
+                  aria-label="Social"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="flex flex-col gap-4 border-t border-white/10 pt-8 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} Authorized TallyPrime Partner. All rights
+            reserved.
+          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a href="#" className="hover:text-white">
+              Privacy Policy
+            </a>
+            <a href="#" className="hover:text-white">
+              Terms
+            </a>
+            <span className="text-white/40">
+              TallyPrime™ is a product of Tally Solutions Pvt. Ltd.
+            </span>
+          </div>
+        </div>
       </div>
     </footer>
+  );
+}
+
+function FooterCol({
+  title,
+  links,
+}: {
+  title: string;
+  links: [string, string][];
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold uppercase tracking-wider text-white/90">{title}</p>
+      <ul className="mt-4 space-y-3 text-sm text-white/70">
+        {links.map(([label, href]) => (
+          <li key={label}>
+            <a href={href} className="transition hover:text-accent">
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    setStatus(ok ? "success" : "error");
+    if (ok) setEmail("");
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+      <p className="text-base font-bold">Get business tips &amp; TallyPrime updates</p>
+      <p className="mt-1 text-sm text-white/60">
+        Monthly. No spam. Unsubscribe anytime.
+      </p>
+      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@business.com"
+          className="flex-1 rounded-lg bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-accent"
+          required
+        />
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground transition hover:bg-accent-dark"
+        >
+          Subscribe
+        </button>
+      </form>
+      {status === "success" && (
+        <p className="mt-3 text-xs font-semibold text-success">
+          Thanks — you&apos;re on the list.
+        </p>
+      )}
+      {status === "error" && (
+        <p className="mt-3 text-xs font-semibold text-danger">
+          Enter a valid email address.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Mobile sticky CTA ─────────────────────────────────────────────── */
+
+function MobileStickyCta() {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] md:hidden">
+      <a
+        href="#contact"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
+      >
+        Get a Free Demo
+        <ArrowDown className="h-4 w-4" />
+      </a>
+    </div>
   );
 }
