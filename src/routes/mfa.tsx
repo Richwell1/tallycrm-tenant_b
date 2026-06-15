@@ -268,15 +268,16 @@ function MfaPage() {
                   <div className="space-y-5">
                     <div className="flex justify-center">
                       <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
-                        <div
-                          className="h-44 w-44 [&_svg]:h-full [&_svg]:w-full"
-                          dangerouslySetInnerHTML={{ __html: enrollData.qrSvg }}
+                        <img
+                          src={enrollData.qrSvg}
+                          alt=""
+                          className="h-44 w-44 block"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary">
                         Manual setup key
                       </label>
                       <div className="flex items-center gap-2">
