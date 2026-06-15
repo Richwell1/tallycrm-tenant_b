@@ -93,10 +93,26 @@ function MfaPage() {
     setEnrollBusy(true);
     setErrorMsg(null);
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({
+      const friendlyName = `Tally CRM ${Date.now()}`;
+      let { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `Tally CRM (${new Date().toISOString().slice(0, 10)})`,
+        friendlyName,
       });
+      // If we hit a friendly-name conflict, wipe ALL unverified factors and retry once.
+      if (error && (error as { code?: string }).code === "mfa_factor_name_conflict") {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        for (const f of factors?.totp ?? []) {
+          if (f.status !== "verified") {
+            await supabase.auth.mfa.unenroll({ factorId: f.id });
+          }
+        }
+        const retry = await supabase.auth.mfa.enroll({
+          factorType: "totp",
+          friendlyName: `Tally CRM ${Date.now()}`,
+        });
+        data = retry.data;
+        error = retry.error;
+      }
       if (error || !data) {
         throw error ?? new Error("Enrollment failed");
       }
