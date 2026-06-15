@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageHeader, ToolbarButton, FilterBar } from "@/components/layout";
-import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/common";
+import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { LeadKanban } from "@/components/leads/LeadKanban";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { AddLeadModal } from "@/components/leads/AddLeadModal";
@@ -75,15 +75,20 @@ function LeadsIndex() {
       />
 
       {isLoading ? (
-        <LoadingSkeleton rows={6} />
+        <TableSkeleton rows={6} />
       ) : isError ? (
-        <ErrorState message={(error as Error)?.message ?? "Could not load leads"} onRetry={() => refetch?.()} />
+        <ErrorState description={(error as Error)?.message ?? "Could not load leads"} onRetry={() => refetch?.()} />
       ) : (leads?.length ?? 0) === 0 ? (
         <EmptyState
-          icon="person_search"
+          icon={<span className="material-symbols-outlined text-[28px]">person_search</span>}
           title="No leads yet"
           description="Leads from the public landing page or manual entry will appear here."
-          action={{ label: "Add your first lead", onClick: () => setAddOpen(true) }}
+          action={
+            <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 rounded-md bg-cta px-4 py-2 text-sm font-semibold text-cta-foreground hover:bg-cta-hover">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Add your first lead
+            </button>
+          }
         />
       ) : view === "kanban" ? (
         <LeadKanban leads={filtered} />
