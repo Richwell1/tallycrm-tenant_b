@@ -348,14 +348,6 @@ function DealCard({
   );
 }
 
-function ToolbarButton({ icon, children }: { icon: string; children: ReactNode }) {
-  return (
-    <button className="flex h-[38px] items-center gap-1 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
-      <span className="material-symbols-outlined">{icon}</span>
-      {children}
-    </button>
-  );
-}
 
 function dateRank(value: string | null | undefined) {
   return value ? new Date(value).getTime() : 0;
