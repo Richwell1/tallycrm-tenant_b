@@ -74,66 +74,44 @@ function DealsIndex() {
   return (
     <>
       <div className="flex h-[calc(100vh-112px)] flex-col overflow-hidden">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="mb-1 text-[24px] font-semibold text-foreground">Sales Pipeline</h1>
-            <p className="text-sm text-text-secondary">
-              {data
-                ? `${data.deals.length} deal${data.deals.length !== 1 ? "s" : ""} across ${data.stages.length} stage${data.stages.length !== 1 ? "s" : ""}`
-                : "Loading pipeline…"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative w-72">
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-                search
-              </span>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-[38px] w-full rounded-full border border-border bg-muted pl-10 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder="Search deals, clients, or reps..."
-                type="search"
-              />
-            </div>
-            <select
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-              className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">Stage: All</option>
-              {data?.stages.map((stage) => (
-                <option key={stage.id} value={stage.id}>
-                  {stage.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as DealSort)}
-              className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="recent">Sort: Recently created</option>
-              <option value="value">Sort: Value</option>
-              <option value="probability">Sort: Probability</option>
-              <option value="closeDate">Sort: Close date</option>
-            </select>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex h-[38px] items-center gap-2 rounded-lg bg-danger px-5 text-xs font-bold uppercase tracking-wider text-white shadow-[var(--shadow-sm)] transition-opacity hover:opacity-90"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Add Deal
-            </button>
-            <button
-              onClick={() => refetch()}
-              className="flex h-[38px] w-[38px] items-center justify-center rounded-lg border border-border bg-card text-text-secondary transition-colors hover:text-primary"
-              title="Refresh"
-            >
-              <span className="material-symbols-outlined">refresh</span>
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="Sales Pipeline"
+          count={data?.deals.length}
+          actions={
+            <>
+              <ToolbarButton icon="refresh" onClick={() => refetch()}>
+                Refresh
+              </ToolbarButton>
+              <ToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>
+                Add Deal
+              </ToolbarButton>
+            </>
+          }
+        />
+
+        <CrmToolbar
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search deals, clients, or reps..."
+          filters={[
+            {
+              label: "Stage",
+              value: stageFilter,
+              onChange: setStageFilter,
+              options: (data?.stages ?? []).map((s) => ({ value: s.id, label: s.name })),
+            },
+          ]}
+          sort={{
+            value: sortKey,
+            onChange: (v) => setSortKey(v as DealSort),
+            options: [
+              { value: "recent", label: "Recently created" },
+              { value: "value", label: "Value" },
+              { value: "probability", label: "Probability" },
+              { value: "closeDate", label: "Close date" },
+            ],
+          }}
+        />
 
         {isLoading ? (
           <GridSkeleton count={8} />
