@@ -65,87 +65,52 @@ function CompaniesIndex() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <h1 className="text-[24px] font-semibold text-primary">Companies</h1>
-          <div className="relative hidden lg:block">
-            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
-              search
-            </span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-[38px] w-[320px] rounded-lg border border-border bg-muted pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="Search companies, domains, managers..."
-              type="search"
-            />
-          </div>
-        </div>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="flex h-[38px] items-center gap-2 rounded-lg bg-danger px-4 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:brightness-110 active:scale-95"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Add Company
-        </button>
-      </div>
+      <PageHeader
+        title="Companies"
+        count={companies?.length}
+        actions={
+          <>
+            <ToolbarButton icon="refresh" onClick={() => refetch()}>
+              Refresh
+            </ToolbarButton>
+            <ToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>
+              Add Company
+            </ToolbarButton>
+          </>
+        }
+      />
 
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center rounded-lg border border-border bg-card p-1 shadow-[var(--shadow-xs)]">
-            <button
-              onClick={() => setView("table")}
-              className={`rounded-md p-2 transition-all ${
-                view === "table"
-                  ? "bg-primary text-white shadow-[var(--shadow-xs)]"
-                  : "text-text-muted hover:bg-muted"
-              }`}
-              title="Table"
-            >
-              <span className="material-symbols-outlined">table_rows</span>
-            </button>
-            <button
-              onClick={() => setView("grid")}
-              className={`rounded-md p-2 transition-all ${
-                view === "grid"
-                  ? "bg-primary text-white shadow-[var(--shadow-xs)]"
-                  : "text-text-muted hover:bg-muted"
-              }`}
-              title="Grid"
-            >
-              <span className="material-symbols-outlined">grid_view</span>
-            </button>
-          </div>
-          <div className="h-6 w-px bg-border" />
-          <ToolbarPill icon="filter_list">Filters</ToolbarPill>
-          <select
-            value={industryFilter}
-            onChange={(e) => setIndustryFilter(e.target.value)}
-            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="all">Industry: All</option>
-            {industries.map((industry) => (
-              <option key={industry} value={industry}>
-                {industry}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as CompanySort)}
-            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="name">Sort: Name</option>
-            <option value="rating">Sort: Rating</option>
-            <option value="deals">Sort: Open deals</option>
-            <option value="value">Sort: Pipeline value</option>
-          </select>
-          <ToolbarPill icon="export_notes">Export</ToolbarPill>
-        </div>
-        <p className="text-xs font-semibold text-text-muted">
-          Showing <span className="font-bold text-foreground">{filtered.length}</span> companies
-        </p>
-      </div>
+      <CrmToolbar<View>
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search companies, domains, managers..."
+        view={view}
+        onViewChange={setView}
+        viewOptions={[
+          { value: "table", icon: "table_rows", label: "Table" },
+          { value: "grid", icon: "grid_view", label: "Grid" },
+        ]}
+        filters={[
+          {
+            label: "Industry",
+            value: industryFilter,
+            onChange: setIndustryFilter,
+            options: industries.map((i) => ({ value: i, label: i })),
+          },
+        ]}
+        sort={{
+          value: sortKey,
+          onChange: (v) => setSortKey(v as CompanySort),
+          options: [
+            { value: "name", label: "Name" },
+            { value: "rating", label: "Rating" },
+            { value: "deals", label: "Open deals" },
+            { value: "value", label: "Pipeline value" },
+          ],
+        }}
+        resultCount={filtered.length}
+        resultNoun="companies"
+      />
 
       {isLoading ? (
         <TableSkeleton rows={7} />
