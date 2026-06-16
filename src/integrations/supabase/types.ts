@@ -113,6 +113,119 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_rules: {
+        Row: {
+          actions: Json
+          audit_logged: boolean
+          condition: string
+          config: Json
+          created_at: string
+          description: string
+          enabled: boolean
+          id: string
+          is_default: boolean
+          last_run_at: string | null
+          name: string
+          object: string
+          owner: string
+          status: string
+          success_rate: number
+          trigger_icon: string
+          trigger_label: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          audit_logged?: boolean
+          condition?: string
+          config?: Json
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id: string
+          is_default?: boolean
+          last_run_at?: string | null
+          name: string
+          object: string
+          owner?: string
+          status?: string
+          success_rate?: number
+          trigger_icon?: string
+          trigger_label?: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          audit_logged?: boolean
+          condition?: string
+          config?: Json
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          is_default?: boolean
+          last_run_at?: string | null
+          name?: string
+          object?: string
+          owner?: string
+          status?: string
+          success_rate?: number
+          trigger_icon?: string
+          trigger_label?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      automation_runs: {
+        Row: {
+          action_taken: string
+          created_at: string
+          duration_ms: number
+          id: string
+          message: string | null
+          record_id: string | null
+          record_name: string
+          record_type: string
+          result: string
+          rule_id: string | null
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          message?: string | null
+          record_id?: string | null
+          record_name?: string
+          record_type?: string
+          result?: string
+          rule_id?: string | null
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          duration_ms?: number
+          id?: string
+          message?: string | null
+          record_id?: string | null
+          record_name?: string
+          record_type?: string
+          result?: string
+          rule_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_runs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           account_manager_id: string | null
@@ -331,8 +444,10 @@ export type Database = {
           description: string | null
           expected_close_date: string | null
           id: string
+          last_stage_change_at: string | null
           lost_reason: string | null
           name: string
+          overdue_at: string | null
           primary_contact_id: string | null
           probability: number
           stage_id: string
@@ -351,8 +466,10 @@ export type Database = {
           description?: string | null
           expected_close_date?: string | null
           id?: string
+          last_stage_change_at?: string | null
           lost_reason?: string | null
           name: string
+          overdue_at?: string | null
           primary_contact_id?: string | null
           probability?: number
           stage_id: string
@@ -371,8 +488,10 @@ export type Database = {
           description?: string | null
           expected_close_date?: string | null
           id?: string
+          last_stage_change_at?: string | null
           lost_reason?: string | null
           name?: string
+          overdue_at?: string | null
           primary_contact_id?: string | null
           probability?: number
           stage_id?: string
@@ -404,6 +523,86 @@ export type Database = {
           },
         ]
       }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          payload: Json
+          recipient: string
+          related_entity: string | null
+          related_entity_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          recipient: string
+          related_entity?: string | null
+          related_entity_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          recipient?: string
+          related_entity?: string | null
+          related_entity_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template?: string
+        }
+        Relationships: []
+      }
+      lead_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_status: Database["public"]["Enums"]["lead_status"] | null
+          id: string
+          lead_id: string
+          to_status: Database["public"]["Enums"]["lead_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["lead_status"] | null
+          id?: string
+          lead_id: string
+          to_status: Database["public"]["Enums"]["lead_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["lead_status"] | null
+          id?: string
+          lead_id?: string
+          to_status?: Database["public"]["Enums"]["lead_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_status_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           assigned_to: string | null
@@ -420,7 +619,9 @@ export type Database = {
           id: string
           ip_country: string | null
           last_name: string
+          last_status_change_at: string | null
           message: string | null
+          overdue_at: string | null
           phone: string | null
           qualified: boolean
           source: string
@@ -443,7 +644,9 @@ export type Database = {
           id?: string
           ip_country?: string | null
           last_name: string
+          last_status_change_at?: string | null
           message?: string | null
+          overdue_at?: string | null
           phone?: string | null
           qualified?: boolean
           source?: string
@@ -466,7 +669,9 @@ export type Database = {
           id?: string
           ip_country?: string | null
           last_name?: string
+          last_status_change_at?: string | null
           message?: string | null
+          overdue_at?: string | null
           phone?: string | null
           qualified?: boolean
           source?: string
@@ -697,6 +902,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      automation_rule_config: { Args: { _rule_id: string }; Returns: Json }
+      automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
+      convert_lead_to_deal: {
+        Args: {
+          _deal_name: string
+          _lead_id: string
+          _stage_id?: string
+          _value?: number
+        }
+        Returns: string
+      }
+      create_auto_task: {
+        Args: {
+          _assigned_to: string
+          _contact_id?: string
+          _deal_id?: string
+          _due_in_days: number
+          _priority?: Database["public"]["Enums"]["task_priority"]
+          _reminder_in_days?: number
+          _title: string
+          _type: string
+        }
+        Returns: string
+      }
+      cron_daily_digest: { Args: never; Returns: number }
+      cron_reengagement_sweep: { Args: never; Returns: number }
+      cron_reminder_dispatch: { Args: never; Returns: number }
+      cron_sla_monitor: { Args: never; Returns: number }
       current_role_label: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -707,6 +940,54 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_audit_system: {
+        Args: {
+          _action: string
+          _entity: string
+          _entity_id: string
+          _entity_name: string
+          _metadata?: Json
+        }
+        Returns: undefined
+      }
+      log_automation_run: {
+        Args: {
+          _action: string
+          _message?: string
+          _record_id: string
+          _record_name: string
+          _record_type: string
+          _result?: string
+          _rule_id: string
+        }
+        Returns: undefined
+      }
+      notify_user: {
+        Args: {
+          _body: string
+          _entity?: string
+          _entity_id?: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      queue_email: {
+        Args: {
+          _entity?: string
+          _entity_id?: string
+          _payload: Json
+          _recipient: string
+          _subject: string
+          _template: string
+        }
+        Returns: string
+      }
+      update_deal_value: {
+        Args: { _deal_id: string; _new_value: number; _reason: string }
+        Returns: undefined
       }
     }
     Enums: {
