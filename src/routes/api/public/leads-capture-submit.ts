@@ -156,11 +156,154 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
           }),
         ]);
 
+        // Fire-and-forget confirmation email — never blocks the response.
+        void sendConfirmationEmail({
+          leadId: lead.id,
+          assignedTo,
+          firstName: data.first_name,
+          email: data.email,
+          message: data.message || null,
+        });
+
         return json(request, { ok: true, lead_id: lead.id }, 200);
       },
     },
   },
 });
+
+// ---------- Confirmation email ----------
+
+type SendArgs = {
+  leadId: string;
+  assignedTo: string | null;
+  firstName: string;
+  email: string;
+  message: string | null;
+};
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
+function buildEmail(args: SendArgs) {
+  const partnerName = process.env.PARTNER_NAME ?? "Your Tally Partner";
+  const partnerPhone = process.env.PARTNER_PHONE ?? "";
+  const partnerEmail = process.env.PARTNER_EMAIL ?? "";
+  const subject = `Thanks for your interest in TallyPrime, ${args.firstName}`;
+  const messageBlock = args.message
+    ? `<p style="margin:16px 0;padding:12px 16px;background:#f5f6f8;border-left:3px solid #1f6feb;border-radius:4px;color:#333;"><strong>Your message:</strong><br/>${escapeHtml(args.message)}</p>`
+    : "";
+  const contactBlock = [
+    partnerPhone ? `Phone: ${escapeHtml(partnerPhone)}` : "",
+    partnerEmail ? `Email: ${escapeHtml(partnerEmail)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" &middot; ");
+
+  const html = `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;background:#ffffff;color:#1a1a1a;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;">
+    <h2 style="color:#1f6feb;margin:0 0 12px;">Thanks, ${escapeHtml(args.firstName)} 👋</h2>
+    <p>Thanks for reaching out about <strong>TallyPrime</strong>. We've received your enquiry and a Tally expert from our team will be in touch <strong>within one business day</strong>.</p>
+    ${messageBlock}
+    <p>In the meantime, if you'd like to reach us directly:</p>
+    <p style="margin:8px 0;color:#444;">${contactBlock || "We'll include our direct contact details in the follow-up."}</p>
+    <p style="margin-top:24px;">Talk soon,<br/><strong>${escapeHtml(partnerName)}</strong><br/><span style="color:#666;">Authorized TallyPrime Partner</span></p>
+  </div></body></html>`;
+
+  const text = `Hi ${args.firstName},
+
+Thanks for reaching out about TallyPrime. We've received your enquiry and a Tally expert will be in touch within one business day.
+${args.message ? `\nYour message:\n${args.message}\n` : ""}
+${partnerPhone ? `Phone: ${partnerPhone}\n` : ""}${partnerEmail ? `Email: ${partnerEmail}\n` : ""}
+Talk soon,
+${partnerName}
+Authorized TallyPrime Partner`;
+
+  return { subject, html, text };
+}
+
+async function postResend(body: Record<string, unknown>, apiKey: string) {
+  return fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  });
+}
+
+async function sendConfirmationEmail(args: SendArgs) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const enabled = (process.env.EMAIL_ENABLED ?? "false").toLowerCase() === "true";
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.LANDING_FROM_EMAIL ?? "onboarding@resend.dev";
+  const fromName = process.env.PARTNER_NAME ?? "TallyPrime Partner";
+  const bcc = process.env.SALES_NOTIFY_BCC || null;
+
+  // Safe-launch gate.
+  if (!enabled || !apiKey) {
+    await supabaseAdmin.from("leads").update({ email_status: "skipped" }).eq("id", args.leadId);
+    await supabaseAdmin.from("audit_log").insert({
+      entity: "lead",
+      entity_id: args.leadId,
+      action: "email.skipped",
+      actor_id: null,
+      metadata: { reason: !apiKey ? "no_api_key" : "email_disabled" },
+    });
+    return;
+  }
+
+  const { subject, html, text } = buildEmail(args);
+  const payload: Record<string, unknown> = {
+    from: `${fromName} <${fromEmail}>`,
+    to: [args.email],
+    subject,
+    html,
+    text,
+  };
+  if (bcc) payload.bcc = [bcc];
+
+  let lastError: string | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await postResend(payload, apiKey);
+      if (res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { id?: string };
+        await supabaseAdmin.from("leads").update({ email_status: "sent" }).eq("id", args.leadId);
+        await supabaseAdmin.from("audit_log").insert({
+          entity: "lead",
+          entity_id: args.leadId,
+          action: "email.sent",
+          actor_id: null,
+          metadata: { provider: "resend", message_id: body?.id ?? null, recipient: args.email },
+        });
+        return;
+      }
+      const errText = await res.text().catch(() => "");
+      lastError = `HTTP ${res.status}: ${errText.slice(0, 300)}`;
+      if (res.status < 500 && res.status !== 429) break;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+    if (attempt === 1) await new Promise((r) => setTimeout(r, 500));
+  }
+
+  // Failure path — record + create follow-up task.
+  await supabaseAdmin.from("leads").update({ email_status: "failed" }).eq("id", args.leadId);
+  await supabaseAdmin.from("audit_log").insert({
+    entity: "lead",
+    entity_id: args.leadId,
+    action: "email.failed",
+    actor_id: null,
+    metadata: { provider: "resend", error: lastError },
+  });
+  await supabaseAdmin.from("tasks").insert({
+    title: `Manually contact lead — confirmation email failed (${args.firstName})`,
+    type: "call",
+    due_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    priority: "high",
+    assigned_to: args.assignedTo,
+    notes: `Confirmation email to ${args.email} failed. Reason: ${lastError ?? "unknown"}`,
+  });
+}
 
 function validatePublicPost(request: Request) {
   const url = new URL(request.url);
