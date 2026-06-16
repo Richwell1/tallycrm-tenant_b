@@ -77,6 +77,60 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          company_address: string | null
+          company_email: string | null
+          company_name: string
+          company_phone: string | null
+          created_at: string
+          default_currency: string
+          email_api_key_masked: string
+          id: string
+          landing_api_key: string
+          landing_last_test_at: string | null
+          landing_last_test_status: string | null
+          landing_response_log: Json
+          logo_url: string | null
+          time_zone: string
+          updated_at: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_email?: string | null
+          company_name?: string
+          company_phone?: string | null
+          created_at?: string
+          default_currency?: string
+          email_api_key_masked?: string
+          id?: string
+          landing_api_key?: string
+          landing_last_test_at?: string | null
+          landing_last_test_status?: string | null
+          landing_response_log?: Json
+          logo_url?: string | null
+          time_zone?: string
+          updated_at?: string
+        }
+        Update: {
+          company_address?: string | null
+          company_email?: string | null
+          company_name?: string
+          company_phone?: string | null
+          created_at?: string
+          default_currency?: string
+          email_api_key_masked?: string
+          id?: string
+          landing_api_key?: string
+          landing_last_test_at?: string | null
+          landing_last_test_status?: string | null
+          landing_response_log?: Json
+          logo_url?: string | null
+          time_zone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -568,6 +622,27 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_assignment_queue: {
+        Row: {
+          active: boolean
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          position: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_status_history: {
         Row: {
           changed_at: string
@@ -709,6 +784,7 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          deleted_at: string | null
           entity: string | null
           entity_id: string | null
           id: string
@@ -720,6 +796,7 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          deleted_at?: string | null
           entity?: string | null
           entity_id?: string | null
           id?: string
@@ -731,6 +808,7 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          deleted_at?: string | null
           entity?: string | null
           entity_id?: string | null
           id?: string
@@ -876,6 +954,36 @@ export type Database = {
           },
         ]
       }
+      user_invites: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -984,6 +1092,13 @@ export type Database = {
           _template: string
         }
         Returns: string
+      }
+      set_user_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: undefined
       }
       update_deal_value: {
         Args: { _deal_id: string; _new_value: number; _reason: string }
