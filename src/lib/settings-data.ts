@@ -13,8 +13,13 @@ const SETTINGS_ROW_ID = "00000000-0000-0000-0000-000000000001";
 const DEFAULT_APP_SETTINGS: AppSettings = {
   id: SETTINGS_ROW_ID,
   crm_name: "Tally CRM Sales",
+  company_name: "Tally CRM Sales",
+  company_address: null,
+  company_email: null,
+  company_phone: null,
   default_currency: "GHS",
   timezone: "GMT",
+  time_zone: "GMT",
   date_format: "DD/MM/YYYY",
   language: "English (United States)",
   logo_url: null,
@@ -35,6 +40,7 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   landing_last_test_at: null,
   landing_last_test_status: null,
   landing_response_log: [],
+  created_at: new Date(0).toISOString(),
   updated_at: new Date(0).toISOString(),
 };
 

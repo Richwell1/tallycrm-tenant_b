@@ -1,0 +1,125 @@
+// Tally CRM — Automation email dispatcher.
+// Reads pending rows from public.email_queue, sends each via Resend, and
+// records the result. Gated by RESEND_API_KEY — if the key is absent the
+// function is a no-op (in-app notifications still work).
+//
+// Trigger by HTTP POST (manual or scheduled). Edge function secret only;
+// never expose RESEND_API_KEY to the client or DB.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type QueueRow = {
+  id: string;
+  template: string;
+  recipient: string;
+  subject: string;
+  payload: Record<string, unknown>;
+  attempts: number;
+};
+
+function renderHtml(template: string, payload: Record<string, unknown>): string {
+  if (template === "daily_digest") {
+    return `<h2>Your Tally CRM digest</h2>
+      <p>Today's tasks: <b>${payload.today ?? 0}</b></p>
+      <p>Overdue: <b>${payload.overdue ?? 0}</b></p>
+      <p>New leads: <b>${payload.new_leads ?? 0}</b></p>`;
+  }
+  // Generic fallback — payload rendered as a list.
+  const items = Object.entries(payload)
+    .map(([k, v]) => `<li><b>${k}</b>: ${String(v)}</li>`)
+    .join("");
+  return `<h2>${template}</h2><ul>${items}</ul>`;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const FROM_EMAIL = Deno.env.get("AUTOMATION_FROM_EMAIL") ?? "onboarding@resend.dev";
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // Pull up to 50 pending rows
+  const { data: rows, error } = await supabase
+    .from("email_queue")
+    .select("id, template, recipient, subject, payload, attempts")
+    .eq("status", "pending")
+    .lt("attempts", 5)
+    .order("created_at", { ascending: true })
+    .limit(50);
+
+  if (error) {
+    return new Response(JSON.stringify({ ok: false, error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!RESEND_API_KEY) {
+    // Gracefully skip when sender not configured; mark rows as "skipped".
+    if (rows && rows.length > 0) {
+      await supabase
+        .from("email_queue")
+        .update({ status: "skipped", last_error: "RESEND_API_KEY not set" })
+        .in("id", rows.map((r) => r.id));
+    }
+    return new Response(
+      JSON.stringify({ ok: true, sent: 0, skipped: rows?.length ?? 0, reason: "no_key" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const row of (rows ?? []) as QueueRow[]) {
+    try {
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to: [row.recipient],
+          subject: row.subject,
+          html: renderHtml(row.template, row.payload ?? {}),
+        }),
+      });
+      if (!r.ok) {
+        const body = await r.text();
+        throw new Error(`Resend ${r.status}: ${body.slice(0, 240)}`);
+      }
+      await supabase
+        .from("email_queue")
+        .update({ status: "sent", sent_at: new Date().toISOString(), attempts: row.attempts + 1 })
+        .eq("id", row.id);
+      sent += 1;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await supabase
+        .from("email_queue")
+        .update({
+          status: row.attempts + 1 >= 5 ? "failed" : "pending",
+          attempts: row.attempts + 1,
+          last_error: msg,
+        })
+        .eq("id", row.id);
+      failed += 1;
+    }
+  }
+
+  return new Response(JSON.stringify({ ok: true, sent, failed }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+});
