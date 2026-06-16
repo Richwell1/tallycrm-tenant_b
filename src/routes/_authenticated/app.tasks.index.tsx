@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AddTaskModal } from "@/components/tasks/AddTaskModal";
 import { EmptyState, ErrorState } from "@/components/common";
-import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
+import { PageHeader, SectionCard, ToolbarButton, CrmToolbar } from "@/components/layout";
 import {
   type TaskItem,
   type TaskPriority,
