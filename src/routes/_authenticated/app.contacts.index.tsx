@@ -90,99 +90,60 @@ function ContactsIndex() {
 
   return (
     <>
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <nav className="mb-1 flex gap-1 text-[11px] font-bold uppercase tracking-wider text-text-muted">
-            <span>Directory</span>
-            <span>/</span>
-            <span className="text-primary">Accounts</span>
-          </nav>
-          <div className="flex items-center gap-4">
-            <h1 className="text-[24px] font-semibold text-foreground">Contacts</h1>
-            <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-bold text-primary">
-              {contacts?.length ?? 0}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ToolbarButton icon="ios_share">Export</ToolbarButton>
-          <ToolbarIcon icon="refresh" onClick={() => refetch()} />
-          <div className="flex rounded-lg border border-border bg-muted p-1">
-            <button
-              onClick={() => setView("grid")}
-              className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs font-semibold ${
-                view === "grid"
-                  ? "bg-card text-primary shadow-[var(--shadow-xs)]"
-                  : "text-text-secondary hover:text-foreground"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">grid_view</span>
-              Grid
-            </button>
-            <button
-              onClick={() => setView("table")}
-              className={`flex items-center gap-1 rounded px-3 py-1.5 text-xs font-semibold ${
-                view === "table"
-                  ? "bg-card text-primary shadow-[var(--shadow-xs)]"
-                  : "text-text-secondary hover:text-foreground"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
-              List
-            </button>
-          </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="flex items-center gap-1 rounded-lg bg-danger px-4 py-2.5 text-xs font-semibold text-white shadow-[var(--shadow-sm)] transition-all hover:brightness-110"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Add Contact
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Contacts"
+        count={contacts?.length ?? 0}
+        breadcrumbs={[{ label: "Directory" }, { label: "Accounts" }]}
+        actions={
+          <>
+            <LayoutToolbarButton icon="ios_share">Export</LayoutToolbarButton>
+            <LayoutToolbarButton icon="refresh" onClick={() => refetch()}>
+              Refresh
+            </LayoutToolbarButton>
+            <LayoutToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>
+              Add Contact
+            </LayoutToolbarButton>
+          </>
+        }
+      />
 
-      <div className="mb-8 flex items-center justify-between rounded-xl border border-border/70 bg-card p-4 shadow-[var(--shadow-xs)]">
-        <div className="flex flex-1 items-center gap-4">
-          <div className="relative w-64">
-            <span className="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-muted">
-              search
-            </span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-[38px] w-full rounded-lg border border-border bg-muted/50 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              placeholder="Search contacts..."
-              type="search"
-            />
-          </div>
-          <select
-            value={companyFilter}
-            onChange={(e) => setCompanyFilter(e.target.value)}
-            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="all">Company: All</option>
-            {companyOptions.map((company) => (
-              <option key={company} value={company}>
-                {company}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as ContactSort)}
-            className="h-[38px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="recent">Sort: Recently created</option>
-            <option value="name">Sort: Name</option>
-            <option value="company">Sort: Company</option>
-            <option value="lastActivity">Sort: Last activity</option>
-          </select>
-        </div>
-        <button className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
-          <span className="material-symbols-outlined text-[18px]">tune</span>
-          Advanced Filters
-        </button>
-      </div>
+      <CrmToolbar<View>
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search contacts..."
+        view={view}
+        onViewChange={setView}
+        viewOptions={[
+          { value: "grid", icon: "grid_view", label: "Grid" },
+          { value: "table", icon: "format_list_bulleted", label: "List" },
+        ]}
+        filters={[
+          {
+            label: "Company",
+            value: companyFilter,
+            onChange: setCompanyFilter,
+            options: companyOptions.map((c) => ({ value: c, label: c })),
+          },
+        ]}
+        sort={{
+          value: sortKey,
+          onChange: (v) => setSortKey(v as ContactSort),
+          options: [
+            { value: "recent", label: "Recently created" },
+            { value: "name", label: "Name" },
+            { value: "company", label: "Company" },
+            { value: "lastActivity", label: "Last activity" },
+          ],
+        }}
+        trailing={
+          <button className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
+            <span className="material-symbols-outlined text-[18px]">tune</span>
+            Advanced Filters
+          </button>
+        }
+        resultCount={filtered.length}
+        resultNoun="contacts"
+      />
 
       {isLoading ? (
         view === "grid" ? (
