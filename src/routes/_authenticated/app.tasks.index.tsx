@@ -115,69 +115,36 @@ function TasksIndex() {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <SectionCard className="overflow-hidden" bodyClassName="p-0">
-            <div className="flex flex-col gap-4 border-b border-border px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                    Search
-                  </span>
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="input"
-                    placeholder="Title, contact, deal, owner..."
-                    type="search"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                    Status
-                  </span>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                    className="input"
-                  >
-                    {STATUS_FILTERS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                    Priority
-                  </span>
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value as "all" | TaskPriority)}
-                    className="input"
-                  >
-                    {PRIORITY_FILTERS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                    Sort
-                  </span>
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="input"
-                  >
-                    {SORT_OPTIONS.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+            <div className="border-b border-border p-4">
+              <CrmToolbar
+                className="mb-0"
+                searchValue={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Title, contact, deal, owner..."
+                filters={[
+                  {
+                    label: "Status",
+                    hideAll: true,
+                    value: statusFilter,
+                    onChange: (v) => setStatusFilter(v as StatusFilter),
+                    options: STATUS_FILTERS.map((s) => ({ value: s.value, label: s.label })),
+                  },
+                  {
+                    label: "Priority",
+                    hideAll: true,
+                    value: priorityFilter,
+                    onChange: (v) => setPriorityFilter(v as "all" | TaskPriority),
+                    options: PRIORITY_FILTERS.map((p) => ({ value: p.value, label: p.label })),
+                  },
+                ]}
+                sort={{
+                  value: sortKey,
+                  onChange: (v) => setSortKey(v as SortKey),
+                  options: SORT_OPTIONS.map((s) => ({ value: s.value, label: s.label })),
+                }}
+                resultCount={filtered.length}
+                resultNoun="tasks"
+              />
             </div>
 
             {isLoading ? (
