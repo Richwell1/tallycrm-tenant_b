@@ -13,7 +13,7 @@ const payloadSchema = z.object({
 type CapturePayload = z.infer<typeof payloadSchema>;
 
 function securityHeaders(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   return {
     "Access-Control-Allow-Origin": origin,
     Vary: "Origin",
@@ -139,13 +139,27 @@ function validatePublicPost(request: Request) {
 
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
-  const expectedOrigin = url.origin;
   const sourceOrigin = origin ?? (referer ? new URL(referer).origin : null);
-  if (sourceOrigin && sourceOrigin !== expectedOrigin) {
-    return {
-      status: 403,
-      body: { error: "Cross-site submission blocked", code: "csrf" },
-    };
+  if (sourceOrigin) {
+    let sourceHost: string;
+    try {
+      sourceHost = new URL(sourceOrigin).hostname;
+    } catch {
+      return {
+        status: 403,
+        body: { error: "Cross-site submission blocked", code: "csrf" },
+      };
+    }
+    const expectedHost = url.hostname;
+    const allowedSuffixes = [".lovable.app", ".lovableproject.com", ".lovable.dev"];
+    const isSameHost = sourceHost === expectedHost;
+    const isAllowedLovable = allowedSuffixes.some((s) => sourceHost.endsWith(s));
+    if (!isSameHost && !isAllowedLovable) {
+      return {
+        status: 403,
+        body: { error: "Cross-site submission blocked", code: "csrf" },
+      };
+    }
   }
 
   return null;
