@@ -79,79 +79,50 @@ function ActivitiesIndex() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <nav className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-text-muted">
-              <span>CRM</span>
-              <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-              <span className="text-primary">Activities</span>
-            </nav>
-            <div className="flex items-center gap-4">
-              <h1 className="text-[24px] font-semibold text-foreground">Activities</h1>
-              <span className="rounded-full border border-primary/20 bg-primary-light px-2 py-1 text-xs font-semibold text-primary">
-                {activities?.length ?? 0} Total
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex h-10 items-center gap-2 rounded border border-border bg-card px-4 text-[16px] font-semibold text-foreground shadow-[var(--shadow-xs)] transition-all hover:bg-muted">
-              <span className="material-symbols-outlined">file_download</span>
-              Export
-            </button>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="flex h-10 items-center gap-2 rounded bg-danger px-4 text-[16px] font-semibold text-white shadow-[var(--shadow-xs)] transition-all hover:bg-danger/90"
-            >
-              <span className="material-symbols-outlined">add</span>
-              Add New Activity
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="Activities"
+          count={`${activities?.length ?? 0} Total`}
+          breadcrumbs={[{ label: "CRM", to: "/app" }, { label: "Activities" }]}
+          actions={
+            <>
+              <ToolbarButton icon="file_download">Export</ToolbarButton>
+              <ToolbarButton icon="refresh" onClick={() => refetch()}>
+                Refresh
+              </ToolbarButton>
+              <ToolbarButton icon="add" variant="cta" onClick={() => setAddOpen(true)}>
+                Add New Activity
+              </ToolbarButton>
+            </>
+          }
+        />
+
+        <CrmToolbar<Filter>
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search title, contact, deal, owner..."
+          view={filter}
+          onViewChange={setFilter}
+          viewOptions={[
+            { value: "all", icon: "all_inclusive", label: "All" },
+            { value: "call", icon: "call", label: "Calls" },
+            { value: "email", icon: "mail", label: "Emails" },
+            { value: "task", icon: "task_alt", label: "Tasks" },
+            { value: "meeting", icon: "groups", label: "Meetings" },
+          ]}
+          sort={{
+            value: sortKey,
+            onChange: (v) => setSortKey(v as ActivitySort),
+            options: [
+              { value: "due", label: "Due date" },
+              { value: "recent", label: "Recent" },
+              { value: "owner", label: "Owner" },
+            ],
+          }}
+          resultCount={filtered.length}
+          resultNoun="activities"
+        />
 
         <section className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xs)]">
-          <div className="flex flex-col items-center border-b border-border md:flex-row">
-            <div className="flex w-full overflow-x-auto md:w-auto">
-              {filters.map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() => setFilter(item.value)}
-                  className={`whitespace-nowrap border-b-2 px-6 py-4 text-sm transition-colors ${
-                    filter === item.value
-                      ? "border-primary text-[16px] font-semibold text-primary"
-                      : "border-transparent text-text-muted hover:text-foreground"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex w-full items-center gap-2 border-t border-border px-4 py-2 md:ml-auto md:w-auto md:border-t-0">
-              <div className="relative flex-1 md:w-64">
-                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
-                  filter_list
-                </span>
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="h-8 w-full border-none bg-transparent pl-8 text-sm outline-none focus:ring-0"
-                  placeholder="Quick search..."
-                  type="search"
-                />
-              </div>
-              <button className="rounded p-1 text-text-muted hover:text-foreground">
-                <span className="material-symbols-outlined">more_vert</span>
-              </button>
-              <select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as ActivitySort)}
-                className="h-8 rounded-lg border border-border bg-card px-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="due">Due date</option>
-                <option value="recent">Recent</option>
-                <option value="owner">Owner</option>
-              </select>
-            </div>
-          </div>
 
           {isLoading ? (
             <TableSkeleton rows={8} columns={8} />
