@@ -37,13 +37,13 @@
 
 ## 3. Landing page (public)
 
-- [ ] Hero, key benefits, features, pricing teaser, social proof
-- [ ] Contact form: First*, Last*, Email\*, Phone, Company, Message
-- [ ] Client-side validation (required, email/phone format)
-- [ ] Honeypot / bot protection
-- [ ] Submit → POST to `leads-capture` Edge Function over HTTPS
-- [ ] Thank-you success state + graceful error state
-- [ ] Responsive; loads < 3s on 4G
+- [x] Hero, key benefits, features, pricing teaser, social proof
+- [x] Contact form: First*, Last*, Email\*, Phone, Company, Message
+- [x] Client-side validation (required, email/phone format)
+- [x] Honeypot / bot protection
+- [x] Submit → POST to `leads-capture` Edge Function over HTTPS
+- [x] Thank-you success state + graceful error state
+- [x] Responsive; loads < 3s on 4G
 
 ## 4. Lead-capture flow (headline integration)
 
@@ -149,7 +149,7 @@
 - [x] Rep leaderboard (crown for top)
 - [x] Lead-source breakdown + win/loss donut + top loss reasons
 - [x] Individual rep report
-cod
+
 ## 14. Settings (Admin only)
 
 - [x] General (currency=GHS, timezone, date format, logo)

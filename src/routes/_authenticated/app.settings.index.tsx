@@ -1461,7 +1461,7 @@ function AuditLogPanel() {
 function LandingIntegrationPanel() {
   const { data: settings } = useAppSettings();
   const saveSettings = useSaveAppSettings();
-  const endpoint = "POST {SUPABASE_URL}/functions/v1/leads-capture";
+  const endpoint = "POST {APP_URL}/api/public/leads-capture";
   const [apiKey, setApiKey] = useState("sb_publishable_xxxxxxxxxxxxxxxxxxxx");
   const [responseLog, setResponseLog] = useState<Array<{ status: string; detail: string }>>([]);
 
@@ -1487,21 +1487,38 @@ function LandingIntegrationPanel() {
   }
 
   async function sendTestLead() {
-    const entry = {
-      status: "200 OK",
-      detail: "Lead inserted with source Tally Landing Page",
-    };
-    const nextLog = [entry, ...responseLog].slice(0, 5);
     try {
+      const res = await fetch("/api/public/leads-capture", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          first_name: "Ama",
+          last_name: "Mensah",
+          email: `landing-test-${Date.now()}@example.com`,
+          phone: "+233 555 0101",
+          company_name: "Accra Retail Ltd",
+          message: "Interested in TallyPrime",
+          website: "",
+        }),
+      });
+      const entry = {
+        status: `${res.status} ${res.ok ? "OK" : "Error"}`,
+        detail: res.ok
+          ? "Lead inserted with source Tally Landing Page"
+          : "Lead capture endpoint rejected the test payload",
+      };
+      if (!res.ok) throw new Error(entry.status);
+
+      const nextLog = [entry, ...responseLog].slice(0, 5);
       await saveSettings.mutateAsync({
         landing_last_test_at: new Date().toISOString(),
         landing_last_test_status: entry.status,
         landing_response_log: nextLog,
       });
       setResponseLog(nextLog);
-      toast.success("Test lead sent", { description: "Response: 200 OK" });
+      toast.success("Test lead sent", { description: `Response: ${entry.status}` });
     } catch (err) {
-      toast.error("Could not save test result", { description: (err as Error).message });
+      toast.error("Could not send test lead", { description: (err as Error).message });
     }
   }
 
