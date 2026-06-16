@@ -306,6 +306,7 @@ function previewNotifications(userId: string): NotificationRow[] {
       entity: "lead",
       entity_id: null,
       read: false,
+      deleted_at: null,
       created_at: new Date(now - 8 * 60_000).toISOString(),
     },
     {
@@ -316,6 +317,7 @@ function previewNotifications(userId: string): NotificationRow[] {
       entity: "task",
       entity_id: null,
       read: false,
+      deleted_at: null,
       created_at: new Date(now - 42 * 60_000).toISOString(),
     },
     {
@@ -326,6 +328,7 @@ function previewNotifications(userId: string): NotificationRow[] {
       entity: "deal",
       entity_id: null,
       read: false,
+      deleted_at: null,
       created_at: new Date(now - 2 * 60 * 60_000).toISOString(),
     },
     {
@@ -336,6 +339,7 @@ function previewNotifications(userId: string): NotificationRow[] {
       entity: "task",
       entity_id: null,
       read: true,
+      deleted_at: null,
       created_at: new Date(now - 5 * 60 * 60_000).toISOString(),
     },
   ];
