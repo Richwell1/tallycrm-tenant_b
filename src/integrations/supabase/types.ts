@@ -79,54 +79,102 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          assignment_strategy: string
           company_address: string | null
           company_email: string | null
           company_name: string
           company_phone: string | null
           created_at: string
+          crm_name: string
+          date_format: string
           default_currency: string
           email_api_key_masked: string
+          email_provider: string
+          from_email: string
+          from_name: string
           id: string
           landing_api_key: string
           landing_last_test_at: string | null
           landing_last_test_status: string | null
           landing_response_log: Json
+          language: string
           logo_url: string | null
+          notif_deal_stage_app: boolean
+          notif_deal_stage_email: boolean
+          notif_digest_app: boolean
+          notif_digest_email: boolean
+          notif_new_lead_app: boolean
+          notif_new_lead_email: boolean
+          notif_sla_app: boolean
+          notif_sla_email: boolean
           time_zone: string
+          timezone: string
           updated_at: string
         }
         Insert: {
+          assignment_strategy?: string
           company_address?: string | null
           company_email?: string | null
           company_name?: string
           company_phone?: string | null
           created_at?: string
+          crm_name?: string
+          date_format?: string
           default_currency?: string
           email_api_key_masked?: string
+          email_provider?: string
+          from_email?: string
+          from_name?: string
           id?: string
           landing_api_key?: string
           landing_last_test_at?: string | null
           landing_last_test_status?: string | null
           landing_response_log?: Json
+          language?: string
           logo_url?: string | null
+          notif_deal_stage_app?: boolean
+          notif_deal_stage_email?: boolean
+          notif_digest_app?: boolean
+          notif_digest_email?: boolean
+          notif_new_lead_app?: boolean
+          notif_new_lead_email?: boolean
+          notif_sla_app?: boolean
+          notif_sla_email?: boolean
           time_zone?: string
+          timezone?: string
           updated_at?: string
         }
         Update: {
+          assignment_strategy?: string
           company_address?: string | null
           company_email?: string | null
           company_name?: string
           company_phone?: string | null
           created_at?: string
+          crm_name?: string
+          date_format?: string
           default_currency?: string
           email_api_key_masked?: string
+          email_provider?: string
+          from_email?: string
+          from_name?: string
           id?: string
           landing_api_key?: string
           landing_last_test_at?: string | null
           landing_last_test_status?: string | null
           landing_response_log?: Json
+          language?: string
           logo_url?: string | null
+          notif_deal_stage_app?: boolean
+          notif_deal_stage_email?: boolean
+          notif_digest_app?: boolean
+          notif_digest_email?: boolean
+          notif_new_lead_app?: boolean
+          notif_new_lead_email?: boolean
+          notif_sla_app?: boolean
+          notif_sla_email?: boolean
           time_zone?: string
+          timezone?: string
           updated_at?: string
         }
         Relationships: []
