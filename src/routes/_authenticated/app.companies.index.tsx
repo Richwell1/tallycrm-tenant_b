@@ -586,14 +586,6 @@ function Tags({ tags }: { tags: string[] }) {
   );
 }
 
-function FilterChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-2 py-1 text-xs font-semibold text-primary">
-      {children}
-      <span className="material-symbols-outlined text-[14px]">close</span>
-    </span>
-  );
-}
 
 function IconLine({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
