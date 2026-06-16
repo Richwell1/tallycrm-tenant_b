@@ -491,14 +491,6 @@ function ConfirmDelete({
   );
 }
 
-function ToolbarPill({ icon, children }: { icon: string; children: React.ReactNode }) {
-  return (
-    <button className="flex h-[38px] items-center gap-2 rounded-lg border border-border bg-card px-4 text-sm font-semibold text-text-secondary shadow-[var(--shadow-xs)] transition-colors hover:bg-muted">
-      <span className="material-symbols-outlined">{icon}</span>
-      {children}
-    </button>
-  );
-}
 
 function TableHead({
   children,
