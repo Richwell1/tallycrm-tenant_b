@@ -62,20 +62,6 @@ function LeadsIndex() {
         count={leads?.length}
         actions={
           <>
-            <div className="mr-2 flex overflow-hidden rounded-lg border border-border bg-surface text-[12px] font-semibold">
-              {(["kanban", "table"] as View[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-3 py-2 ${view === v ? "bg-primary text-primary-foreground" : "text-text-secondary hover:bg-surface-hover"}`}
-                >
-                  <span className="material-symbols-outlined text-[16px] align-middle">
-                    {v === "kanban" ? "view_kanban" : "table_rows"}
-                  </span>
-                  <span className="ml-1.5">{v === "kanban" ? "Kanban" : "Table"}</span>
-                </button>
-              ))}
-            </div>
             <ToolbarButton icon="refresh" onClick={() => refetch?.()}>
               Refresh
             </ToolbarButton>
@@ -86,53 +72,40 @@ function LeadsIndex() {
         }
       />
 
-      <div className="mb-6 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-[var(--shadow-xs)]">
-        <div className="relative min-w-[260px] flex-1">
-          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
-            search
-          </span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by name or company..."
-            className="h-[38px] w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-        <select
-          className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "all")}
-        >
-          <option value="all">Status: All</option>
-          {LEAD_STATUSES.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <select
-          className="h-[38px] min-w-[150px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-        >
-          <option value="all">Source: All</option>
-          {sourceOptions.map((source) => (
-            <option key={source} value={source}>
-              {source}
-            </option>
-          ))}
-        </select>
-        <select
-          className="h-[38px] min-w-[170px] rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as LeadSort)}
-        >
-          <option value="recent">Sort: Recently created</option>
-          <option value="name">Sort: Name</option>
-          <option value="value">Sort: Estimated value</option>
-        </select>
-      </div>
+      <CrmToolbar<View>
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Filter by name or company..."
+        view={view}
+        onViewChange={setView}
+        viewOptions={[
+          { value: "kanban", icon: "view_kanban", label: "Kanban" },
+          { value: "table", icon: "table_rows", label: "Table" },
+        ]}
+        filters={[
+          {
+            label: "Status",
+            value: statusFilter,
+            onChange: (v) => setStatusFilter(v as LeadStatus | "all"),
+            options: LEAD_STATUSES.map((s) => ({ value: s.id, label: s.label })),
+          },
+          {
+            label: "Source",
+            value: sourceFilter,
+            onChange: setSourceFilter,
+            options: sourceOptions.map((s) => ({ value: s, label: s })),
+          },
+        ]}
+        sort={{
+          value: sortKey,
+          onChange: (v) => setSortKey(v as LeadSort),
+          options: [
+            { value: "recent", label: "Recently created" },
+            { value: "name", label: "Name" },
+            { value: "value", label: "Estimated value" },
+          ],
+        }}
+      />
 
       {isLoading ? (
         <TableSkeleton rows={6} />
