@@ -326,7 +326,6 @@ function DealCard({
   );
 }
 
-
 function dateRank(value: string | null | undefined) {
   return value ? new Date(value).getTime() : 0;
 }

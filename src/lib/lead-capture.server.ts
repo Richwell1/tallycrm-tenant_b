@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const MAX_CAPTURE_BYTES = 16 * 1024;
+
 const payloadSchema = z.object({
   first_name: z.string().trim().min(1).max(80),
   last_name: z.string().trim().min(1).max(80),
@@ -12,13 +14,45 @@ const payloadSchema = z.object({
 
 type CapturePayload = z.infer<typeof payloadSchema>;
 
+function getAllowedOrigins() {
+  return (process.env.LEAD_CAPTURE_ALLOWED_ORIGINS ?? process.env.PUBLIC_SITE_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function isTrustedSourceOrigin(request: Request, sourceOrigin: string) {
+  let sourceUrl: URL;
+  try {
+    sourceUrl = new URL(sourceOrigin);
+  } catch {
+    return false;
+  }
+
+  const requestUrl = new URL(request.url);
+  if (sourceUrl.origin === requestUrl.origin) return true;
+
+  if (process.env.NODE_ENV !== "production") {
+    const localhostHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    if (localhostHosts.has(sourceUrl.hostname)) return true;
+  }
+
+  return getAllowedOrigins().some((allowedOrigin) => allowedOrigin === sourceUrl.origin);
+}
+
+function getCorsOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && isTrustedSourceOrigin(request, origin)) return origin;
+  return new URL(request.url).origin;
+}
+
 function securityHeaders(request: Request) {
-  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   return {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": getCorsOrigin(request),
     Vary: "Origin",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Cache-Control": "no-store",
   };
 }
 
@@ -73,19 +107,14 @@ export async function handleLeadCapturePost(request: Request) {
 async function insertLandingLead(request: Request, data: CapturePayload) {
   const { createClient } = await import("@supabase/supabase-js");
 
-  const SUPABASE_URL =
-    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY =
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const AUTOMATION_DISPATCH_SECRET = process.env.AUTOMATION_DISPATCH_SECRET;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     console.error("[lead-capture] Missing Supabase publishable env vars");
-    return json(
-      request,
-      { error: "Backend not configured", code: "config_missing" },
-      500,
-    );
+    return json(request, { error: "Backend not configured", code: "config_missing" }, 500);
   }
 
   const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -105,33 +134,53 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
   });
 
   if (error || !leadId) {
-    console.error("[lead-capture] RPC failed", error);
-    return json(
-      request,
-      { error: "Could not save lead", code: "insert_failed" },
-      500,
-    );
+    console.error("[lead-capture] RPC failed", sanitizeLogValue(error));
+    return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
   }
 
   // Fire-and-forget: trigger the email dispatcher so the queued
   // confirmation email is sent without waiting for a cron tick.
   // Failures here must NOT block the visitor's success response.
-  try {
-    const fnUrl = `${SUPABASE_URL}/functions/v1/send-automation-email`;
-    void fetch(fnUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: "{}",
-    }).catch((e) => console.error("[lead-capture] dispatcher trigger failed", e));
-  } catch (e) {
-    console.error("[lead-capture] dispatcher trigger threw", e);
-  }
+  void triggerEmailDispatcher(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
+    leadId,
+    AUTOMATION_DISPATCH_SECRET,
+  );
 
   return json(request, { ok: true, lead_id: leadId }, 200);
+}
+
+async function triggerEmailDispatcher(
+  supabaseUrl: string,
+  supabasePublishableKey: string,
+  leadId: string,
+  automationDispatchSecret?: string,
+) {
+  if (!automationDispatchSecret) {
+    console.warn("[lead-capture] Email dispatcher secret not configured; email remains queued");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-automation-email`, {
+      method: "POST",
+      headers: {
+        apikey: supabasePublishableKey,
+        authorization: `Bearer ${supabasePublishableKey}`,
+        "content-type": "application/json",
+        "x-dispatch-secret": automationDispatchSecret,
+      },
+      body: JSON.stringify({ related_entity: "lead", related_entity_id: leadId }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn("[lead-capture] Email dispatcher failed", res.status, sanitizeLogValue(body));
+    }
+  } catch (err) {
+    console.warn("[lead-capture] Email dispatcher unavailable", sanitizeLogValue(err));
+  }
 }
 
 function getVisitorCountry(request: Request) {
@@ -145,6 +194,13 @@ function getVisitorCountry(request: Request) {
 }
 
 function validatePublicPost(request: Request) {
+  if (request.method !== "POST") {
+    return {
+      status: 405,
+      body: { error: "Method not allowed", code: "method_not_allowed" },
+    };
+  }
+
   const url = new URL(request.url);
   const forwardedProto = request.headers.get("x-forwarded-proto");
   const isHttps = url.protocol === "https:" || forwardedProto === "https";
@@ -155,24 +211,34 @@ function validatePublicPost(request: Request) {
     };
   }
 
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return {
+      status: 415,
+      body: { error: "JSON content is required", code: "unsupported_media_type" },
+    };
+  }
+
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_CAPTURE_BYTES) {
+    return {
+      status: 413,
+      body: { error: "Submission is too large", code: "payload_too_large" },
+    };
+  }
+
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
   const sourceOrigin = origin ?? (referer ? new URL(referer).origin : null);
+  if (process.env.NODE_ENV === "production" && !sourceOrigin) {
+    return {
+      status: 403,
+      body: { error: "Submission source is required", code: "csrf" },
+    };
+  }
+
   if (sourceOrigin) {
-    let sourceHost: string;
-    try {
-      sourceHost = new URL(sourceOrigin).hostname;
-    } catch {
-      return {
-        status: 403,
-        body: { error: "Cross-site submission blocked", code: "csrf" },
-      };
-    }
-    const expectedHost = url.hostname;
-    const allowedSuffixes = [".lovable.app", ".lovableproject.com", ".lovable.dev"];
-    const isSameHost = sourceHost === expectedHost;
-    const isAllowedLovable = allowedSuffixes.some((s) => sourceHost.endsWith(s));
-    if (!isSameHost && !isAllowedLovable) {
+    if (!isTrustedSourceOrigin(request, sourceOrigin)) {
       return {
         status: 403,
         body: { error: "Cross-site submission blocked", code: "csrf" },
@@ -181,4 +247,10 @@ function validatePublicPost(request: Request) {
   }
 
   return null;
+}
+
+function sanitizeLogValue(value: unknown) {
+  return String(value instanceof Error ? value.message : value)
+    .replace(/[A-Za-z0-9_-]{24,}/g, "[redacted]")
+    .slice(0, 240);
 }

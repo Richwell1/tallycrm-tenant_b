@@ -38,7 +38,10 @@ interface TableSkeletonProps extends SkeletonProps {
 export function TableSkeleton({ rows = 6, columns = 5, className }: TableSkeletonProps) {
   return (
     <div className={cn("overflow-hidden rounded-xl border border-border bg-surface", className)}>
-      <div className="grid border-b border-border bg-primary-light/40 px-4 py-3" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+      <div
+        className="grid border-b border-border bg-primary-light/40 px-4 py-3"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-3 w-2/3" />
         ))}
@@ -68,18 +71,10 @@ export function StatCardSkeleton() {
   );
 }
 
-export function GridSkeleton({
-  count = 8,
-  className,
-}: {
-  count?: number;
-  className?: string;
-}) {
+export function GridSkeleton({ count = 8, className }: { count?: number; className?: string }) {
   return (
     <div
-      className={
-        className ?? "grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      }
+      className={className ?? "grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
     >
       {Array.from({ length: count }).map((_, i) => (
         <CardSkeleton key={i} />

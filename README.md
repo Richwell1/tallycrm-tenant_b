@@ -35,6 +35,7 @@ write-only capture path. Full product/requirements specs are in [`docs/`](docs) 
 ## Key features
 
 **Landing page & lead capture**
+
 - Public marketing page (hero, features, editions, industries, FAQ, testimonials) at `/`.
 - Demo-request form with client-side validation and a honeypot field, posting to a server route
   that validates again and writes through a Postgres RPC (no direct table access from the public
@@ -43,10 +44,11 @@ write-only capture path. Full product/requirements specs are in [`docs/`](docs) 
   a queued confirmation email are created in the same transaction as the lead.
 
 **Auth & 2FA**
+
 - Supabase Auth (email/password) plus mandatory TOTP/email-OTP MFA. The `_authenticated` route
   guard checks the session's Authenticator Assurance Level (AAL) on every load and redirects to
   `/mfa` until AAL2 is satisfied — CRM data is not reachable on an AAL1-only session.
-- *Planned* (tracked open in `docs/CHECKLIST.md` §1): forced enrollment on first login with no
+- _Planned_ (tracked open in `docs/CHECKLIST.md` §1): forced enrollment on first login with no
   skip path, 8h inactivity session expiry, admin session revocation, and a first-login onboarding
   wizard.
 
@@ -66,12 +68,12 @@ with stage/value history, Close Won (with confetti) and Close Lost (reason requi
 **Activities** — table with type filters, slide-over detail panel, lifecycle states
 (Pending → In Progress → Completed).
 
-**Tasks** — grouped-by-date list, Add Task modal, quick-complete. *Planned*: reminder dispatch to
+**Tasks** — grouped-by-date list, Add Task modal, quick-complete. _Planned_: reminder dispatch to
 in-app/email (the cron job exists in the DB — see [Database & Supabase setup](#database--supabase-setup)
 — but is not yet wired to a notification channel end-to-end).
 
 **Dashboard** — pipeline funnel, lead-source donut, recent activity feed, my-tasks list.
-*Planned*: the 4 headline KPI count-up cards and role-based dashboard scoping (§12).
+_Planned_: the 4 headline KPI count-up cards and role-based dashboard scoping (§12).
 
 **Analytics** (Admin/Manager) — period selector, pipeline-health KPIs, revenue chart, conversion
 funnel, rep leaderboard, lead-source/win-loss breakdowns, per-rep report.
@@ -89,17 +91,17 @@ Edge Function that drains a queue table and sends the actual emails via Resend. 
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Framework | [TanStack Start](https://tanstack.com/start) `^1.167` (file-based routing via `@tanstack/react-router`, SSR via Nitro) |
-| UI | React `^19.2`, TypeScript `^5.8` |
-| Build | Vite `^7.3` |
-| Styling | Tailwind CSS `^4.2` + [shadcn/ui](https://ui.shadcn.com) (Radix UI primitives) |
-| Data fetching | `@tanstack/react-query` `^5.83` |
-| Forms/validation | `react-hook-form` + `zod` |
-| Backend | [Supabase](https://supabase.com) — Postgres, Auth (incl. MFA), Row-Level Security, Edge Functions (Deno) |
-| Outbound email | [Resend](https://resend.com) |
-| CI | GitHub Actions (lint → security checks → build) |
+| Layer            | Choice                                                                                                                 |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Framework        | [TanStack Start](https://tanstack.com/start) `^1.167` (file-based routing via `@tanstack/react-router`, SSR via Nitro) |
+| UI               | React `^19.2`, TypeScript `^5.8`                                                                                       |
+| Build            | Vite `^7.3`                                                                                                            |
+| Styling          | Tailwind CSS `^4.2` + [shadcn/ui](https://ui.shadcn.com) (Radix UI primitives)                                         |
+| Data fetching    | `@tanstack/react-query` `^5.83`                                                                                        |
+| Forms/validation | `react-hook-form` + `zod`                                                                                              |
+| Backend          | [Supabase](https://supabase.com) — Postgres, Auth (incl. MFA), Row-Level Security, Edge Functions (Deno)               |
+| Outbound email   | [Resend](https://resend.com)                                                                                           |
+| CI               | GitHub Actions (lint → security checks → build)                                                                        |
 
 Exact dependency versions are in [`package.json`](package.json).
 
@@ -133,6 +135,7 @@ separate deployment.
 ```
 
 Key points:
+
 - **RLS is the authorization boundary for everything authenticated.** The React app does not
   itself decide what a Rep can see — every table has Row-Level Security policies that scope rows
   by `assigned_to`/ownership and role (see migration `20260616120000_feature_2_security_rls_hardening.sql`).
@@ -158,15 +161,15 @@ Key points:
 
 Three roles, defined in the `app_role` enum and assigned via `user_roles`:
 
-| Capability | Sales Rep | Sales Manager | Admin |
-|---|---|---|---|
-| View own/assigned leads, contacts, companies, deals | ✅ | ✅ | ✅ |
-| View **all** records (team-wide) | ❌ | ✅ | ✅ |
-| Create/edit own records | ✅ | ✅ | ✅ |
-| Delete any record | ❌ | ✅ | ✅ |
-| Manage users, roles, invites | ❌ | ❌ | ✅ |
-| Settings (pipeline, automations, email, audit log, landing-page integration) | ❌ | ❌ | ✅ |
-| Mandatory MFA to access `/app/*` | ✅ | ✅ | ✅ |
+| Capability                                                                   | Sales Rep | Sales Manager | Admin |
+| ---------------------------------------------------------------------------- | --------- | ------------- | ----- |
+| View own/assigned leads, contacts, companies, deals                          | ✅        | ✅            | ✅    |
+| View **all** records (team-wide)                                             | ❌        | ✅            | ✅    |
+| Create/edit own records                                                      | ✅        | ✅            | ✅    |
+| Delete any record                                                            | ❌        | ✅            | ✅    |
+| Manage users, roles, invites                                                 | ❌        | ❌            | ✅    |
+| Settings (pipeline, automations, email, audit log, landing-page integration) | ❌        | ❌            | ✅    |
+| Mandatory MFA to access `/app/*`                                             | ✅        | ✅            | ✅    |
 
 All three roles require MFA verification (AAL2) before any `/app/*` route resolves — there is no
 role that can bypass it. See [Auth & 2FA](#key-features) above for current enforcement scope.
@@ -222,26 +225,26 @@ Every variable below is read somewhere in the code (verified against `src/`,
 `.env.example` to `.env` and fill these in — **never commit `.env`** (it's gitignored; only
 `.env.example` should be tracked).
 
-| Variable | Required? | Where to get it | Example |
-|---|---|---|---|
-| `SUPABASE_URL` | Yes (server) | Supabase dashboard → Project Settings → API | `https://xxxx.supabase.co` |
-| `SUPABASE_PUBLISHABLE_KEY` | Yes (server) | Supabase dashboard → Project Settings → API → Project API keys (`publishable`/`anon` key) | `sb_publishable_...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes (server-only secret) | Supabase dashboard → Project Settings → API → `service_role` key. **Never expose client-side.** | `sb_secret_...` |
-| `VITE_SUPABASE_URL` | Yes (client) | Same as `SUPABASE_URL`; exposed to the browser bundle | `https://xxxx.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes (client) | Same as `SUPABASE_PUBLISHABLE_KEY`; safe to expose | `sb_publishable_...` |
-| `VITE_SUPABASE_PROJECT_ID` | Optional | Supabase dashboard → Project Settings → General | `xxxx` |
-| `SUPABASE_PROJECT_ID` | Optional | Same as above, server-side copy | `xxxx` |
-| `AUTOMATION_DISPATCH_SECRET` | Yes (server + Edge Function secret) | Generate your own (e.g. `openssl rand -hex 32`). Must be set to the **same value** in the app server env and as a Supabase Edge Function secret. | `8f2a1c...` |
-| `RESEND_API_KEY` | Yes, to actually send email (server/Edge Function secret) | [resend.com](https://resend.com) → API Keys | `re_...` |
-| `LANDING_FROM_EMAIL` | Recommended | A verified sender on your Resend domain | `demo@yourdomain.com` |
-| `AUTOMATION_FROM_EMAIL` | Optional (fallback if `LANDING_FROM_EMAIL` unset) | Same as above | `automations@yourdomain.com` |
-| `PARTNER_NAME` | Optional | Free text, used in the confirmation email | `Acme Tally Partners` |
-| `PARTNER_PHONE` | Optional | Free text | `+233 000 000 000` |
-| `PARTNER_EMAIL` | Optional | Free text | `hello@yourdomain.com` |
-| `SALES_NOTIFY_BCC` | Optional | An internal inbox to BCC on outbound automation emails | `sales@yourdomain.com` |
-| `EMAIL_ENABLED` | Optional (default `true` in `.env.example`) | Safe-launch flag — see [Lead-capture & email flow](#lead-capture--email-flow) | `true` |
-| `LEAD_CAPTURE_ALLOWED_ORIGINS` | Optional | Comma-separated origins, only needed if the landing page is ever served from a **different** origin than this app | `https://landing.example.com` |
-| `PUBLIC_SITE_ORIGINS` | Optional | Same purpose/format as above (fallback name) | `https://landing.example.com` |
+| Variable                        | Required?                                                 | Where to get it                                                                                                                                  | Example                       |
+| ------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| `SUPABASE_URL`                  | Yes (server)                                              | Supabase dashboard → Project Settings → API                                                                                                      | `https://xxxx.supabase.co`    |
+| `SUPABASE_PUBLISHABLE_KEY`      | Yes (server)                                              | Supabase dashboard → Project Settings → API → Project API keys (`publishable`/`anon` key)                                                        | `sb_publishable_...`          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Yes (server-only secret)                                  | Supabase dashboard → Project Settings → API → `service_role` key. **Never expose client-side.**                                                  | `sb_secret_...`               |
+| `VITE_SUPABASE_URL`             | Yes (client)                                              | Same as `SUPABASE_URL`; exposed to the browser bundle                                                                                            | `https://xxxx.supabase.co`    |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes (client)                                              | Same as `SUPABASE_PUBLISHABLE_KEY`; safe to expose                                                                                               | `sb_publishable_...`          |
+| `VITE_SUPABASE_PROJECT_ID`      | Optional                                                  | Supabase dashboard → Project Settings → General                                                                                                  | `xxxx`                        |
+| `SUPABASE_PROJECT_ID`           | Optional                                                  | Same as above, server-side copy                                                                                                                  | `xxxx`                        |
+| `AUTOMATION_DISPATCH_SECRET`    | Yes (server + Edge Function secret)                       | Generate your own (e.g. `openssl rand -hex 32`). Must be set to the **same value** in the app server env and as a Supabase Edge Function secret. | `8f2a1c...`                   |
+| `RESEND_API_KEY`                | Yes, to actually send email (server/Edge Function secret) | [resend.com](https://resend.com) → API Keys                                                                                                      | `re_...`                      |
+| `LANDING_FROM_EMAIL`            | Recommended                                               | A verified sender on your Resend domain                                                                                                          | `demo@yourdomain.com`         |
+| `AUTOMATION_FROM_EMAIL`         | Optional (fallback if `LANDING_FROM_EMAIL` unset)         | Same as above                                                                                                                                    | `automations@yourdomain.com`  |
+| `PARTNER_NAME`                  | Optional                                                  | Free text, used in the confirmation email                                                                                                        | `Acme Tally Partners`         |
+| `PARTNER_PHONE`                 | Optional                                                  | Free text                                                                                                                                        | `+233 000 000 000`            |
+| `PARTNER_EMAIL`                 | Optional                                                  | Free text                                                                                                                                        | `hello@yourdomain.com`        |
+| `SALES_NOTIFY_BCC`              | Optional                                                  | An internal inbox to BCC on outbound automation emails                                                                                           | `sales@yourdomain.com`        |
+| `EMAIL_ENABLED`                 | Optional (default `true` in `.env.example`)               | Safe-launch flag — see [Lead-capture & email flow](#lead-capture--email-flow)                                                                    | `true`                        |
+| `LEAD_CAPTURE_ALLOWED_ORIGINS`  | Optional                                                  | Comma-separated origins, only needed if the landing page is ever served from a **different** origin than this app                                | `https://landing.example.com` |
+| `PUBLIC_SITE_ORIGINS`           | Optional                                                  | Same purpose/format as above (fallback name)                                                                                                     | `https://landing.example.com` |
 
 **Secrets — `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `AUTOMATION_DISPATCH_SECRET` — are
 server-side/Edge-Function-only.** Never add them to a `VITE_`-prefixed variable, never log them,
@@ -297,17 +300,17 @@ and never commit a real `.env`. `scripts/security-check.mjs` (run in CI) checks 
 
 From [`package.json`](package.json):
 
-| Script | Command | Purpose |
-|---|---|---|
-| `npm run dev` | `vite dev` | Start the dev server (CRM + landing page) |
-| `npm run build` | `vite build` | Production build |
-| `npm run build:dev` | `vite build --mode development` | Development-mode build |
-| `npm run preview` | `vite preview` | Preview a production build locally |
-| `npm run lint` | `eslint .` | Lint the codebase |
-| `npm run test` | `node scripts/security-check.mjs` | Security regression checks (see note below) |
-| `npm run test:ci` | `npm run test` | Alias used by CI |
-| `npm run ci` | `npm run lint && npm run test && npm run build` | Runs the full CI gate locally |
-| `npm run format` | `prettier --write .` | Format the codebase |
+| Script              | Command                                         | Purpose                                     |
+| ------------------- | ----------------------------------------------- | ------------------------------------------- |
+| `npm run dev`       | `vite dev`                                      | Start the dev server (CRM + landing page)   |
+| `npm run build`     | `vite build`                                    | Production build                            |
+| `npm run build:dev` | `vite build --mode development`                 | Development-mode build                      |
+| `npm run preview`   | `vite preview`                                  | Preview a production build locally          |
+| `npm run lint`      | `eslint .`                                      | Lint the codebase                           |
+| `npm run test`      | `node scripts/security-check.mjs`               | Security regression checks (see note below) |
+| `npm run test:ci`   | `npm run test`                                  | Alias used by CI                            |
+| `npm run ci`        | `npm run lint && npm run test && npm run build` | Runs the full CI gate locally               |
+| `npm run format`    | `prettier --write .`                            | Format the codebase                         |
 
 **Note:** there is no unit/integration test framework installed (no Jest/Vitest). `npm run test`
 runs `scripts/security-check.mjs`, which is a static regression check (no `.env` tracked,
@@ -444,17 +447,17 @@ Restated from `docs/CHECKLIST.md` §21 ("Final acceptance"), checked against the
 state. **Met** = implemented and traceable in code/migrations. **Partial** = some of the
 requirement is built. **Planned** = tracked in `docs/CHECKLIST.md` but not yet implemented.
 
-| Criterion | Status |
-|---|---|
-| Visitor form → lead on dashboard ≤10s + email ≤60s | **Partial** — lead save is synchronous/instant; email send depends on Resend/Edge Function config being present (see [Lead-capture & email flow](#lead-capture--email-flow)); no automated latency test exists |
-| 3 users with correct matrix permissions | **Partial** — role model + RLS policies for Admin/Manager/Rep are implemented and enforced server-side; no seed script creates the 3 users automatically (manual setup, see [Database & Supabase setup](#database--supabase-setup)) |
-| 2FA enforced for all | **Partial** — AAL2 gate blocks `/app/*` until MFA is verified; forced first-login enrollment with no skip path, 8h session expiry, and admin session revocation are still open per `CHECKLIST.md` §1 |
-| Lead→deal conversion creates linked contact+company atomically | **Met** — 3-step convert flow + `convert_lead_to_deal` RPC |
-| Deal moves through all stages, each logged | **Met** — `deal_stage_history` trigger logs every transition |
-| Close Won/Lost works; Lost requires reason | **Met** |
-| Automations fire end-to-end and are audited | **Met** — trigger-based stage automations + `pg_cron` SLA/digest/re-engagement jobs, all writing to `audit_log` |
-| Light extras (tasks, dashboard, search/filter) work | **Partial** — tasks and dashboard widgets work; task reminder *dispatch* (notifying someone) and the 4 dashboard KPI count-up cards are open per `CHECKLIST.md` §10/§12 |
-| App deploys from `main` without errors | **Met** — CI builds on every push to `main`; no committed automated deploy step (see [Deployment](#deployment)) |
+| Criterion                                                      | Status                                                                                                                                                                                                                              |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Visitor form → lead on dashboard ≤10s + email ≤60s             | **Partial** — lead save is synchronous/instant; email send depends on Resend/Edge Function config being present (see [Lead-capture & email flow](#lead-capture--email-flow)); no automated latency test exists                      |
+| 3 users with correct matrix permissions                        | **Partial** — role model + RLS policies for Admin/Manager/Rep are implemented and enforced server-side; no seed script creates the 3 users automatically (manual setup, see [Database & Supabase setup](#database--supabase-setup)) |
+| 2FA enforced for all                                           | **Partial** — AAL2 gate blocks `/app/*` until MFA is verified; forced first-login enrollment with no skip path, 8h session expiry, and admin session revocation are still open per `CHECKLIST.md` §1                                |
+| Lead→deal conversion creates linked contact+company atomically | **Met** — 3-step convert flow + `convert_lead_to_deal` RPC                                                                                                                                                                          |
+| Deal moves through all stages, each logged                     | **Met** — `deal_stage_history` trigger logs every transition                                                                                                                                                                        |
+| Close Won/Lost works; Lost requires reason                     | **Met**                                                                                                                                                                                                                             |
+| Automations fire end-to-end and are audited                    | **Met** — trigger-based stage automations + `pg_cron` SLA/digest/re-engagement jobs, all writing to `audit_log`                                                                                                                     |
+| Light extras (tasks, dashboard, search/filter) work            | **Partial** — tasks and dashboard widgets work; task reminder _dispatch_ (notifying someone) and the 4 dashboard KPI count-up cards are open per `CHECKLIST.md` §10/§12                                                             |
+| App deploys from `main` without errors                         | **Met** — CI builds on every push to `main`; no committed automated deploy step (see [Deployment](#deployment))                                                                                                                     |
 
 For the full, granular section-by-section checklist (21 sections), see
 [`docs/CHECKLIST.md`](docs/CHECKLIST.md) directly — it's the maintained source of truth and is

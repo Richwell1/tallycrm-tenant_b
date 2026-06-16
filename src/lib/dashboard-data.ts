@@ -25,6 +25,21 @@ export interface DashboardKpis {
   conversionRate: number;
 }
 
+type DashboardDealStage = {
+  is_closed?: boolean | null;
+  is_won?: boolean | null;
+};
+
+type DashboardDealRow = {
+  value: number | null;
+  actual_value?: number | null;
+  stage?: DashboardDealStage | DashboardDealStage[] | null;
+};
+
+function firstStage(stage: DashboardDealRow["stage"]) {
+  return Array.isArray(stage) ? stage[0] : stage;
+}
+
 export function useDashboardKpis() {
   return useQuery<DashboardKpis>({
     queryKey: ["dashboard", "kpis"],
@@ -70,15 +85,15 @@ export function useDashboardKpis() {
             .is("deleted_at", null),
         ]);
 
-      const openDeals = (allDealsRes.data ?? []).filter((d: any) => !d.stage?.is_closed);
-      const openDealsValue = openDeals.reduce(
-        (sum: number, d: any) => sum + Number(d.value ?? 0),
-        0,
-      );
+      const allDeals = (allDealsRes.data ?? []) as DashboardDealRow[];
+      const wonDeals = (wonRes.data ?? []) as DashboardDealRow[];
 
-      const won = (wonRes.data ?? []).filter((d: any) => d.stage?.is_won);
+      const openDeals = allDeals.filter((d) => !firstStage(d.stage)?.is_closed);
+      const openDealsValue = openDeals.reduce((sum: number, d) => sum + Number(d.value ?? 0), 0);
+
+      const won = wonDeals.filter((d) => firstStage(d.stage)?.is_won);
       const closedWonValue = won.reduce(
-        (sum: number, d: any) => sum + Number(d.actual_value ?? d.value ?? 0),
+        (sum: number, d) => sum + Number(d.actual_value ?? d.value ?? 0),
         0,
       );
 

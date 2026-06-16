@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useModalA11y } from "@/components/common/use-modal-a11y";
-import {
-  type ContactSummary,
-  useContactFormOptions,
-  useUpdateContact,
-} from "@/lib/contacts-data";
+import { type ContactSummary, useContactFormOptions, useUpdateContact } from "@/lib/contacts-data";
 
 interface EditContactModalProps {
   contact: ContactSummary;

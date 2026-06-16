@@ -54,14 +54,28 @@ function RepAnalyticsPage() {
   if (isLoading)
     return (
       <>
-        <PageHeader title="Rep Performance Deep-Dive" breadcrumbs={[{ label: "CRM" }, { label: "Analytics", to: "/app/analytics" }, { label: "Loading..." }]} />
+        <PageHeader
+          title="Rep Performance Deep-Dive"
+          breadcrumbs={[
+            { label: "CRM" },
+            { label: "Analytics", to: "/app/analytics" },
+            { label: "Loading..." },
+          ]}
+        />
         <TableSkeleton rows={8} />
       </>
     );
   if (isError || !rep)
     return (
       <>
-        <PageHeader title="Rep Performance Deep-Dive" breadcrumbs={[{ label: "CRM" }, { label: "Analytics", to: "/app/analytics" }, { label: "Error" }]} />
+        <PageHeader
+          title="Rep Performance Deep-Dive"
+          breadcrumbs={[
+            { label: "CRM" },
+            { label: "Analytics", to: "/app/analytics" },
+            { label: "Error" },
+          ]}
+        />
         <ErrorState description={(error as Error)?.message ?? "Rep not found"} />
       </>
     );
@@ -425,7 +439,9 @@ function RecentOutcomes({ repId }: { repId: string }) {
       bodyClassName="overflow-x-auto p-0"
     >
       {outcomes.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-text-muted">No deals assigned to this rep</p>
+        <p className="px-5 py-8 text-center text-sm text-text-muted">
+          No deals assigned to this rep
+        </p>
       ) : (
         <table className="w-full min-w-[760px] text-left">
           <thead className="bg-primary-light text-[11px] uppercase tracking-wider text-text-secondary">

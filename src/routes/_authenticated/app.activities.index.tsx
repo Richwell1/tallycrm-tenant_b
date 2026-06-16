@@ -123,7 +123,6 @@ function ActivitiesIndex() {
         />
 
         <section className="overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-xs)]">
-
           {isLoading ? (
             <TableSkeleton rows={8} columns={8} />
           ) : isError ? (

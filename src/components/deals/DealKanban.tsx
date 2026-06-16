@@ -6,7 +6,12 @@ import { formatCurrency } from "@/lib/format";
 import type { DealRow } from "@/lib/deals-data";
 
 type DealWithRefs = DealRow & {
-  primary_contact: { id: string; first_name: string; last_name: string; email: string | null } | null;
+  primary_contact: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string | null;
+  } | null;
   company: { id: string; name: string } | null;
 };
 
@@ -27,8 +32,9 @@ export function DealKanban({ deals }: { deals: DealWithRefs[] }) {
       { dealId: id, stageId },
       {
         onSuccess: () => toast.success(`Moved to ${stage?.name}`),
-        onError: (err) => toast.error("Could not move deal", { description: (err as Error).message }),
-      }
+        onError: (err) =>
+          toast.error("Could not move deal", { description: (err as Error).message }),
+      },
     );
   }
 
@@ -54,10 +60,7 @@ export function DealKanban({ deals }: { deals: DealWithRefs[] }) {
           >
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: col.color }}
-                />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
                 <span className="text-sm font-bold">{col.name}</span>
               </div>
               <span className="text-xs font-semibold text-text-secondary">{items.length}</span>
@@ -83,7 +86,7 @@ export function DealKanban({ deals }: { deals: DealWithRefs[] }) {
 
 function DealCard({ deal, stageColor }: { deal: DealWithRefs; stageColor: string }) {
   const days = Math.floor(
-    (Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24),
   );
   return (
     <Link

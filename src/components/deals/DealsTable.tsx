@@ -3,7 +3,12 @@ import type { DealRow } from "@/lib/deals-data";
 import { formatCurrency } from "@/lib/format";
 
 type DealWithRefs = DealRow & {
-  primary_contact: { id: string; first_name: string; last_name: string; email: string | null } | null;
+  primary_contact: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string | null;
+  } | null;
   company: { id: string; name: string } | null;
 };
 
@@ -40,9 +45,7 @@ export function DealsTable({ deals }: { deals: DealWithRefs[] }) {
                 {formatCurrency(Number(d.value), d.currency)}
               </td>
               <td className="px-4 py-3 text-text-secondary">{d.probability}%</td>
-              <td className="px-4 py-3 text-text-secondary">
-                {d.expected_close_date ?? "—"}
-              </td>
+              <td className="px-4 py-3 text-text-secondary">{d.expected_close_date ?? "—"}</td>
               <td className="px-4 py-3 text-text-muted">
                 {new Date(d.created_at).toLocaleDateString()}
               </td>

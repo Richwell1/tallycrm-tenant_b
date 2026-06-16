@@ -7,11 +7,14 @@
 ---
 
 ## 0. Setup
+
 - Init Vite + React + TS + Tailwind + shadcn/ui. Connect Supabase project. Add `.env.example` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, server-only `RESEND_API_KEY`, `SERVICE_ROLE_KEY`).
 - Routing: public `/` (landing), `/login`, `/2fa`, `/onboarding`; protected `/app/*` behind auth+MFA guard.
 
 ## 1. Database schema (Postgres)
+
 Tables (all with `id uuid pk default gen_random_uuid()`, `created_at`, `updated_at`, `deleted_at`, `owner_id` where ownable):
+
 - `profiles` (id→auth.users, full_name, avatar_url, role enum `admin|manager|rep`, status, last_login)
 - `companies` (name unique, industry, email, phone, website, linkedin, address, city, country, rating int, notes, account_manager_id)
 - `contacts` (first_name, last_name, email unique, phone, job_title, company_id→companies, source, tags text[], assigned_to)
@@ -28,6 +31,7 @@ Tables (all with `id uuid pk default gen_random_uuid()`, `created_at`, `updated_
 - `notifications` (user_id, type, title, body, entity, entity_id, read bool, created_at)
 
 ## 2. RLS policies (enable on every table)
+
 - **profiles:** user reads/updates own; admin all.
 - **Ownable tables (contacts/deals/leads/tasks):**
   - `admin` + `manager` → full select/insert/update; **delete** allowed.
@@ -39,12 +43,14 @@ Tables (all with `id uuid pk default gen_random_uuid()`, `created_at`, `updated_
 - Test: a `rep` selecting another user's deal returns 0 rows; delete returns error.
 
 ## 3. Auth + mandatory 2FA
+
 - Supabase Auth email/password. Enable **MFA (TOTP)**; support **email OTP** fallback.
 - Route guard: session must be **AAL2** (MFA-verified) to enter `/app/*`. If authenticated but no MFA factor → force `/2fa` enrollment (screen 9B), cannot skip. If factor exists but session is AAL1 → `/2fa` verification (9C).
 - First login → onboarding wizard (9E) after MFA. Session expiry 8h. Admin can revoke sessions.
 - Seed 3 users: 1 `admin`, 1 `manager`, 1 `rep`, each must enroll 2FA on first login.
 
 ## 4. Edge Function `leads-capture` (public, write-only)
+
 ```
 POST /functions/v1/leads-capture
 1. Validate body (first_name, last_name, email required; email/phone format). Honeypot field check.
@@ -53,12 +59,15 @@ POST /functions/v1/leads-capture
 4. On success → Resend confirmation email to submitter; log email_status.
 5. Insert audit_log + system activity. Return {ok, leadId} or {error, code}.
 ```
+
 Use service role inside the function only. Never call Resend or expose keys from the browser.
 
 ## 4b. Automation engine (PRD §14)
+
 Rule model: trigger → conditions → actions, driven by `automation_rules` (data-driven, not hardcoded).
 
 **Synchronous (Postgres triggers/functions) — transactional with the record write:**
+
 - On `deals`/`leads` stage change → write `*_stage_history`, set probability to stage default, and INSERT the configured auto-task to the owner. Matrix:
   - Lead captured → task "Make first contact" +4h + notify + round-robin assign
   - Lead→Contacted → "Qualify lead (BANT)" +2d
@@ -72,6 +81,7 @@ Rule model: trigger → conditions → actions, driven by `automation_rules` (da
 - Every automated action → INSERT `audit_log` (actor = 'system').
 
 **Scheduled (pg_cron → SQL fn or Edge Function):**
+
 - Hourly **SLA monitor**: flag leads/deals past stage SLA → overdue/stale + escalate to Manager (notification).
 - **Reminder dispatch**: fire task reminders at due window.
 - **Daily digest** (morning): per-user email/in-app summary (today's tasks, overdue, new leads) via Edge Function + Resend.
@@ -81,8 +91,8 @@ Rule model: trigger → conditions → actions, driven by `automation_rules` (da
 
 **Notifications:** write to `notifications` table; topbar bell reads unread; optional email mirror per Settings toggles.
 
-
 Order — finish each before next:
+
 1. **Shell + components** — sidebar (role-aware nav, Settings admin-only), topbar, shared components.
 2. **Landing page** — hero/features/pricing/social proof + form → POST to `leads-capture`; thank-you + error states.
 3. **Auth** — login, 2FA enroll/verify, forgot/reset, onboarding.
@@ -100,6 +110,7 @@ Order — finish each before next:
 Every list: search/filter/sort within permitted scope. Every screen: empty/loading(skeleton)/error states. Kanban: optimistic move, revert + toast on failure. Destructive actions: confirm dialog (hidden for rep).
 
 ## 6. Acceptance gate (must all pass)
+
 1. Form submit → lead in CRM (source='Tally Landing Page') ≤10s + confirmation email ≤60s.
 2. 3 seeded users with correct matrix permissions.
 3. 2FA enforced for all; no data access pre-verification.
@@ -108,10 +119,11 @@ Every list: search/filter/sort within permitted scope. Every screen: empty/loadi
 6. Close Won/Lost works; Lost requires reason.
 7. RLS verified: rep cannot see/delete others' records.
 8. Tasks, dashboard metrics, search/filter work.
-10. **Automations fire:** new-lead assignment + "make first contact" task; each stage change auto-creates its task and sets probability; SLA breach escalates to Manager; Closed-Won/Lost create their follow-up/re-engagement tasks; every automated action hits the audit log.
-9. Clean clone builds via README; CI green; no secrets in repo.
+9. **Automations fire:** new-lead assignment + "make first contact" task; each stage change auto-creates its task and sets probability; SLA breach escalates to Manager; Closed-Won/Lost create their follow-up/re-engagement tasks; every automated action hits the audit log.
+10. Clean clone builds via README; CI green; no secrets in repo.
 
 ## 7. Then → GitHub → Claude Code
+
 Push via Lovable GitHub sync. In Claude Code: harden capture (server validation, spam/captcha, retries, email-fail handling), refactor to shared/typed components, add tests (incl. "submit creates lead + triggers email"), re-audit RLS + 2FA-cannot-bypass, add CONTRIBUTING + CI (lint+tests on PR). Merge via reviewed PRs.
 
-*End of plan.md · v2.0*
+_End of plan.md · v2.0_

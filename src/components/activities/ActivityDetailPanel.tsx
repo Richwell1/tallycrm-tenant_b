@@ -81,7 +81,9 @@ export function ActivityDetailPanel({ item, open, onOpenChange }: ActivityDetail
                   {typeLabel(item)}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-1 text-[11px] font-bold uppercase ${statusTone(item.status)}`}>
+                  <span
+                    className={`rounded-full px-2 py-1 text-[11px] font-bold uppercase ${statusTone(item.status)}`}
+                  >
                     {item.status.replace("_", " ")}
                   </span>
                   <span className="text-[11px] font-medium text-text-muted">

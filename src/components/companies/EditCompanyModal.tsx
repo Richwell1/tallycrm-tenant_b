@@ -2,11 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useModalA11y } from "@/components/common/use-modal-a11y";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  type CompanySummary,
-  useCompanyManagers,
-  useUpdateCompany,
-} from "@/lib/companies-data";
+import { type CompanySummary, useCompanyManagers, useUpdateCompany } from "@/lib/companies-data";
 
 interface EditCompanyModalProps {
   company: CompanySummary;

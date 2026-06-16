@@ -26,8 +26,9 @@ export const adminResetUserMfa = createServerFn({ method: "POST" })
     if (!roleRow) throw new Error("Forbidden: admin role required");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: factorsRes, error: listErr } =
-      await supabaseAdmin.auth.admin.mfa.listFactors({ userId: data.userId });
+    const { data: factorsRes, error: listErr } = await supabaseAdmin.auth.admin.mfa.listFactors({
+      userId: data.userId,
+    });
     if (listErr) throw listErr;
 
     let removed = 0;

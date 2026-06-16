@@ -140,7 +140,8 @@ function AnalyticsOverviewPage() {
 
 function KpiSection({ period }: { period: AnalyticsPeriod }) {
   const { data = [], isLoading, isError, error, refetch } = useAnalyticsKpis(period);
-  if (isLoading) return <GridSkeleton count={4} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4" />;
+  if (isLoading)
+    return <GridSkeleton count={4} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4" />;
   if (isError)
     return (
       <ErrorState
@@ -209,14 +210,23 @@ function RevenuePerformanceChart({ period }: { period: AnalyticsPeriod }) {
 
   if (isLoading)
     return (
-      <SectionCard title="Revenue Performance" description="Closed Won value vs monthly growth target">
+      <SectionCard
+        title="Revenue Performance"
+        description="Closed Won value vs monthly growth target"
+      >
         <TableSkeleton rows={5} columns={12} />
       </SectionCard>
     );
   if (isError)
     return (
-      <SectionCard title="Revenue Performance" description="Closed Won value vs monthly growth target">
-        <ErrorState description={(error as Error)?.message ?? "Could not load revenue data"} onRetry={() => refetch()} />
+      <SectionCard
+        title="Revenue Performance"
+        description="Closed Won value vs monthly growth target"
+      >
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load revenue data"}
+          onRetry={() => refetch()}
+        />
       </SectionCard>
     );
 
@@ -409,20 +419,36 @@ function ConversionFunnel() {
 
   if (isLoading)
     return (
-      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
+      <SectionCard
+        title="Sales Conversion Funnel"
+        description="Active movement through the canonical lead-to-deal stages"
+      >
         <TableSkeleton rows={1} columns={5} />
       </SectionCard>
     );
   if (isError)
     return (
-      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
-        <ErrorState description={(error as Error)?.message ?? "Could not load funnel"} onRetry={() => refetch()} />
+      <SectionCard
+        title="Sales Conversion Funnel"
+        description="Active movement through the canonical lead-to-deal stages"
+      >
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load funnel"}
+          onRetry={() => refetch()}
+        />
       </SectionCard>
     );
   if (stages.length === 0)
     return (
-      <SectionCard title="Sales Conversion Funnel" description="Active movement through the canonical lead-to-deal stages">
-        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">filter_alt</span>} title="No funnel data yet" description="Leads and deals will populate the funnel as activity is recorded." />
+      <SectionCard
+        title="Sales Conversion Funnel"
+        description="Active movement through the canonical lead-to-deal stages"
+      >
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">filter_alt</span>}
+          title="No funnel data yet"
+          description="Leads and deals will populate the funnel as activity is recorded."
+        />
       </SectionCard>
     );
 
@@ -476,13 +502,20 @@ function RepLeaderboard() {
   if (isError)
     return (
       <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
-        <ErrorState description={(error as Error)?.message ?? "Could not load leaderboard"} onRetry={() => refetch()} />
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load leaderboard"}
+          onRetry={() => refetch()}
+        />
       </SectionCard>
     );
   if (reps.length === 0)
     return (
       <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
-        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">leaderboard</span>} title="No rep data yet" description="Revenue data will appear here once deals are closed." />
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">leaderboard</span>}
+          title="No rep data yet"
+          description="Revenue data will appear here once deals are closed."
+        />
       </SectionCard>
     );
 
@@ -591,7 +624,10 @@ function WinLossAnalysis({ period }: { period: AnalyticsPeriod }) {
   if (isError)
     return (
       <SectionCard title="Win/Loss Analysis" description="Top reasons for lost opportunities">
-        <ErrorState description={(error as Error)?.message ?? "Could not load data"} onRetry={() => refetch()} />
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load data"}
+          onRetry={() => refetch()}
+        />
       </SectionCard>
     );
 
@@ -635,9 +671,7 @@ function WinLossAnalysis({ period }: { period: AnalyticsPeriod }) {
             )}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-semibold">
-              {winRateKpi?.value ?? "—"}
-            </span>
+            <span className="text-xl font-semibold">{winRateKpi?.value ?? "—"}</span>
             <span className="text-[12px] font-semibold text-text-muted">Win Rate</span>
           </div>
         </div>
@@ -672,20 +706,36 @@ function LeadSourceEfficiency() {
 
   if (isLoading)
     return (
-      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
+      <SectionCard
+        title="Lead Source Efficiency"
+        description="Volume vs conversion rate per channel"
+      >
         <GridSkeleton count={4} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4" />
       </SectionCard>
     );
   if (isError)
     return (
-      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
-        <ErrorState description={(error as Error)?.message ?? "Could not load data"} onRetry={() => refetch()} />
+      <SectionCard
+        title="Lead Source Efficiency"
+        description="Volume vs conversion rate per channel"
+      >
+        <ErrorState
+          description={(error as Error)?.message ?? "Could not load data"}
+          onRetry={() => refetch()}
+        />
       </SectionCard>
     );
   if (sources.length === 0)
     return (
-      <SectionCard title="Lead Source Efficiency" description="Volume vs conversion rate per channel">
-        <EmptyState icon={<span className="material-symbols-outlined text-[28px]">ads_click</span>} title="No lead source data" description="Lead source data will appear here once leads have been captured." />
+      <SectionCard
+        title="Lead Source Efficiency"
+        description="Volume vs conversion rate per channel"
+      >
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">ads_click</span>}
+          title="No lead source data"
+          description="Lead source data will appear here once leads have been captured."
+        />
       </SectionCard>
     );
 

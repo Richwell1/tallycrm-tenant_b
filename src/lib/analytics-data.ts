@@ -162,8 +162,7 @@ export function useAnalyticsKpis(period: AnalyticsPeriod) {
         wonWithDates.length > 0
           ? wonWithDates.reduce((s, d) => {
               const days =
-                (new Date(d.actual_close_date!).getTime() -
-                  new Date(d.created_at).getTime()) /
+                (new Date(d.actual_close_date!).getTime() - new Date(d.created_at).getTime()) /
                 86_400_000;
               return s + days;
             }, 0) / wonWithDates.length
@@ -193,8 +192,7 @@ export function useAnalyticsKpis(period: AnalyticsPeriod) {
         {
           label: "Win Rate",
           value: totalClosed > 0 ? `${winRate.toFixed(1)}%` : "—",
-          delta:
-            totalClosed > 0 ? `${periodWon.length}/${totalClosed}` : "No closes this period",
+          delta: totalClosed > 0 ? `${periodWon.length}/${totalClosed}` : "No closes this period",
           trend: winRate >= 35 ? "up" : winRate >= 25 ? "flat" : "down",
           icon: "workspace_premium",
           caption: `${periodWon.length} won · ${periodLost.length} lost this period`,
@@ -227,9 +225,7 @@ export function useRevenueChart(period: AnalyticsPeriod) {
     queryFn: async (): Promise<RevenuePoint[]> => {
       const { data: wonDeals, error } = await supabase
         .from("deals")
-        .select(
-          "actual_value, actual_close_date, stage:pipeline_stages!stage_id(is_won)",
-        )
+        .select("actual_value, actual_close_date, stage:pipeline_stages!stage_id(is_won)")
         .is("deleted_at", null)
         .not("actual_close_date", "is", null);
       if (error) throw error;
@@ -237,9 +233,7 @@ export function useRevenueChart(period: AnalyticsPeriod) {
       type Row = (typeof wonDeals)[number] & {
         stage: { is_won: boolean } | null;
       };
-      const won = ((wonDeals ?? []) as Row[]).filter(
-        (d) => d.stage?.is_won && d.actual_close_date,
-      );
+      const won = ((wonDeals ?? []) as Row[]).filter((d) => d.stage?.is_won && d.actual_close_date);
 
       const now = new Date();
 
@@ -333,9 +327,7 @@ export function useConversionFunnel() {
       const contacted = leads.filter((l) =>
         ["contacted", "qualified", "converted"].includes(l.status),
       ).length;
-      const qualified = leads.filter((l) =>
-        ["qualified", "converted"].includes(l.status),
-      ).length;
+      const qualified = leads.filter((l) => ["qualified", "converted"].includes(l.status)).length;
       const openDeals = deals.filter((d) => !d.stage?.is_closed).length;
       const wonDeals = deals.filter((d) => d.stage?.is_won).length;
 
@@ -422,8 +414,7 @@ export function useRepLeaderboard() {
             wonWithDates.length > 0
               ? wonWithDates.reduce((s, d) => {
                   const days =
-                    (new Date(d.actual_close_date!).getTime() -
-                      new Date(d.created_at).getTime()) /
+                    (new Date(d.actual_close_date!).getTime() - new Date(d.created_at).getTime()) /
                     86_400_000;
                   return s + days;
                 }, 0) / wonWithDates.length
@@ -434,12 +425,7 @@ export function useRepLeaderboard() {
           return {
             id: user_id,
             name,
-            role:
-              role === "admin"
-                ? "Admin"
-                : role === "manager"
-                  ? "Sales Manager"
-                  : "Sales Rep",
+            role: role === "admin" ? "Admin" : role === "manager" ? "Sales Manager" : "Sales Rep",
             region: "",
             location: "",
             initials: nameInitials(name),
@@ -507,9 +493,7 @@ export function useLossReasonAnalytics() {
         supabase.from("loss_reasons").select("id, label, position").order("position"),
         supabase
           .from("deals")
-          .select(
-            "lost_reason, stage:pipeline_stages!stage_id(is_closed, is_won)",
-          )
+          .select("lost_reason, stage:pipeline_stages!stage_id(is_closed, is_won)")
           .is("deleted_at", null)
           .not("lost_reason", "is", null),
       ]);
@@ -592,8 +576,7 @@ export function useRepDetails(repId: string | undefined) {
         wonWithDates.length > 0
           ? wonWithDates.reduce((s, d) => {
               const days =
-                (new Date(d.actual_close_date!).getTime() -
-                  new Date(d.created_at).getTime()) /
+                (new Date(d.actual_close_date!).getTime() - new Date(d.created_at).getTime()) /
                 86_400_000;
               return s + days;
             }, 0) / wonWithDates.length
@@ -689,9 +672,7 @@ export function useRepDeals(repId: string | undefined) {
           value: d.actual_value ?? d.value ?? 0,
           status,
           reason: d.lost_reason ?? (stg?.is_won ? "Closed Won" : (stg?.name ?? "—")),
-          date: d.actual_close_date
-            ? new Date(d.actual_close_date).toLocaleDateString()
-            : "—",
+          date: d.actual_close_date ? new Date(d.actual_close_date).toLocaleDateString() : "—",
         };
       });
     },

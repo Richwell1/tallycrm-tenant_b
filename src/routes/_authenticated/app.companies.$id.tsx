@@ -174,8 +174,8 @@ function CompanyDetailPage() {
             </div>
             <h3 className="mb-2 text-lg font-semibold text-foreground">Delete Company</h3>
             <p className="mb-6 text-sm text-text-secondary">
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">{company.name}</span>? This action cannot be undone.
+              Are you sure you want to delete <span className="font-semibold">{company.name}</span>?
+              This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -496,9 +496,7 @@ function ActionTile({
     <button
       onClick={onClick}
       className={`group flex flex-col items-center justify-center rounded-lg border p-4 transition-colors ${
-        danger
-          ? "border-danger/30 hover:bg-danger/10"
-          : "border-border hover:bg-muted"
+        danger ? "border-danger/30 hover:bg-danger/10" : "border-border hover:bg-muted"
       }`}
     >
       <span className={`material-symbols-outlined mb-1 ${danger ? "text-danger" : "text-primary"}`}>
@@ -506,9 +504,7 @@ function ActionTile({
       </span>
       <span
         className={`text-xs font-semibold ${
-          danger
-            ? "text-danger"
-            : "text-text-secondary group-hover:text-primary"
+          danger ? "text-danger" : "text-text-secondary group-hover:text-primary"
         }`}
       >
         {label}

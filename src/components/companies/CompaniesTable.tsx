@@ -27,7 +27,12 @@ export function CompaniesTable({ companies }: { companies: CompanyRow[] }) {
               <td className="px-4 py-3 text-text-secondary">{c.industry ?? "—"}</td>
               <td className="px-4 py-3 text-text-secondary">
                 {c.website ? (
-                  <a href={c.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  <a
+                    href={c.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
                     {c.website}
                   </a>
                 ) : (
@@ -38,7 +43,9 @@ export function CompaniesTable({ companies }: { companies: CompanyRow[] }) {
               <td className="px-4 py-3 text-text-secondary">
                 {[c.city, c.country].filter(Boolean).join(", ") || "—"}
               </td>
-              <td className="px-4 py-3 text-text-secondary">{c.rating ? `${c.rating} / 5` : "—"}</td>
+              <td className="px-4 py-3 text-text-secondary">
+                {c.rating ? `${c.rating} / 5` : "—"}
+              </td>
               <td className="px-4 py-3 text-text-muted">
                 {new Date(c.created_at).toLocaleDateString()}
               </td>

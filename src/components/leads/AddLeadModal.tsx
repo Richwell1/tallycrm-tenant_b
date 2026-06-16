@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { useCreateLead, useAssignableUsers, type LeadStatus } from "@/lib/leads-data";
@@ -61,7 +67,13 @@ const initial: FormState = {
   message: "",
 };
 
-export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function AddLeadModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const create = useCreateLead();
   const users = useAssignableUsers();
   const [v, setV] = useState<FormState>(initial);
@@ -127,10 +139,18 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="First Name *" error={errs.first_name}>
-              <input className="input" value={v.first_name} onChange={(e) => set("first_name", e.target.value)} />
+              <input
+                className="input"
+                value={v.first_name}
+                onChange={(e) => set("first_name", e.target.value)}
+              />
             </Field>
             <Field label="Last Name *" error={errs.last_name}>
-              <input className="input" value={v.last_name} onChange={(e) => set("last_name", e.target.value)} />
+              <input
+                className="input"
+                value={v.last_name}
+                onChange={(e) => set("last_name", e.target.value)}
+              />
             </Field>
           </div>
 
@@ -146,10 +166,18 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Phone Number">
-              <input className="input" value={v.phone} onChange={(e) => set("phone", e.target.value)} />
+              <input
+                className="input"
+                value={v.phone}
+                onChange={(e) => set("phone", e.target.value)}
+              />
             </Field>
             <Field label="Company Name">
-              <input className="input" value={v.company_name} onChange={(e) => set("company_name", e.target.value)} />
+              <input
+                className="input"
+                value={v.company_name}
+                onChange={(e) => set("company_name", e.target.value)}
+              />
             </Field>
           </div>
 
@@ -181,7 +209,9 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
                 onChange={(e) => set("status", e.target.value as LeadStatus)}
               >
                 {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -194,7 +224,11 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
                 value={v.source}
                 onChange={(e) => set("source", e.target.value as FormState["source"])}
               >
-                {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {SOURCES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </Field>
             <Field label="Assigned To">
@@ -205,7 +239,9 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
               >
                 <option value="self">Self (Me)</option>
                 {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>{u.full_name ?? "Unnamed user"}</option>
+                  <option key={u.id} value={u.id}>
+                    {u.full_name ?? "Unnamed user"}
+                  </option>
                 ))}
                 <option value="unassigned">Unassigned</option>
               </select>
@@ -231,7 +267,9 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
           </Field>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? "Saving..." : "Save Lead"}
             </Button>
@@ -242,7 +280,15 @@ export function AddLeadModal({ open, onOpenChange }: { open: boolean; onOpenChan
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-semibold text-text-secondary">{label}</span>

@@ -491,7 +491,6 @@ function ConfirmDelete({
   );
 }
 
-
 function TableHead({
   children,
   className = "",
@@ -585,7 +584,6 @@ function Tags({ tags }: { tags: string[] }) {
     </div>
   );
 }
-
 
 function IconLine({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (

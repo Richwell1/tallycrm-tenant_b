@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test": "node scripts/security-check.mjs",
+    "ci": "npm run lint && npm run test && npm run build",
     "format": "prettier --write ."
   },
   "dependencies": {

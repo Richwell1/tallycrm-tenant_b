@@ -12,6 +12,7 @@
 ## 1. Design System Foundation
 
 ### 1.1 Colour tokens (use CSS variables only — no hardcoded hex)
+
 ```
 /* PRIMARY */            /* ACCENT */                /* SEMANTIC */
 --color-primary:#0057B8  --color-accent:#F5A623      --color-success:#1A9E4A / -light:#E6F6ED
@@ -26,16 +27,20 @@
 --color-text-primary:#1A202C  --color-text-secondary:#4A5568   --color-sidebar-active-bg:#0057B8
 --color-text-muted:#94A3B8  --color-text-inverse:#FFFFFF       --color-sidebar-section:#4A6080
 ```
+
 Dark mode: every token has a dark variant; sidebar stays navy; card surface `#1E2A3A`, hover `#263347`, text `#E2E8F0`; charts use brighter accents. Toggle persists.
 
 ### 1.2 Typography
+
 Font: `Inter, "Segoe UI", system-ui, sans-serif`. Scale: xs 11 · sm 13 · base 14 · md 15 · lg 18 · xl 22 · 2xl 28 · 3xl 36 (px). Weights 400/500/600/700.
 
 ### 1.3 Spacing & radius
+
 4px base scale (4/8/12/16/20/24/32/40/48/64). Radius: sm 4 · md 8 · lg 12 · xl 16 · full 9999. Shadows: card `0 1px 4px rgba(0,0,0,.06), 0 0 0 1px rgba(226,232,240,.8)`; md `0 4px 16px rgba(0,87,184,.10)`; lg `0 8px 32px rgba(0,87,184,.15)`.
 
 ### 1.4 Component grammar
-- **Primary CTA ("Add" actions):** high-visibility red `#E53E3E`, white text, radius-sm, icon left. All *other* interactive elements use `--color-primary` blue.
+
+- **Primary CTA ("Add" actions):** high-visibility red `#E53E3E`, white text, radius-sm, icon left. All _other_ interactive elements use `--color-primary` blue.
 - **Cards:** white, card shadow, radius-md, 16px padding; 40px avatar; 3-dot menu; tag pills; assigned avatar.
 - **Form inputs:** 38px height, radius-sm, label above (sm semibold secondary), focus ring primary 2px.
 - **Badges/tags:** radius-full, 5×10 padding, xs semibold; status → semantic colour.
@@ -58,12 +63,14 @@ Font: `Inter, "Segoe UI", system-ui, sans-serif`. Scale: xs 11 · sm 13 · base 
 ---
 
 ## Feature 0 — Shared Component Library (build before any page)
+
 EntityCard (contact/company) · KanbanColumn · KanbanCard · DataTable · Modal (standard+wide) · StatusBadge (New Lead=blue, Contacted=amber, Qualified=purple, Demo/Proposal=teal, Negotiation=orange, Won=green, Lost=red) · AvatarStack · SearchBar · FilterPanel · PageHeader · EmptyState · ToastNotification · ConfirmDialog · ActivityItem · PipelineFunnelChart · **RoleBadge** (Admin/Manager/Rep) · **OTPInput** (6-digit segmented, for 2FA).
 **Checkpoint:** all render in isolation, with hover/focus/active/disabled, dark-mode tokens, responsive below 768px.
 
 ---
 
 ## Feature 1 — Dashboard (role-aware)
+
 - **KPI row (4):** New Leads (today/week toggle), Open Deals (count + value), Closed-Won this month (count + revenue), Conversion Rate. Count-up animation.
 - **Charts:** Pipeline Funnel (60%) + Lead Source Donut — Tally Landing Page / Manual / Referral (40%).
 - **Split:** Recent Activity feed (ActivityItem) + My Tasks/Reminders (overdue in red).
@@ -71,47 +78,54 @@ EntityCard (contact/company) · KanbanColumn · KanbanCard · DataTable · Modal
 - **Greeting:** "Good morning, [Name] 👋 — You have N new leads from TallyPrime.com".
 - **Scope by role:** Rep = own data only; Manager = whole team + per-rep performance table + lead-volume + win/loss charts; Admin = same as Manager plus admin shortcuts.
 - States: empty ("Import your first leads" / "Connect landing page"), loading skeleton matching layout.
-**Checkpoint:** all KPIs, both charts, feed, tasks, mini-pipeline, manager/admin panels, empty, loading.
+  **Checkpoint:** all KPIs, both charts, feed, tasks, mini-pipeline, manager/admin panels, empty, loading.
 
 ---
 
 ## Feature 2 — Contacts
+
 Grid view (4-col → EntityCard) + table view + Add/Edit modal (wide, 2-col fields incl. Company searchable w/ create-new, Country, Tags, Notes, Assigned To) + Contact detail page (30/70, tabs: Overview, Deals, Activities, Notes, Lead Origin) + delete confirm (type-name) + empty state + bulk action bar (Assign / Tag / Export / Delete / Email). Delete/bulk-delete hidden for Sales Rep.
 **Checkpoint:** grid, table, add, edit, detail (5 tabs), delete confirm, empty, bulk bar.
 
 ---
 
 ## Feature 3 — Companies
+
 Grid (cards with star rating, gold) + table + Add/Edit modal (Name, Industry, Email, Phone, Website, LinkedIn, Address, City, Country, Account Manager, Tags, Notes, logo drag-drop) + detail page (tabs: Overview, Contacts, Deals, Activities, Notes) + empty + delete confirm.
 **Checkpoint:** grid w/ ratings, table, add/edit w/ logo, detail (5 tabs), empty, delete.
 
 ---
 
 ## Feature 4 — Leads
+
 Kanban (columns: New Lead=blue, Contacted=amber, Qualified=purple, Closed/Lost handled via convert/disqualify) with drag-to-change-status + table view + Add Lead modal (wide) + Lead detail (tabs: Timeline, Convert to Deal, Notes, Email History) + **Lead Capture panel** (read-only payload: Source = "Tally Landing Page", submitted timestamp, IP country, confirmation email Delivered/Failed, form data) + **3-step Convert flow** (Confirm Contact → Link/Create Company → Create Deal, progress dots) + disqualify flow (reason dropdown + note) + empty state. Reps see only assigned leads.
 **Checkpoint:** kanban + DnD, table, add, detail (4 tabs), capture panel, 3-step convert, disqualify, empty.
 
 ---
 
 ## Feature 5 — Deals & Pipeline
-Kanban with the **7 canonical stages** (New Lead → Contacted → Qualified → Demo/Proposal → Negotiation → Closed-Won → Closed-Lost), horizontal scroll, coloured left borders, per-card probability badge (<30 red / 30–70 amber / >70 green), priority bar. Table view. Add Deal modal (wide): Name (auto-suggest "[Company] – Tally [Edition]"), Primary Contact*, Company, Value* + Currency (GHS/USD/NGN/KES), visual stage selector, probability (auto by stage), expected close date*, Assigned To, Description, Tags. Deal detail (30/70, tabs: Timeline w/ stage milestones, Activities, Proposals, Contacts, Value History). Close flow: **Won → confirm actual value + date → gold/blue confetti**; **Lost → required reason + competitor + note**. Separate Pipeline funnel page (click stage → expand deals; time filter). Empty state.
+
+Kanban with the **7 canonical stages** (New Lead → Contacted → Qualified → Demo/Proposal → Negotiation → Closed-Won → Closed-Lost), horizontal scroll, coloured left borders, per-card probability badge (<30 red / 30–70 amber / >70 green), priority bar. Table view. Add Deal modal (wide): Name (auto-suggest "[Company] – Tally [Edition]"), Primary Contact*, Company, Value* + Currency (GHS/USD/NGN/KES), visual stage selector, probability (auto by stage), expected close date\*, Assigned To, Description, Tags. Deal detail (30/70, tabs: Timeline w/ stage milestones, Activities, Proposals, Contacts, Value History). Close flow: **Won → confirm actual value + date → gold/blue confetti**; **Lost → required reason + competitor + note**. Separate Pipeline funnel page (click stage → expand deals; time filter). Empty state.
 **Checkpoint:** kanban (7 cols), probability badges, table, add modal w/ stage selector, detail (5 tabs), Won confetti + Lost reason, pipeline funnel page, empty.
 
 ---
 
 ## Feature 6 — Activities
+
 Table (Title, Type badge [Meeting blue / Call green / Email amber / Task orange], Due Date, Owner, Created, Actions) + filter tabs (All/Calls/Emails/Tasks/Meetings) + slide-over detail panel (400px) + Add Activity modal (Title, Type segmented, Due date+time, Duration, Owner, link Contact, link Deal, Description, Reminder toggle, Outcome) + status lifecycle (Pending → In Progress → Completed w/ outcome) + overdue red row + empty + bulk.
 **Checkpoint:** table + badges, filter tabs, slide-over, add modal + reminder, lifecycle, overdue styling, empty.
 
 ---
 
 ## Feature 7 — Tasks & Reminders
+
 List grouped by date (Recent / Yesterday / dated headers). Row: drag handle, checkbox, star, title (strike when done), type badge, status badge, tags, date, assigned avatar, 3-dot. Left accent bar by status. Add Task modal (Title, Type, Due Date, Assigned To, Status, Tags, Priority radio, link Contact/Deal, Description). Quick-complete (checkbox → strikethrough + toast). Empty state.
 **Checkpoint:** grouped list, all row elements, accent bars, add modal, quick-complete, empty.
 
 ---
 
 ## Feature 8 — Analytics (Admin + Manager)
+
 Period selector. Sections: Pipeline Health (4 KPIs) · Revenue line chart (Target vs Actual) · Conversion Funnel (Leads→Contacted→Qualified→Demo→Proposal→Won w/ drop-off %) · Rep Leaderboard (rank, avatar, leads, closed, revenue, win rate, trend; top rep gold crown) · Lead Source Breakdown bar · Win/Loss donut + top-5 loss reasons. Click rep → individual rep report.
 **Checkpoint:** KPIs + period selector, revenue chart, funnel, leaderboard w/ crown, source chart, win/loss, rep report.
 
@@ -134,15 +148,18 @@ Period selector. Sections: Pipeline Health (4 KPIs) · Revenue line chart (Targe
 ---
 
 ## Feature 10 — Settings & Admin (Admin only; Manager/Rep see no Settings nav)
+
 Tabs: General (CRM name, default currency = GHS, timezone, date format, logo) · Pipeline Config (drag-reorder stages, name/colour/**SLA days**, min 3 lock) · **Users & Roles** (table: avatar+name, email, **role dropdown — Admin / Sales Manager / Sales Rep**, status toggle, **2FA status: Enrolled/Pending**, last login, actions; "Invite User" modal = email + role + send invite → invitee must enroll 2FA) · Lead Assignment (Manual / Round-Robin, drag queue) · **Automations** (list of rules from PRD §14 — each row: name, trigger, on/off toggle, editable delay/SLA/probability/target-task/escalation; reset-to-default) · Email & Notifications (Resend/SendGrid + SMTP config, masked keys, Test button; notification toggles) · Loss Reasons (editable, reorder) · Audit Log (actor inc. "System/Automation", action, entity, timestamp, IP; filter; export CSV) · **Landing Page Integration** (prominent): copyable Edge Function endpoint `POST {SUPABASE_URL}/functions/v1/leads-capture`, API key reveal/regenerate, JSON payload schema, "Send test lead" button with live response log, numbered "connect your Lovable landing page" guide, last-test timestamp + status.
 **Checkpoint:** all 9 tabs, pipeline DnD + SLA, automations toggles/edit, invite flow (with 2FA-pending state), email config + test, landing-page panel, audit log + export.
 
 ---
 
 ## 3. Brand & quality requirements
+
 Tally moments: sidebar "Powered by TallyPrime", login hero stats, Closed-Won gold/blue confetti, dashboard greeting tying to TallyPrime.com. Mobile: sidebar → bottom tab bar (Home, Leads, Deals, Activities, More); cards 1-col; kanban horizontal-scroll with stage tabs; modals full-screen slide-up. Performance perception: skeletons not spinners, optimistic Kanban with revert-on-fail, lazy avatars, virtualized long tables.
 
 ## 4. Build order
+
 `0 Components → 1 Dashboard → 2 Contacts → 3 Companies → 4 Leads → 5 Deals/Pipeline → 6 Activities → 7 Tasks → 8 Analytics → 9 Auth (with mandatory 2FA) → 10 Settings`. Finish each feature's every state before advancing. Session recovery: resume from the last incomplete checkpoint; reuse Feature 0 components; never rebuild prior features.
 
-*End of design.md · v2.0*
+_End of design.md · v2.0_

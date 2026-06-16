@@ -86,9 +86,7 @@ function MfaPage() {
       }
       // Wipe leftover unverified factors so enroll never hits a name/cap conflict.
       const unverified = factorsRes.data?.totp?.filter((f) => f.status !== "verified") ?? [];
-      await Promise.all(
-        unverified.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })),
-      );
+      await Promise.all(unverified.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })));
       setMode("enroll");
       await beginEnrollment();
     } catch (err) {
@@ -268,11 +266,7 @@ function MfaPage() {
                   <div className="space-y-5">
                     <div className="flex justify-center">
                       <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
-                        <img
-                          src={enrollData.qrSvg}
-                          alt=""
-                          className="h-44 w-44 block"
-                        />
+                        <img src={enrollData.qrSvg} alt="" className="h-44 w-44 block" />
                       </div>
                     </div>
 

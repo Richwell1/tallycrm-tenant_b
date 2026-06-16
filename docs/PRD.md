@@ -22,13 +22,13 @@ The MVP delivers a complete end-to-end flow: a visitor submits the landing-page 
 
 ## 2. Toolchain & Workflow
 
-| Tool | Role | Integration point |
-|------|------|-------------------|
-| **Lovable** | Rapid build of landing page + CRM front-end and initial Supabase wiring | Syncs source to GitHub on publish; hosts the public landing page URL |
-| **Supabase** | Backend of record — Postgres database, Auth (with MFA), Row Level Security, Edge Functions, storage | All data, auth, and server logic live here |
-| **GitHub** | Version control and single source of truth | Lovable pushes here; Claude Code pulls and pushes |
-| **Claude Code** | Agentic refactor / test / harden / extend | Clones repo, improves code, runs tests, pushes reviewed PRs |
-| **Resend / SendGrid** | Transactional email (confirmation + internal notify) | Called only from the Supabase Edge Function — never from the browser |
+| Tool                  | Role                                                                                                | Integration point                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Lovable**           | Rapid build of landing page + CRM front-end and initial Supabase wiring                             | Syncs source to GitHub on publish; hosts the public landing page URL |
+| **Supabase**          | Backend of record — Postgres database, Auth (with MFA), Row Level Security, Edge Functions, storage | All data, auth, and server logic live here                           |
+| **GitHub**            | Version control and single source of truth                                                          | Lovable pushes here; Claude Code pulls and pushes                    |
+| **Claude Code**       | Agentic refactor / test / harden / extend                                                           | Clones repo, improves code, runs tests, pushes reviewed PRs          |
+| **Resend / SendGrid** | Transactional email (confirmation + internal notify)                                                | Called only from the Supabase Edge Function — never from the browser |
 
 **Deployment chain:** Lovable (build) → GitHub (push) → Claude Code (refactor/test/extend) → GitHub (final) → Production hosting.
 
@@ -36,33 +36,33 @@ The MVP delivers a complete end-to-end flow: a visitor submits the landing-page 
 
 ## 3. Glossary of Terms
 
-| Term | Definition |
-|------|------------|
-| **Simple CRM** | The web application being built — a lightweight CRM tailored for Tally software sales and follow-up. |
-| **Tally** | A popular accounting & ERP product. The CRM exists to capture, nurture, and close leads interested in Tally. |
-| **Landing Page** | Public marketing page (Lovable) presenting Tally's value proposition; contains the lead-capture form; no login. |
-| **Lead** | A prospect who submitted the landing-page form (or was entered manually). Has expressed interest but is not yet qualified. Tagged `source = "Tally Landing Page"` when captured from the form. |
-| **Contact** | A person record inside the CRM. Each lead becomes or links to a Contact. Stores name, email, phone, title, company. |
-| **Company** | An organisation record. Many Contacts belong to one Company. Full CRUD. |
-| **Deal** | A sales opportunity linked to a Contact (and optionally a Company). Tracks stage, value, currency, and expected close date. |
-| **Pipeline** | The ordered set of Deal stages from first contact to Closed-Won/Lost, visualised as a Kanban board. |
-| **Lead Capture Flow** | The automated sequence on form submit: data → Edge Function → DB insert → confirmation email → dashboard appearance. |
-| **Confirmation Email** | Automated email to the lead immediately after a successful save, confirming receipt and next steps. |
-| **Activity / Note** | A timestamped record of an action or communication logged against a Contact and/or Deal (call, email, meeting, demo, proposal, note). |
-| **Task / Reminder** | A simple to-do with a due date, optionally linked to a Contact or Deal, with an optional reminder alert. |
-| **Dashboard** | CRM home screen surfacing key metrics: new leads, open deals, pipeline value, recent activity, conversion KPIs. |
-| **Lead-to-Deal** | The action of converting a qualified Lead into a Deal, creating or linking the associated Contact and Company. |
-| **Closed-Won** | Deal stage: the sale completed and the customer committed to purchasing Tally. |
-| **Closed-Lost** | Deal stage: the opportunity did not convert; reason-for-loss is recorded for analytics. |
-| **Role** | A permission level (Admin, Sales Manager, Sales Rep) controlling which screens, actions, and records a user may access. |
-| **Admin** | CRM role with unrestricted access — manages users, settings, all data, all CRUD. |
-| **Sales Manager** | Non-admin role; works **all** CRM records but cannot manage users or system settings. |
-| **Sales Rep** | Non-admin role; works **own/assigned** records only; cannot delete records or access admin areas. |
-| **RLS** | Row Level Security — Supabase Postgres policies that enforce per-role/per-owner data access at the database layer. |
-| **MFA / 2FA** | Multi-factor / two-factor authentication. Mandatory second sign-in factor (TOTP authenticator app, or email OTP) for every CRM user. |
-| **Edge Function** | A Supabase serverless function holding secrets and performing privileged server logic (form insert + email send). |
-| **CRUD** | Create, Read, Update, Delete — the four data operations on CRM entities. |
-| **Kanban Board** | Visual board where Deal cards sit in stage columns and can be dragged between stages. |
+| Term                   | Definition                                                                                                                                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Simple CRM**         | The web application being built — a lightweight CRM tailored for Tally software sales and follow-up.                                                                                           |
+| **Tally**              | A popular accounting & ERP product. The CRM exists to capture, nurture, and close leads interested in Tally.                                                                                   |
+| **Landing Page**       | Public marketing page (Lovable) presenting Tally's value proposition; contains the lead-capture form; no login.                                                                                |
+| **Lead**               | A prospect who submitted the landing-page form (or was entered manually). Has expressed interest but is not yet qualified. Tagged `source = "Tally Landing Page"` when captured from the form. |
+| **Contact**            | A person record inside the CRM. Each lead becomes or links to a Contact. Stores name, email, phone, title, company.                                                                            |
+| **Company**            | An organisation record. Many Contacts belong to one Company. Full CRUD.                                                                                                                        |
+| **Deal**               | A sales opportunity linked to a Contact (and optionally a Company). Tracks stage, value, currency, and expected close date.                                                                    |
+| **Pipeline**           | The ordered set of Deal stages from first contact to Closed-Won/Lost, visualised as a Kanban board.                                                                                            |
+| **Lead Capture Flow**  | The automated sequence on form submit: data → Edge Function → DB insert → confirmation email → dashboard appearance.                                                                           |
+| **Confirmation Email** | Automated email to the lead immediately after a successful save, confirming receipt and next steps.                                                                                            |
+| **Activity / Note**    | A timestamped record of an action or communication logged against a Contact and/or Deal (call, email, meeting, demo, proposal, note).                                                          |
+| **Task / Reminder**    | A simple to-do with a due date, optionally linked to a Contact or Deal, with an optional reminder alert.                                                                                       |
+| **Dashboard**          | CRM home screen surfacing key metrics: new leads, open deals, pipeline value, recent activity, conversion KPIs.                                                                                |
+| **Lead-to-Deal**       | The action of converting a qualified Lead into a Deal, creating or linking the associated Contact and Company.                                                                                 |
+| **Closed-Won**         | Deal stage: the sale completed and the customer committed to purchasing Tally.                                                                                                                 |
+| **Closed-Lost**        | Deal stage: the opportunity did not convert; reason-for-loss is recorded for analytics.                                                                                                        |
+| **Role**               | A permission level (Admin, Sales Manager, Sales Rep) controlling which screens, actions, and records a user may access.                                                                        |
+| **Admin**              | CRM role with unrestricted access — manages users, settings, all data, all CRUD.                                                                                                               |
+| **Sales Manager**      | Non-admin role; works **all** CRM records but cannot manage users or system settings.                                                                                                          |
+| **Sales Rep**          | Non-admin role; works **own/assigned** records only; cannot delete records or access admin areas.                                                                                              |
+| **RLS**                | Row Level Security — Supabase Postgres policies that enforce per-role/per-owner data access at the database layer.                                                                             |
+| **MFA / 2FA**          | Multi-factor / two-factor authentication. Mandatory second sign-in factor (TOTP authenticator app, or email OTP) for every CRM user.                                                           |
+| **Edge Function**      | A Supabase serverless function holding secrets and performing privileged server logic (form insert + email send).                                                                              |
+| **CRUD**               | Create, Read, Update, Delete — the four data operations on CRM entities.                                                                                                                       |
+| **Kanban Board**       | Visual board where Deal cards sit in stage columns and can be dragged between stages.                                                                                                          |
 
 ---
 
@@ -78,17 +78,17 @@ The CRM implements role-based access control (RBAC) enforced **server-side via S
 
 ### 4.2 Permissions Matrix
 
-| Capability | Admin | Sales Manager | Sales Rep |
-|------------|:-----:|:-------------:|:---------:|
-| View all contacts, deals, companies | Yes | Yes | Own + assigned only |
-| Create / edit records | Yes | Yes | Yes (own) |
-| Delete records | Yes | Yes | No |
-| View leads from landing page | Yes | Yes | Assigned only |
-| Manage users & roles | Yes | No | No |
-| System / app settings | Yes | No | No |
-| View dashboard & reports | Yes | Yes | Own data |
+| Capability                          | Admin | Sales Manager |      Sales Rep      |
+| ----------------------------------- | :---: | :-----------: | :-----------------: |
+| View all contacts, deals, companies |  Yes  |      Yes      | Own + assigned only |
+| Create / edit records               |  Yes  |      Yes      |      Yes (own)      |
+| Delete records                      |  Yes  |      Yes      |         No          |
+| View leads from landing page        |  Yes  |      Yes      |    Assigned only    |
+| Manage users & roles                |  Yes  |      No       |         No          |
+| System / app settings               |  Yes  |      No       |         No          |
+| View dashboard & reports            |  Yes  |      Yes      |      Own data       |
 
-*(A read-only Viewer role is reserved for a future version and is not active in v1.)*
+_(A read-only Viewer role is reserved for a future version and is not active in v1.)_
 
 ### 4.3 Two-Factor Authentication (mandatory)
 
@@ -112,22 +112,22 @@ The CRM implements role-based access control (RBAC) enforced **server-side via S
 
 ## 5. Use Cases
 
-| ID | Actor | Goal | Trigger | Expected outcome |
-|----|-------|------|---------|------------------|
-| UC-01 | Visitor / Prospect | Submit interest in Tally | Visits landing page, fills form | Lead created in CRM; confirmation email sent |
-| UC-02 | CRM System | Auto-capture lead | Form submitted | Contact + Lead appear on dashboard within seconds |
-| UC-03 | Sales Rep / Manager | View new leads | Login after submission | Dashboard shows new lead; user opens and reviews it |
-| UC-04 | Sales Rep / Manager | Qualify a lead | Lead in pipeline | Stage moved to Contacted/Qualified, or disqualified with reason |
-| UC-05 | Sales Rep / Manager | Convert lead to deal | Lead qualified | Deal created, linked to Contact + Company |
-| UC-06 | Sales Rep / Manager | Progress deal | Deal created | Card dragged across Kanban stages; each move logged |
-| UC-07 | Sales Rep / Manager | Log activity / note | Any interaction | Timestamped note saved on Contact and Deal |
-| UC-08 | Sales Rep / Manager | Close a deal | Negotiation complete | Deal marked Won or Lost; reason captured for Lost |
-| UC-09 | Admin | Create / manage users | New team member | Admin creates user, assigns role; user receives invite and must enroll 2FA |
-| UC-10 | Admin | Configure pipeline | Process change | Admin edits stage names, order, SLA thresholds |
-| UC-11 | Admin / Manager | View reports | Period review | Conversion rates, pipeline value, rep performance shown |
-| UC-12 | Admin / Manager | Manage companies | New org identified | Company created; Contacts and Deals linked |
-| UC-13 | Any CRM user | Manage tasks/reminders | Follow-up needed | Task created with due date, linked to contact/deal; reminder fires |
-| UC-14 | Any CRM user | Enroll & pass 2FA | First/subsequent login | MFA factor registered/verified before any data access |
+| ID    | Actor               | Goal                     | Trigger                         | Expected outcome                                                           |
+| ----- | ------------------- | ------------------------ | ------------------------------- | -------------------------------------------------------------------------- |
+| UC-01 | Visitor / Prospect  | Submit interest in Tally | Visits landing page, fills form | Lead created in CRM; confirmation email sent                               |
+| UC-02 | CRM System          | Auto-capture lead        | Form submitted                  | Contact + Lead appear on dashboard within seconds                          |
+| UC-03 | Sales Rep / Manager | View new leads           | Login after submission          | Dashboard shows new lead; user opens and reviews it                        |
+| UC-04 | Sales Rep / Manager | Qualify a lead           | Lead in pipeline                | Stage moved to Contacted/Qualified, or disqualified with reason            |
+| UC-05 | Sales Rep / Manager | Convert lead to deal     | Lead qualified                  | Deal created, linked to Contact + Company                                  |
+| UC-06 | Sales Rep / Manager | Progress deal            | Deal created                    | Card dragged across Kanban stages; each move logged                        |
+| UC-07 | Sales Rep / Manager | Log activity / note      | Any interaction                 | Timestamped note saved on Contact and Deal                                 |
+| UC-08 | Sales Rep / Manager | Close a deal             | Negotiation complete            | Deal marked Won or Lost; reason captured for Lost                          |
+| UC-09 | Admin               | Create / manage users    | New team member                 | Admin creates user, assigns role; user receives invite and must enroll 2FA |
+| UC-10 | Admin               | Configure pipeline       | Process change                  | Admin edits stage names, order, SLA thresholds                             |
+| UC-11 | Admin / Manager     | View reports             | Period review                   | Conversion rates, pipeline value, rep performance shown                    |
+| UC-12 | Admin / Manager     | Manage companies         | New org identified              | Company created; Contacts and Deals linked                                 |
+| UC-13 | Any CRM user        | Manage tasks/reminders   | Follow-up needed                | Task created with due date, linked to contact/deal; reminder fires         |
+| UC-14 | Any CRM user        | Enroll & pass 2FA        | First/subsequent login          | MFA factor registered/verified before any data access                      |
 
 ---
 
@@ -169,17 +169,17 @@ The CRM implements role-based access control (RBAC) enforced **server-side via S
 
 ## 7. Component & Entity Relationships
 
-| Parent | Child / related | Relationship rule |
-|--------|-----------------|-------------------|
-| Landing Page | Lead | 1 submission → 1 Lead. Landing page is external; calls the Edge Function on submit. |
-| Lead | Contact | 1 Lead → exactly 1 Contact. A Contact can originate from multiple Leads over time (dedupe required). |
-| Contact | Company | Many Contacts → 1 Company (a Contact may start with no Company). |
-| Contact | Deal | 1 Contact → many Deals; each Deal must have ≥1 primary Contact. |
-| Company | Deal | 1 Company → many Deals; link optional but recommended. |
-| Deal | Pipeline Stage | A Deal occupies exactly 1 stage; stage changes are append-only logged. |
-| Contact / Deal | Activity / Note | Polymorphic: attached to a Contact and/or Deal; immutable after a 15-minute grace window. |
-| Contact / Deal | Task | A Task optionally links to a Contact and/or Deal; has a due date and owner. |
-| CRM User | Lead / Deal / Task | Ownership: each has an assigned user. Admin/Manager can reassign. |
+| Parent         | Child / related    | Relationship rule                                                                                    |
+| -------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Landing Page   | Lead               | 1 submission → 1 Lead. Landing page is external; calls the Edge Function on submit.                  |
+| Lead           | Contact            | 1 Lead → exactly 1 Contact. A Contact can originate from multiple Leads over time (dedupe required). |
+| Contact        | Company            | Many Contacts → 1 Company (a Contact may start with no Company).                                     |
+| Contact        | Deal               | 1 Contact → many Deals; each Deal must have ≥1 primary Contact.                                      |
+| Company        | Deal               | 1 Company → many Deals; link optional but recommended.                                               |
+| Deal           | Pipeline Stage     | A Deal occupies exactly 1 stage; stage changes are append-only logged.                               |
+| Contact / Deal | Activity / Note    | Polymorphic: attached to a Contact and/or Deal; immutable after a 15-minute grace window.            |
+| Contact / Deal | Task               | A Task optionally links to a Contact and/or Deal; has a due date and owner.                          |
+| CRM User       | Lead / Deal / Task | Ownership: each has an assigned user. Admin/Manager can reassign.                                    |
 
 **Entity hierarchy (independent → dependent):** Company → Contact → Lead → Deal → Activity/Note & Task; Pipeline Stage is a configuration entity referenced by Deals and managed by Admin.
 
@@ -189,23 +189,24 @@ The CRM implements role-based access control (RBAC) enforced **server-side via S
 
 Seven default stages. Admin may rename/reorder from Settings but cannot drop below three (entry, one mid-stage, ≥1 close stage).
 
-| # | Stage | Definition | Exit criteria |
-|---|-------|-----------|----------------|
-| 1 | New Lead | Form submitted; no human contact yet | Rep acknowledges/assigns |
-| 2 | Contacted | First outreach logged | Lead responds or next touchpoint scheduled |
-| 3 | Qualified | BANT assessed; lead viable | Converted to Deal; Company linked |
-| 4 | Demo / Proposal | Demo conducted or proposal sent | Prospect requests pricing / counters |
-| 5 | Negotiation | Terms/pricing being negotiated | Both parties agree |
-| 6 | Closed-Won | Sale completed | PO / contract / payment received |
-| 7 | Closed-Lost | Did not convert | Reason captured; deal archived |
+| #   | Stage           | Definition                           | Exit criteria                              |
+| --- | --------------- | ------------------------------------ | ------------------------------------------ |
+| 1   | New Lead        | Form submitted; no human contact yet | Rep acknowledges/assigns                   |
+| 2   | Contacted       | First outreach logged                | Lead responds or next touchpoint scheduled |
+| 3   | Qualified       | BANT assessed; lead viable           | Converted to Deal; Company linked          |
+| 4   | Demo / Proposal | Demo conducted or proposal sent      | Prospect requests pricing / counters       |
+| 5   | Negotiation     | Terms/pricing being negotiated       | Both parties agree                         |
+| 6   | Closed-Won      | Sale completed                       | PO / contract / payment received           |
+| 7   | Closed-Lost     | Did not convert                      | Reason captured; deal archived             |
 
 ---
 
 ## 9. Functional Requirements
 
 ### 9.1 Landing Page
+
 - FR-LP-01 Display Tally value prop, features, pricing teaser, social proof.
-- FR-LP-02 Lead-capture form: First Name*, Last Name*, Email*, Phone, Company, Message.
+- FR-LP-02 Lead-capture form: First Name*, Last Name*, Email\*, Phone, Company, Message.
 - FR-LP-03 Client-side validation (required, email/phone format).
 - FR-LP-04 On submit, POST over HTTPS to the Supabase Edge Function.
 - FR-LP-05 Show a thank-you confirmation state on success.
@@ -214,6 +215,7 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 - FR-LP-08 Public; no login.
 
 ### 9.2 Lead Capture & Management
+
 - FR-LC-01 Edge Function inserts a Lead within 500 ms (p95).
 - FR-LC-02 Deduplicate by email — link, don't duplicate.
 - FR-LC-03 Auto-assign by round-robin or leave unassigned per Admin config.
@@ -225,6 +227,7 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 - FR-LC-09 Spam/bot protection on the form (honeypot or captcha) — hardened in Claude Code phase.
 
 ### 9.3 Contacts
+
 - FR-CO-01 Full CRUD (Admin/Manager all; Rep own/assigned).
 - FR-CO-02 Fields: First/Last Name, Email (unique), Phone, Job Title, Company, Source, Created Date, Assigned Rep, Tags.
 - FR-CO-03 Detail shows linked Deals, Activities, Lead origin.
@@ -232,12 +235,14 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 - FR-CO-05 Admin can merge duplicate Contacts.
 
 ### 9.4 Companies
+
 - FR-CM-01 Full CRUD.
 - FR-CM-02 Fields: Name (unique), Industry, Address, Website, Phone, LinkedIn URL, Notes.
 - FR-CM-03 Detail shows linked Contacts and Deals.
 - FR-CM-04 Search by name and industry.
 
 ### 9.5 Deals & Pipeline
+
 - FR-DE-01 Full CRUD.
 - FR-DE-02 Fields: Name, Primary Contact (required), Company (optional), Value + Currency, Stage, Expected Close Date, Assigned Rep, Description, Tags.
 - FR-DE-03 Kanban view: one column per stage; cards show name, value, contact, days-in-stage.
@@ -248,18 +253,21 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 - FR-DE-08 List view with filters (stage, rep, date, value range).
 
 ### 9.6 Activities & Notes
+
 - FR-AN-01 Log against Contact and/or Deal: type, date/time, duration, outcome, notes.
 - FR-AN-02 Reverse-chron timeline on Contact and Deal detail.
 - FR-AN-03 Immutable after a 15-minute grace edit window.
 - FR-AN-04 Optional follow-up reminder per activity.
 
 ### 9.7 Tasks & Reminders (light extra)
+
 - FR-TK-01 CRUD for tasks: title, type, due date, status, priority, owner.
 - FR-TK-02 Optional link to a Contact and/or Deal.
 - FR-TK-03 Optional reminder alert (date/time).
 - FR-TK-04 Quick-complete with status toggle.
 
 ### 9.8 Dashboard
+
 - FR-DB-01 KPI cards: New Leads (today/week), Open Deals (count + value), Closed-Won (month count + value), Conversion Rate.
 - FR-DB-02 Recent activity feed (last 10 visible events).
 - FR-DB-03 Pipeline funnel (count + value per stage).
@@ -267,6 +275,7 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 - FR-DB-05 Admin/Manager dashboards add per-rep performance, total pipeline value, lead-source breakdown.
 
 ### 9.9 Users, Auth & Settings
+
 - FR-US-01 Admin can create, edit, deactivate, delete users.
 - FR-US-02 Admin can assign/change roles.
 - FR-US-03 Admin can configure pipeline stages (name, order, SLA).
@@ -283,34 +292,34 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 
 ## 10. Non-Functional Requirements
 
-| Category | Requirement | Target |
-|----------|-------------|--------|
-| Performance | Lead capture API response | < 500 ms (p95) |
-| Performance | Dashboard load | < 2 s on broadband |
-| Reliability | Uptime | 99.5% monthly (excl. planned maintenance) |
-| Security | Auth | Supabase Auth + mandatory MFA; HTTPS everywhere; CSRF protection |
-| Security | Role enforcement | Server-side via RLS; no client-only guards |
-| Security | Secrets | Email/provider keys only in Edge Functions; never in the browser; none committed to Git |
-| Scalability | Concurrent users | 50 simultaneous CRM users (MVP) |
-| Usability | Responsiveness | Dashboard + Kanban usable on tablet (768 px+) |
-| Data integrity | Dedupe | Email-based dedupe on capture; flag rather than silently drop |
-| Audit | Logging | Stage changes, edits, logins → audit log with timestamp + actor |
+| Category       | Requirement               | Target                                                                                  |
+| -------------- | ------------------------- | --------------------------------------------------------------------------------------- |
+| Performance    | Lead capture API response | < 500 ms (p95)                                                                          |
+| Performance    | Dashboard load            | < 2 s on broadband                                                                      |
+| Reliability    | Uptime                    | 99.5% monthly (excl. planned maintenance)                                               |
+| Security       | Auth                      | Supabase Auth + mandatory MFA; HTTPS everywhere; CSRF protection                        |
+| Security       | Role enforcement          | Server-side via RLS; no client-only guards                                              |
+| Security       | Secrets                   | Email/provider keys only in Edge Functions; never in the browser; none committed to Git |
+| Scalability    | Concurrent users          | 50 simultaneous CRM users (MVP)                                                         |
+| Usability      | Responsiveness            | Dashboard + Kanban usable on tablet (768 px+)                                           |
+| Data integrity | Dedupe                    | Email-based dedupe on capture; flag rather than silently drop                           |
+| Audit          | Logging                   | Stage changes, edits, logins → audit log with timestamp + actor                         |
 
 ---
 
 ## 11. Technical Architecture
 
-| Layer | Technology |
-|-------|------------|
-| Framework | React + Vite (Lovable default) |
-| Styling | Tailwind CSS + shadcn/ui |
-| Backend / DB | **Supabase** (Postgres, Auth, Row Level Security) |
-| Auth & access | Supabase Auth with **MFA/2FA (TOTP / email OTP)** + RBAC |
-| Server logic | Supabase **Edge Function** (form submit + email) |
-| Email | Resend (or SendGrid) for confirmation + internal notify |
-| State / data | TanStack Query (or Supabase client hooks) |
-| Version control | GitHub (via Lovable GitHub sync) |
-| AI tooling | Claude Code (refactor, tests, enhancements) |
+| Layer           | Technology                                               |
+| --------------- | -------------------------------------------------------- |
+| Framework       | React + Vite (Lovable default)                           |
+| Styling         | Tailwind CSS + shadcn/ui                                 |
+| Backend / DB    | **Supabase** (Postgres, Auth, Row Level Security)        |
+| Auth & access   | Supabase Auth with **MFA/2FA (TOTP / email OTP)** + RBAC |
+| Server logic    | Supabase **Edge Function** (form submit + email)         |
+| Email           | Resend (or SendGrid) for confirmation + internal notify  |
+| State / data    | TanStack Query (or Supabase client hooks)                |
+| Version control | GitHub (via Lovable GitHub sync)                         |
+| AI tooling      | Claude Code (refactor, tests, enhancements)              |
 
 **Suggested data model (tables):** `users` (profiles + role), `companies`, `contacts`, `leads`, `deals`, `activities`, `tasks`, plus supporting `deal_stage_history`, `deal_value_history`, `audit_log`, `pipeline_stages`, `loss_reasons`.
 
@@ -322,7 +331,7 @@ Seven default stages. Admin may rename/reorder from Settings but cannot drop bel
 
 **Assumptions:** Landing page built in Lovable first; CRM hardened in Claude Code. Single Tally product in v1. Currency defaults to GHS (Admin-configurable). Confirmation email copy finalised by Product before dev. No Tally licensing-API integration in v1.
 
-**Open questions:** OQ-01 capture UTM parameters? · OQ-02 native mobile app vs responsive web? · OQ-03 Closed-Won → licence provisioning webhook or manual? · OQ-04 fallback assignment if all reps at capacity? · OQ-05 — *resolved: 2FA is now mandatory for all users, not just Admin.*
+**Open questions:** OQ-01 capture UTM parameters? · OQ-02 native mobile app vs responsive web? · OQ-03 Closed-Won → licence provisioning webhook or manual? · OQ-04 fallback assignment if all reps at capacity? · OQ-05 — _resolved: 2FA is now mandatory for all users, not just Admin._
 
 ---
 
@@ -359,33 +368,35 @@ Rules are seeded with sensible defaults (below) and are **Admin-configurable** i
 
 ### 14.2 Auto-task & automation matrix (default rules)
 
-| Trigger | Conditions | Automatic actions |
-|---------|-----------|-------------------|
-| **Lead captured** (New Lead) | source = Tally Landing Page | Round-robin assign · send confirmation email · create task **"Make first contact"** due +4h to assignee · notify assigned rep · log audit |
-| **New Lead idle** | not Contacted within 24h | Mark lead overdue · notify rep **and** Sales Manager · escalate |
-| **Lead → Contacted** | — | Clear first-contact SLA · create task **"Qualify lead (BANT) — schedule call"** due +2d |
-| **Lead → Qualified** | — | Create task **"Prepare demo / convert to deal"** due +1d · surface convert prompt |
-| **Lead disqualified** | reason set | Archive (not delete) · log reason · optionally create **re-engagement** task due +90d |
-| **Lead → Deal** (conversion) | — | Create linked Contact+Company+Deal · deal stage = Qualified · set probability default · create task **"Schedule Tally demo"** due +2d |
-| **Deal → Demo / Proposal** | — | Create task **"Send proposal document"** due +1d · create reminder **"Follow up on proposal"** +3d · set probability default (e.g. 50%) |
-| **Deal → Negotiation** | — | Create task **"Follow up on negotiation terms"** due +2d · set probability default (e.g. 75%) |
-| **Deal idle in stage** | days-in-stage > stage SLA | Mark deal **stale** · notify owner + Manager · create nudge task |
-| **Deal → Closed-Won** | — | Confetti · prompt actual value + close date · set probability 100% · create tasks **"Send welcome & next steps"** +1d and **"Renewal check-in"** +11mo · notify Admin/Manager |
-| **Deal → Closed-Lost** | reason required | Set probability 0% · archive · create **re-engagement** task +90d · feed win/loss analytics |
-| **Activity logged without next step** | call/meeting completed, no open task | Prompt / auto-suggest a follow-up task |
-| **Confirmation email failed** | email_status = failed | Create task **"Manually contact lead — email failed"** to assignee · alert |
-| **Task due soon** | reminder window reached | In-app (and optional email) reminder · include in morning digest |
-| **Deal value changed** | in Negotiation, drop > threshold | Version-track change · optionally notify Manager |
+| Trigger                               | Conditions                           | Automatic actions                                                                                                                                                             |
+| ------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lead captured** (New Lead)          | source = Tally Landing Page          | Round-robin assign · send confirmation email · create task **"Make first contact"** due +4h to assignee · notify assigned rep · log audit                                     |
+| **New Lead idle**                     | not Contacted within 24h             | Mark lead overdue · notify rep **and** Sales Manager · escalate                                                                                                               |
+| **Lead → Contacted**                  | —                                    | Clear first-contact SLA · create task **"Qualify lead (BANT) — schedule call"** due +2d                                                                                       |
+| **Lead → Qualified**                  | —                                    | Create task **"Prepare demo / convert to deal"** due +1d · surface convert prompt                                                                                             |
+| **Lead disqualified**                 | reason set                           | Archive (not delete) · log reason · optionally create **re-engagement** task due +90d                                                                                         |
+| **Lead → Deal** (conversion)          | —                                    | Create linked Contact+Company+Deal · deal stage = Qualified · set probability default · create task **"Schedule Tally demo"** due +2d                                         |
+| **Deal → Demo / Proposal**            | —                                    | Create task **"Send proposal document"** due +1d · create reminder **"Follow up on proposal"** +3d · set probability default (e.g. 50%)                                       |
+| **Deal → Negotiation**                | —                                    | Create task **"Follow up on negotiation terms"** due +2d · set probability default (e.g. 75%)                                                                                 |
+| **Deal idle in stage**                | days-in-stage > stage SLA            | Mark deal **stale** · notify owner + Manager · create nudge task                                                                                                              |
+| **Deal → Closed-Won**                 | —                                    | Confetti · prompt actual value + close date · set probability 100% · create tasks **"Send welcome & next steps"** +1d and **"Renewal check-in"** +11mo · notify Admin/Manager |
+| **Deal → Closed-Lost**                | reason required                      | Set probability 0% · archive · create **re-engagement** task +90d · feed win/loss analytics                                                                                   |
+| **Activity logged without next step** | call/meeting completed, no open task | Prompt / auto-suggest a follow-up task                                                                                                                                        |
+| **Confirmation email failed**         | email_status = failed                | Create task **"Manually contact lead — email failed"** to assignee · alert                                                                                                    |
+| **Task due soon**                     | reminder window reached              | In-app (and optional email) reminder · include in morning digest                                                                                                              |
+| **Deal value changed**                | in Negotiation, drop > threshold     | Version-track change · optionally notify Manager                                                                                                                              |
 
-*Probability defaults and all timings (+4h, +2d, SLA days, etc.) are configurable per stage by Admin; the values above are seed defaults.*
+_Probability defaults and all timings (+4h, +2d, SLA days, etc.) are configurable per stage by Admin; the values above are seed defaults._
 
 ### 14.3 Scheduled (time-based) automations
+
 - **SLA monitor** — hourly job flags leads/deals exceeding their stage SLA → overdue/stale + escalation.
 - **Reminder dispatch** — fires task reminders at their due window.
 - **Daily digest** — morning email/in-app summary to each user: today's tasks, overdue items, new assigned leads.
 - **Re-engagement sweep** — surfaces disqualified leads / Closed-Lost deals past their cooldown for a fresh outreach task.
 
 ### 14.4 Automation functional requirements
+
 - FR-AUT-01 Stage changes on leads/deals trigger their configured automatic task(s) atomically with the stage write and the stage-history log.
 - FR-AUT-02 Auto-created tasks are assigned to the record's owner, carry a due date, and appear in that user's task list and dashboard.
 - FR-AUT-03 SLA breaches mark records overdue/stale and notify the owner and their Manager.
@@ -397,6 +408,7 @@ Rules are seeded with sensible defaults (below) and are **Admin-configurable** i
 - FR-AUT-09 Reminders and a daily digest are delivered per user for upcoming and overdue tasks.
 
 ### 14.5 Glossary additions
+
 - **Automation Rule** — a Trigger → Conditions → Actions definition that runs automatically.
 - **SLA (stage)** — the maximum days a record should sit in a stage before it is flagged overdue/stale.
 - **Stale Deal** — a deal with no activity / exceeding stage SLA, flagged for attention.
@@ -404,6 +416,7 @@ Rules are seeded with sensible defaults (below) and are **Admin-configurable** i
 - **Auto-Task** — a task created automatically by the engine, owned by the record's assignee.
 
 ### 14.6 Technical implementation notes
+
 - **Synchronous rules** (stage change → task + history + probability) via Postgres triggers / functions, so they are transactional with the record write.
 - **Scheduled rules** (SLA, stale, digest, re-engagement) via Supabase **pg_cron** invoking SQL functions or an Edge Function.
 - **Email/notification actions** via Edge Functions (Resend) — secrets server-side only.
@@ -411,4 +424,4 @@ Rules are seeded with sensible defaults (below) and are **Admin-configurable** i
 
 ---
 
-*End of PRD v2.0 · Ref ASM-CRM-001*
+_End of PRD v2.0 · Ref ASM-CRM-001_
