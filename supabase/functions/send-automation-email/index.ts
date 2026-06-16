@@ -29,6 +29,17 @@ function renderHtml(template: string, payload: Record<string, unknown>): string 
       <p>Overdue: <b>${payload.overdue ?? 0}</b></p>
       <p>New leads: <b>${payload.new_leads ?? 0}</b></p>`;
   }
+  if (template === "landing_lead_confirmation") {
+    const first = String(payload.first_name ?? "there");
+    const company = payload.company_name ? ` at <b>${String(payload.company_name)}</b>` : "";
+    return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
+      <p>Hi ${first}${company},</p>
+      <p>We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.</p>
+      <p>If it's urgent, just reply to this email and we'll prioritise it.</p>
+      <p style="margin-top:24px">— The TallyPrime team</p>
+    </div>`;
+  }
   // Generic fallback — payload rendered as a list.
   const items = Object.entries(payload)
     .map(([k, v]) => `<li><b>${k}</b>: ${String(v)}</li>`)

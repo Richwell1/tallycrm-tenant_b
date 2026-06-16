@@ -113,6 +113,24 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     );
   }
 
+  // Fire-and-forget: trigger the email dispatcher so the queued
+  // confirmation email is sent without waiting for a cron tick.
+  // Failures here must NOT block the visitor's success response.
+  try {
+    const fnUrl = `${SUPABASE_URL}/functions/v1/send-automation-email`;
+    void fetch(fnUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: "{}",
+    }).catch((e) => console.error("[lead-capture] dispatcher trigger failed", e));
+  } catch (e) {
+    console.error("[lead-capture] dispatcher trigger threw", e);
+  }
+
   return json(request, { ok: true, lead_id: leadId }, 200);
 }
 
