@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { PageHeader, ToolbarButton } from "@/components/layout";
+import { PageHeader, ToolbarButton, CrmToolbar } from "@/components/layout";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { LeadKanban } from "@/components/leads/LeadKanban";
 import { LeadsTable } from "@/components/leads/LeadsTable";
