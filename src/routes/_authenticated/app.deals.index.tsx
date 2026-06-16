@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { EmptyState, ErrorState, GridSkeleton } from "@/components/common";
+import { PageHeader, ToolbarButton, CrmToolbar } from "@/components/layout";
 import { AddDealModal } from "@/components/deals/AddDealModal";
 import { CloseDealModal } from "@/components/deals/CloseDealModal";
 import {
