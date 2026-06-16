@@ -436,34 +436,6 @@ function ContactsTable({
   );
 }
 
-function ToolbarButton({ icon, children }: { icon: string; children: React.ReactNode }) {
-  return (
-    <button className="flex items-center gap-1 rounded-lg border border-border bg-card px-4 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted">
-      <span className="material-symbols-outlined text-[18px]">{icon}</span>
-      {children}
-    </button>
-  );
-}
-
-function ToolbarIcon({ icon, onClick }: { icon: string; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-lg border border-border bg-card p-2.5 text-text-muted transition-colors hover:text-primary"
-    >
-      <span className="material-symbols-outlined">{icon}</span>
-    </button>
-  );
-}
-
-function FilterChip({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[11px] font-semibold text-text-secondary hover:bg-muted">
-      {children}
-      <span className="material-symbols-outlined text-[14px]">close</span>
-    </button>
-  );
-}
 
 function TableHead({
   children,
