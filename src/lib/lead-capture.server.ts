@@ -13,7 +13,7 @@ const payloadSchema = z.object({
 type CapturePayload = z.infer<typeof payloadSchema>;
 
 function securityHeaders(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   return {
     "Access-Control-Allow-Origin": origin,
     Vary: "Origin",
