@@ -1060,6 +1060,18 @@ export type Database = {
     Functions: {
       automation_rule_config: { Args: { _rule_id: string }; Returns: Json }
       automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
+      capture_landing_lead: {
+        Args: {
+          p_company_name: string
+          p_email: string
+          p_first_name: string
+          p_ip_country: string
+          p_last_name: string
+          p_message: string
+          p_phone: string
+        }
+        Returns: string
+      }
       convert_lead_to_deal: {
         Args: {
           _deal_name: string

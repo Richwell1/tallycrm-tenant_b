@@ -71,111 +71,49 @@ export async function handleLeadCapturePost(request: Request) {
 }
 
 async function insertLandingLead(request: Request, data: CapturePayload) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { createClient } = await import("@supabase/supabase-js");
 
-  const [existingContactRes, repsRes] = await Promise.all([
-    supabaseAdmin
-      .from("contacts")
-      .select("id, assigned_to")
-      .eq("email", data.email)
-      .is("deleted_at", null)
-      .maybeSingle(),
-    supabaseAdmin.from("user_roles").select("user_id").eq("role", "rep"),
-  ]);
+  const SUPABASE_URL =
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-  const existingContact = existingContactRes.data;
-  let assignedTo: string | null = null;
-  const reps = repsRes.data ?? [];
-
-  if (reps.length > 0) {
-    try {
-      const counts = await Promise.all(
-        reps.map(async (rep) => {
-          const { count } = await supabaseAdmin
-            .from("leads")
-            .select("id", { count: "exact", head: true })
-            .eq("assigned_to", rep.user_id)
-            .in("status", ["new", "contacted", "qualified"]);
-          return { id: rep.user_id as string, count: count ?? 0 };
-        }),
-      );
-      counts.sort((a, b) => a.count - b.count);
-      assignedTo = counts[0]?.id ?? null;
-    } catch {
-      assignedTo = null;
-    }
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    console.error("[lead-capture] Missing Supabase publishable env vars");
+    return json(
+      request,
+      { error: "Backend not configured", code: "config_missing" },
+      500,
+    );
   }
 
-  if (existingContact?.assigned_to) {
-    assignedTo = existingContact.assigned_to as string;
-  }
+  const client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-  const leadName = `${data.first_name} ${data.last_name}`.trim();
   const ipCountry = getVisitorCountry(request);
-  const { data: lead, error: insertError } = await supabaseAdmin
-    .from("leads")
-    .insert({
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      phone: data.phone || null,
-      company_name: data.company_name || null,
-      message: data.message || null,
-      source: "Tally Landing Page",
-      status: "new",
-      ip_country: ipCountry,
-      assigned_to: assignedTo,
-      email_status: "queued",
-    })
-    .select("id")
-    .single();
 
-  if (insertError || !lead) {
-    return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
+  const { data: leadId, error } = await client.rpc("capture_landing_lead", {
+    p_first_name: data.first_name,
+    p_last_name: data.last_name,
+    p_email: data.email,
+    p_phone: data.phone ?? "",
+    p_company_name: data.company_name ?? "",
+    p_message: data.message ?? "",
+    p_ip_country: ipCountry,
+  });
+
+  if (error || !leadId) {
+    console.error("[lead-capture] RPC failed", error);
+    return json(
+      request,
+      { error: "Could not save lead", code: "insert_failed" },
+      500,
+    );
   }
 
-  const dueAt = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
-  const sideEffects = [
-    supabaseAdmin.from("tasks").insert({
-      title: `Make first contact: ${leadName}`,
-      type: "call",
-      due_at: dueAt,
-      priority: "high",
-      assigned_to: assignedTo,
-      contact_id: existingContact?.id ?? null,
-      notes: `Auto-created from Tally Landing Page lead. Email: ${data.email}`,
-    }),
-    supabaseAdmin.from("email_queue").insert({
-      template: "landing_lead_confirmation",
-      recipient: data.email,
-      subject: "We received your TallyPrime demo request",
-      payload: {
-        first_name: data.first_name,
-        last_name: data.last_name,
-        company_name: data.company_name || null,
-        message: data.message || null,
-      },
-      related_entity: "lead",
-      related_entity_id: lead.id,
-    }),
-    supabaseAdmin.from("audit_log").insert({
-      entity: "lead",
-      entity_id: lead.id,
-      entity_name: leadName,
-      action: "create",
-      actor_id: null,
-      metadata: {
-        source: "Tally Landing Page",
-        ip_country: ipCountry,
-        assigned_to: assignedTo,
-        existing_contact_id: existingContact?.id ?? null,
-      },
-    }),
-  ];
-
-  void Promise.allSettled(sideEffects);
-
-  return json(request, { ok: true, lead_id: lead.id }, 200);
+  return json(request, { ok: true, lead_id: leadId }, 200);
 }
 
 function getVisitorCountry(request: Request) {
