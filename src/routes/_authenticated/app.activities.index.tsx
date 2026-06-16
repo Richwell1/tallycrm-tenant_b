@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
+import { PageHeader, ToolbarButton, CrmToolbar } from "@/components/layout";
 import { ActivityDetailPanel } from "@/components/activities/ActivityDetailPanel";
 import { AddActivityModal } from "@/components/activities/AddActivityModal";
 import { type ActivityItem, type ActivityType, useActivities } from "@/lib/activities-data";
