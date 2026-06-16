@@ -1,5 +1,5 @@
 import { SectionCard } from "@/components/layout";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Icon } from "@/components/common";
 import { useMiniPipeline } from "@/lib/dashboard-data";
 import { useAuth } from "@/lib/auth-context";
 import { formatCurrency, formatRelative } from "@/lib/format";
@@ -23,7 +23,7 @@ export function MiniPipeline() {
         </div>
       ) : stages.every((s) => s.deals.length === 0) ? (
         <EmptyState
-          icon={<span className="material-symbols-outlined text-[24px]">view_kanban</span>}
+          icon={<Icon name="view_kanban" className="h-6 w-6" />}
           title="Pipeline is empty"
           description="Deals appear here grouped by stage once created."
         />
@@ -36,7 +36,7 @@ export function MiniPipeline() {
             >
               <div className="mb-2 flex items-center justify-between">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                  <span className="h-2 w-2 rounded-full bg-primary" />
                   {s.name}
                 </p>
                 <span className="text-[10px] text-text-secondary">{s.deals.length}</span>

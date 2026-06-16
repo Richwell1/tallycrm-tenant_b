@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Bell, BellOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -6,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Icon } from "@/components/common";
 import { useAuth } from "@/lib/auth-context";
 import { formatRelative } from "@/lib/format";
 import {
@@ -87,7 +89,7 @@ export function NotificationCenter() {
           title="Notifications"
           aria-label={`${unreadCount} unread notifications`}
         >
-          <span className="material-symbols-outlined">notifications</span>
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 ? (
             <span className="absolute right-1.5 top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-cta px-1 text-[10px] font-bold leading-none text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -217,7 +219,7 @@ function NotificationItem({
       <div
         className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", tone)}
       >
-        <span className="material-symbols-outlined text-[19px]">{icon}</span>
+        <Icon name={icon} className="h-[19px] w-[19px]" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
@@ -245,7 +247,7 @@ function NotificationItem({
             className="rounded-md p-1 text-text-muted opacity-0 transition-opacity hover:bg-danger-light hover:text-danger group-hover:opacity-100 focus:opacity-100"
             title="Dismiss notification"
           >
-            <span className="material-symbols-outlined text-[16px]">close</span>
+            <X className="h-4 w-4" />
           </button>
         </div>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
@@ -290,7 +292,7 @@ function NotificationError({ message, onRetry }: { message: string; onRetry: () 
   return (
     <div className="p-5 text-center">
       <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-danger-light text-danger">
-        <span className="material-symbols-outlined">error</span>
+        <Icon name="error" />
       </div>
       <p className="text-sm font-semibold text-foreground">Notifications unavailable</p>
       <p className="mt-1 text-xs text-text-secondary">{message}</p>
@@ -309,7 +311,7 @@ function NotificationEmpty({ filter }: { filter: NotificationFilter }) {
   return (
     <div className="px-6 py-10 text-center">
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-text-muted">
-        <span className="material-symbols-outlined">notifications_off</span>
+        <BellOff className="h-5 w-5" />
       </div>
       <p className="text-sm font-semibold text-foreground">{label}</p>
       <p className="mt-1 text-xs leading-5 text-text-secondary">

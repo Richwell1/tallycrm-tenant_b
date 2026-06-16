@@ -1,8 +1,15 @@
 import { SectionCard } from "@/components/layout";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Icon } from "@/components/common";
 import { useLeadSourceBreakdown } from "@/lib/dashboard-data";
 
-const PALETTE = ["#0057B8", "#F5A623", "#10B981", "#EF4444", "#8B5CF6", "#06B6D4"];
+const PALETTE = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+  "var(--color-primary-mid)",
+];
 
 export function LeadSourceDonut() {
   const { data, isLoading } = useLeadSourceBreakdown();
@@ -15,13 +22,16 @@ export function LeadSourceDonut() {
         <div className="h-44 rounded-lg skeleton" />
       ) : total === 0 ? (
         <EmptyState
-          icon={<span className="material-symbols-outlined text-[24px]">donut_large</span>}
+          icon={<Icon name="donut_large" className="h-6 w-6" />}
           title="No leads captured yet"
           description="Source mix will appear after the first lead arrives."
         />
       ) : (
         <div className="flex items-center gap-6">
-          <Donut slices={slices.map((s, i) => ({ ...s, color: PALETTE[i % PALETTE.length] }))} total={total} />
+          <Donut
+            slices={slices.map((s, i) => ({ ...s, color: PALETTE[i % PALETTE.length] }))}
+            total={total}
+          />
           <ul className="flex-1 space-y-2">
             {slices.map((s, i) => {
               const pct = total > 0 ? (s.count / total) * 100 : 0;
@@ -63,7 +73,14 @@ function Donut({
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
-        <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          fill="none"
+          stroke="var(--color-muted)"
+          strokeWidth={stroke}
+        />
         {slices.map((s) => {
           const frac = s.count / total;
           const dash = frac * circumference;

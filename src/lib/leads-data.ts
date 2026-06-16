@@ -126,6 +126,28 @@ export function useDisqualifyLead() {
   });
 }
 
+export function useSaveLeadNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ lead, note }: { lead: LeadRow; note: string }) => {
+      const trimmed = note.trim();
+      if (!trimmed) throw new Error("Note is required");
+      const entry = `[${new Date().toLocaleString()}] ${trimmed}`;
+      const nextMessage = lead.message ? `${lead.message}\n\n${entry}` : entry;
+      const { error } = await supabase
+        .from("leads")
+        .update({ message: nextMessage })
+        .eq("id", lead.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: leadsKey });
+      qc.invalidateQueries({ queryKey: ["lead", v.lead.id] });
+      qc.invalidateQueries({ queryKey: ["lead_activities", v.lead.email] });
+    },
+  });
+}
+
 export interface ConvertLeadInput {
   lead: LeadRow;
   contact: {

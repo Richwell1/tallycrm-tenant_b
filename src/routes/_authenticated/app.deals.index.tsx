@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { EmptyState, ErrorState, GridSkeleton } from "@/components/common";
 import { AddDealModal } from "@/components/deals/AddDealModal";
+import { CloseDealModal } from "@/components/deals/CloseDealModal";
 import {
   type DealSummary,
   type PipelineStageRow,
@@ -25,6 +26,10 @@ function DealsIndex() {
   const [sortKey, setSortKey] = useState<DealSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
+  const [closeTarget, setCloseTarget] = useState<{
+    deal: DealSummary;
+    mode: "won" | "lost";
+  } | null>(null);
 
   const filteredDeals = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -54,12 +59,16 @@ function DealsIndex() {
     });
   }, [data?.deals, search, sortKey, stageFilter]);
 
-  function handleDrop(stageId: string) {
+  function handleDrop(stage: PipelineStageRow) {
     if (!draggedDealId) return;
     const deal = data?.deals.find((item) => item.id === draggedDealId);
     setDraggedDealId(null);
-    if (!deal || deal.stage_id === stageId) return;
-    updateStage.mutate({ dealId: draggedDealId, stageId });
+    if (!deal || deal.stage_id === stage.id) return;
+    if (stage.is_closed) {
+      setCloseTarget({ deal, mode: stage.is_won ? "won" : "lost" });
+      return;
+    }
+    updateStage.mutate({ dealId: draggedDealId, stageId: stage.id });
   }
 
   return (
@@ -170,7 +179,8 @@ function DealsIndex() {
                   deals={stageDeals}
                   dragging={!!draggedDealId}
                   onDragStart={setDraggedDealId}
-                  onDrop={() => handleDrop(stage.id)}
+                  onDrop={() => handleDrop(stage)}
+                  onClose={(deal, mode) => setCloseTarget({ deal, mode })}
                 />
               );
             })}
@@ -179,6 +189,16 @@ function DealsIndex() {
       </div>
 
       <AddDealModal open={addOpen} onOpenChange={setAddOpen} />
+      {closeTarget ? (
+        <CloseDealModal
+          deal={closeTarget.deal}
+          mode={closeTarget.mode}
+          open={!!closeTarget}
+          onOpenChange={(open) => {
+            if (!open) setCloseTarget(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }
@@ -189,12 +209,14 @@ function KanbanColumn({
   dragging,
   onDragStart,
   onDrop,
+  onClose,
 }: {
   stage: PipelineStageRow;
   deals: DealSummary[];
   dragging: boolean;
   onDragStart: (id: string) => void;
   onDrop: () => void;
+  onClose: (deal: DealSummary, mode: "won" | "lost") => void;
 }) {
   const total = deals.reduce((sum, deal) => sum + Number(deal.value ?? 0), 0);
   const tone = stageTone(stage);
@@ -231,6 +253,7 @@ function KanbanColumn({
             deal={deal}
             tone={tone}
             onDragStart={() => onDragStart(deal.id)}
+            onClose={onClose}
           />
         ))}
         {deals.length === 0 ? (
@@ -247,10 +270,12 @@ function DealCard({
   deal,
   tone,
   onDragStart,
+  onClose,
 }: {
   deal: DealSummary;
   tone: ReturnType<typeof stageTone>;
   onDragStart: () => void;
+  onClose: (deal: DealSummary, mode: "won" | "lost") => void;
 }) {
   const contactName = deal.primary_contact
     ? `${deal.primary_contact.first_name} ${deal.primary_contact.last_name}`
@@ -263,35 +288,35 @@ function DealCard({
     .toUpperCase();
 
   return (
-    <Link
+    <div
       draggable
       onDragStart={onDragStart}
-      to="/app/deals/$id"
-      params={{ id: deal.id }}
       className="group cursor-grab overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:border-primary active:cursor-grabbing"
     >
       <div className={`h-1 w-full ${tone.bar}`} />
       <div className="p-4">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <h3 className="text-[16px] font-semibold text-foreground transition-colors group-hover:text-primary">
-            {deal.name}
-          </h3>
-          <span className="material-symbols-outlined text-text-muted">more_vert</span>
-        </div>
-        <div className="mb-4 flex items-center gap-1 text-[16px] font-semibold text-foreground">
-          <span className="material-symbols-outlined text-[18px] text-primary">payments</span>
-          {formatCurrency(Number(deal.value ?? 0), deal.currency ?? "USD")}
-        </div>
-        <div className="mb-4 space-y-1">
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <span className="material-symbols-outlined text-[16px] text-text-muted">person</span>
-            {contactName}
+        <Link to="/app/deals/$id" params={{ id: deal.id }} className="block">
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <h3 className="text-[16px] font-semibold text-foreground transition-colors group-hover:text-primary">
+              {deal.name}
+            </h3>
+            <span className="material-symbols-outlined text-text-muted">open_in_new</span>
           </div>
-          <div className="flex items-center gap-2 truncate text-sm text-text-secondary">
-            <span className="material-symbols-outlined text-[16px] text-text-muted">mail</span>
-            <span className="truncate">{deal.primary_contact?.email ?? deal.company?.email}</span>
+          <div className="mb-4 flex items-center gap-1 text-[16px] font-semibold text-foreground">
+            <span className="material-symbols-outlined text-[18px] text-primary">payments</span>
+            {formatCurrency(Number(deal.value ?? 0), deal.currency ?? "USD")}
           </div>
-        </div>
+          <div className="mb-4 space-y-1">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <span className="material-symbols-outlined text-[16px] text-text-muted">person</span>
+              {contactName}
+            </div>
+            <div className="flex items-center gap-2 truncate text-sm text-text-secondary">
+              <span className="material-symbols-outlined text-[16px] text-text-muted">mail</span>
+              <span className="truncate">{deal.primary_contact?.email ?? deal.company?.email}</span>
+            </div>
+          </div>
+        </Link>
         <div className="flex items-center justify-between">
           <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary-light text-[10px] font-bold text-primary">
             {initials}
@@ -300,8 +325,26 @@ function DealCard({
             {deal.probability ?? 0}% Prob.
           </span>
         </div>
+        {!deal.stage?.is_closed ? (
+          <div className="mt-4 grid grid-cols-2 gap-2 border-t border-border pt-3">
+            <button
+              type="button"
+              onClick={() => onClose(deal, "won")}
+              className="rounded bg-success-light px-2 py-1.5 text-xs font-bold text-success hover:bg-success hover:text-white"
+            >
+              Won
+            </button>
+            <button
+              type="button"
+              onClick={() => onClose(deal, "lost")}
+              className="rounded bg-danger-light px-2 py-1.5 text-xs font-bold text-danger hover:bg-danger hover:text-white"
+            >
+              Lost
+            </button>
+          </div>
+        ) : null}
       </div>
-    </Link>
+    </div>
   );
 }
 

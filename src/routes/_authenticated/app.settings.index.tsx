@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
@@ -27,6 +27,9 @@ import {
   useUpdateLossReason,
   useDeleteLossReason,
   useUpdateUserRole,
+  useUpdateUserStatus,
+  useInviteUser,
+  useSaveAssignmentQueue,
   useAppSettings,
   useSaveAppSettings,
   type AuditLogEntry,
@@ -175,16 +178,17 @@ function GeneralSettingsPanel() {
   const [timezone, setTimezone] = useState("");
   const [dateFormat, setDateFormat] = useState("");
   const [language, setLanguage] = useState("");
-  const [initialized, setInitialized] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
 
-  if (settings && !initialized) {
+  useEffect(() => {
+    if (!settings) return;
     setCrmName(settings.crm_name);
     setCurrency(settings.default_currency);
     setTimezone(settings.timezone);
     setDateFormat(settings.date_format);
     setLanguage(settings.language);
-    setInitialized(true);
-  }
+    setLogoUrl(settings.logo_url ?? "");
+  }, [settings]);
 
   async function handleSave() {
     try {
@@ -194,6 +198,7 @@ function GeneralSettingsPanel() {
         timezone,
         date_format: dateFormat,
         language,
+        logo_url: logoUrl || null,
       });
       toast.success("General settings saved");
     } catch (err) {
@@ -224,15 +229,16 @@ function GeneralSettingsPanel() {
               This name appears in browser titles, notifications, and system-generated messages.
             </p>
           </div>
-          <label className="group flex h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted text-center transition-colors hover:border-primary hover:bg-primary-light">
-            <span className="material-symbols-outlined text-[34px] text-text-muted group-hover:text-primary">
-              cloud_upload
-            </span>
-            <span className="mt-2 text-xs font-semibold text-text-secondary group-hover:text-primary">
-              Replace Logo
-            </span>
-            <input type="file" className="sr-only" />
-          </label>
+          <div className="space-y-3">
+            <InputControl label="Logo URL" value={logoUrl} onChange={setLogoUrl} />
+            <div className="flex h-24 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted text-center">
+              {logoUrl ? (
+                <img src={logoUrl} alt="CRM logo preview" className="max-h-16 max-w-full" />
+              ) : (
+                <span className="text-xs font-semibold text-text-secondary">No logo URL set</span>
+              )}
+            </div>
+          </div>
         </div>
       </SectionCard>
 
@@ -294,9 +300,11 @@ function GeneralSettingsPanel() {
 function PipelineSettingsPanel() {
   const { data: stages = [], isLoading, isError, error, refetch } = usePipelineStagesConfig();
   const updateStage = useUpdatePipelineStage();
-  const [edits, setEdits] = useState<Record<string, { name?: string; sla_days?: number }>>({});
+  const [edits, setEdits] = useState<
+    Record<string, { name?: string; color?: string; sla_days?: number }>
+  >({});
 
-  function patchEdit(id: string, patch: { name?: string; sla_days?: number }) {
+  function patchEdit(id: string, patch: { name?: string; color?: string; sla_days?: number }) {
     setEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
   }
 
@@ -374,9 +382,16 @@ function PipelineSettingsPanel() {
                       />
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className="inline-flex h-7 w-7 rounded-full border-2 border-white shadow-[var(--shadow-xs)] ring-1 ring-border"
-                        style={{ background: stage.color || "var(--color-primary)" }}
+                      <input
+                        defaultValue={stage.color}
+                        disabled={stage.is_closed}
+                        onBlur={(e) => {
+                          if (e.target.value !== stage.color) {
+                            patchEdit(stage.id, { color: e.target.value });
+                          }
+                        }}
+                        className="h-8 w-12 rounded border border-border bg-card p-1 disabled:cursor-not-allowed disabled:opacity-60"
+                        type="color"
                       />
                     </td>
                     <td className="px-5 py-4">
@@ -453,6 +468,7 @@ function UsersSettingsPanel() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const { data: users = [], isLoading, isError, error, refetch } = useSettingsUsers();
   const updateRole = useUpdateUserRole();
+  const updateStatus = useUpdateUserStatus();
 
   const adminCount = users.filter((u) => u.role === "admin").length;
   const managerCount = users.filter((u) => u.role === "manager").length;
@@ -581,7 +597,25 @@ function UsersSettingsPanel() {
                           : "Never"}
                       </td>
                       <td className="px-5 py-4">
-                        <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
+                        <div className="flex items-center gap-2">
+                          <AutomationSwitch
+                            checked={user.status === "active"}
+                            onChange={async (checked) => {
+                              try {
+                                await updateStatus.mutateAsync({
+                                  userId: user.id,
+                                  status: checked ? "active" : "inactive",
+                                });
+                                toast.success("User status updated");
+                              } catch (err) {
+                                toast.error("Could not update status", {
+                                  description: (err as Error).message,
+                                });
+                              }
+                            }}
+                          />
+                          <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -841,20 +875,31 @@ function LeadAssignmentPanel() {
   const { data: reps = [], isLoading } = useAssignmentReps();
   const { data: settings } = useAppSettings();
   const saveSettings = useSaveAppSettings();
+  const saveQueue = useSaveAssignmentQueue();
 
   const [strategy, setStrategy] = useState<string>("round_robin");
-  const [strategyInit, setStrategyInit] = useState(false);
+  const [queue, setQueue] = useState<Record<string, boolean>>({});
 
-  if (settings && !strategyInit) {
-    setStrategy(settings.assignment_strategy);
-    setStrategyInit(true);
-  }
+  useEffect(() => {
+    if (settings) setStrategy(settings.assignment_strategy);
+  }, [settings]);
 
-  const activeCount = reps.filter((r) => r.active).length;
+  useEffect(() => {
+    setQueue(Object.fromEntries(reps.map((rep) => [rep.id, rep.active])));
+  }, [reps]);
+
+  const activeCount = reps.filter((r) => queue[r.id] ?? r.active).length;
 
   async function handleSaveStrategy() {
     try {
       await saveSettings.mutateAsync({ assignment_strategy: strategy });
+      await saveQueue.mutateAsync(
+        reps.map((rep, index) => ({
+          user_id: rep.id,
+          position: index + 1,
+          active: queue[rep.id] ?? rep.active,
+        })),
+      );
       toast.success("Lead assignment logic saved");
     } catch (err) {
       toast.error("Could not save assignment logic", { description: (err as Error).message });
@@ -944,7 +989,10 @@ function LeadAssignmentPanel() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-semibold text-text-muted">#{index + 1}</span>
-                  <AutomationSwitch checked={rep.active} onChange={() => {}} />
+                  <AutomationSwitch
+                    checked={queue[rep.id] ?? rep.active}
+                    onChange={(checked) => setQueue((prev) => ({ ...prev, [rep.id]: checked }))}
+                  />
                 </div>
               </div>
             ))}
@@ -956,10 +1004,10 @@ function LeadAssignmentPanel() {
           </button>
           <button
             onClick={handleSaveStrategy}
-            disabled={saveSettings.isPending}
+            disabled={saveSettings.isPending || saveQueue.isPending}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
           >
-            {saveSettings.isPending ? "Saving…" : "Save Assignment Logic"}
+            {saveSettings.isPending || saveQueue.isPending ? "Saving…" : "Save Assignment Logic"}
           </button>
         </footer>
       </SectionCard>
@@ -972,6 +1020,7 @@ function EmailNotificationsPanel() {
   const saveSettings = useSaveAppSettings();
   const [showKey, setShowKey] = useState(false);
   const [provider, setProvider] = useState("Resend");
+  const [apiKeyMasked, setApiKeyMasked] = useState("re_xxxxxxxxxxxxxxxxxxxx");
   const [fromName, setFromName] = useState("Tally CRM Sales");
   const [fromEmail, setFromEmail] = useState("sales@tallycrm.io");
   const [notifs, setNotifs] = useState({
@@ -984,10 +1033,11 @@ function EmailNotificationsPanel() {
     digestEmail: true,
     digestApp: false,
   });
-  const [emailInit, setEmailInit] = useState(false);
 
-  if (settings && !emailInit) {
+  useEffect(() => {
+    if (!settings) return;
     setProvider(settings.email_provider);
+    setApiKeyMasked(settings.email_api_key_masked);
     setFromName(settings.from_name);
     setFromEmail(settings.from_email);
     setNotifs({
@@ -1000,13 +1050,13 @@ function EmailNotificationsPanel() {
       digestEmail: settings.notif_digest_email,
       digestApp: settings.notif_digest_app,
     });
-    setEmailInit(true);
-  }
+  }, [settings]);
 
   async function saveProvider() {
     try {
       await saveSettings.mutateAsync({
         email_provider: provider,
+        email_api_key_masked: apiKeyMasked,
         from_name: fromName,
         from_email: fromEmail,
       });
@@ -1030,6 +1080,7 @@ function EmailNotificationsPanel() {
         notif_digest_email: next.digestEmail,
         notif_digest_app: next.digestApp,
       });
+      toast.success("Notification settings saved");
     } catch (err) {
       toast.error("Could not save notification settings", { description: (err as Error).message });
     }
@@ -1087,8 +1138,8 @@ function EmailNotificationsPanel() {
               </span>
               <div className="relative">
                 <input
-                  value="re_xxxxxxxxxxxxxxxxxxxx"
-                  readOnly
+                  value={apiKeyMasked}
+                  onChange={(e) => setApiKeyMasked(e.target.value)}
                   type={showKey ? "text" : "password"}
                   className="input pr-10"
                 />
@@ -1198,6 +1249,7 @@ function LossReasonsPanel() {
   async function handleCreate() {
     try {
       await createReason.mutateAsync("New reason");
+      toast.success("Loss reason added");
     } catch (err) {
       toast.error("Could not add reason", { description: (err as Error).message });
     }
@@ -1206,6 +1258,7 @@ function LossReasonsPanel() {
   async function handleDelete(id: string) {
     try {
       await deleteReason.mutateAsync(id);
+      toast.success("Loss reason deleted");
     } catch (err) {
       toast.error("Could not delete reason", { description: (err as Error).message });
     }
@@ -1248,6 +1301,7 @@ function LossReasonsPanel() {
                     if (e.target.value !== reason.label) {
                       updateReason
                         .mutateAsync({ id: reason.id, label: e.target.value })
+                        .then(() => toast.success("Loss reason saved"))
                         .catch((err) =>
                           toast.error("Could not save", { description: (err as Error).message }),
                         );
@@ -1277,7 +1331,32 @@ function LossReasonsPanel() {
 }
 
 function AuditLogPanel() {
-  const { data: rows = [], isLoading, isError, error, refetch } = useAuditLog();
+  const [entity, setEntity] = useState("All Entities");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    entity: "All Entities",
+    startDate: "",
+    endDate: "",
+  });
+  const { data: rows = [], isLoading, isError, error, refetch } = useAuditLog(50, appliedFilters);
+
+  function exportCsv() {
+    const headers = ["Actor", "Action", "Entity", "Entity Name", "Timestamp", "IP Address"];
+    const csvRows = rows.map((row) =>
+      [row.actor, row.action, row.entity, row.entity_name ?? "", row.created_at, row.ip ?? ""]
+        .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+        .join(","),
+    );
+    const blob = new Blob([[headers.join(","), ...csvRows].join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Audit log exported");
+  }
 
   return (
     <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
@@ -1285,13 +1364,16 @@ function AuditLogPanel() {
         <div className="space-y-4">
           <SelectControl
             label="Entity Type"
-            value="All Entities"
-            onChange={() => {}}
+            value={entity}
+            onChange={setEntity}
             options={["All Entities", "Lead", "Deal", "Task", "Contact", "Company"]}
           />
-          <InputControl label="Start Date" value="" onChange={() => {}} />
-          <InputControl label="End Date" value="" onChange={() => {}} />
-          <button className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">
+          <InputControl label="Start Date" value={startDate} onChange={setStartDate} />
+          <InputControl label="End Date" value={endDate} onChange={setEndDate} />
+          <button
+            onClick={() => setAppliedFilters({ entity, startDate, endDate })}
+            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+          >
             Apply Filters
           </button>
         </div>
@@ -1301,7 +1383,10 @@ function AuditLogPanel() {
         title="Audit Log"
         description="Actor, action, entity, timestamp, and IP address."
         actions={
-          <button className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-muted">
+          <button
+            onClick={exportCsv}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-muted"
+          >
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export CSV
           </button>
@@ -1374,19 +1459,71 @@ function AuditLogPanel() {
 }
 
 function LandingIntegrationPanel() {
+  const { data: settings } = useAppSettings();
+  const saveSettings = useSaveAppSettings();
   const endpoint = "POST {SUPABASE_URL}/functions/v1/leads-capture";
+  const [apiKey, setApiKey] = useState("sb_publishable_xxxxxxxxxxxxxxxxxxxx");
+  const [responseLog, setResponseLog] = useState<Array<{ status: string; detail: string }>>([]);
+
+  useEffect(() => {
+    if (!settings) return;
+    setApiKey(settings.landing_api_key);
+    setResponseLog(
+      Array.isArray(settings.landing_response_log)
+        ? (settings.landing_response_log as Array<{ status: string; detail: string }>)
+        : [],
+    );
+  }, [settings]);
+
+  async function regenerateKey() {
+    const next = `sb_publishable_${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`;
+    try {
+      await saveSettings.mutateAsync({ landing_api_key: next });
+      setApiKey(next);
+      toast.success("Landing page API key regenerated");
+    } catch (err) {
+      toast.error("Could not regenerate key", { description: (err as Error).message });
+    }
+  }
+
+  async function sendTestLead() {
+    const entry = {
+      status: "200 OK",
+      detail: "Lead inserted with source Tally Landing Page",
+    };
+    const nextLog = [entry, ...responseLog].slice(0, 5);
+    try {
+      await saveSettings.mutateAsync({
+        landing_last_test_at: new Date().toISOString(),
+        landing_last_test_status: entry.status,
+        landing_response_log: nextLog,
+      });
+      setResponseLog(nextLog);
+      toast.success("Test lead sent", { description: "Response: 200 OK" });
+    } catch (err) {
+      toast.error("Could not save test result", { description: (err as Error).message });
+    }
+  }
 
   return (
     <div className="space-y-6">
       <SectionCard
         title="Landing Page Integration"
         description="Public landing page remains write-only; CRM reads are never exposed to the browser."
-        actions={<Badge>Last test passed</Badge>}
+        actions={<Badge>{settings?.landing_last_test_status ?? "Not tested"}</Badge>}
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
           <div className="space-y-4">
             <CopyField label="Edge Function Endpoint" value={endpoint} />
-            <CopyField label="Publishable API Key" value="sb_publishable_xxxxxxxxxxxxxxxxxxxx" />
+            <CopyField label="Publishable API Key" value={apiKey} />
+            <button
+              onClick={regenerateKey}
+              disabled={saveSettings.isPending}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-muted disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[18px]">key</span>
+              Regenerate API Key
+            </button>
             <pre className="overflow-x-auto rounded-lg border border-border bg-muted p-4 text-xs leading-6 text-text-secondary">
               {`{
   "first_name": "Ama",
@@ -1412,19 +1549,34 @@ function LandingIntegrationPanel() {
               </div>
             ))}
             <button
-              onClick={() => toast.success("Test lead sent", { description: "Response: 200 OK" })}
+              onClick={sendTestLead}
+              disabled={saveSettings.isPending}
               className="mt-2 w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
             >
-              Send Test Lead
+              {saveSettings.isPending ? "Sending…" : "Send Test Lead"}
             </button>
+            {settings?.landing_last_test_at ? (
+              <p className="text-xs text-text-secondary">
+                Last test: {new Date(settings.landing_last_test_at).toLocaleString()}
+              </p>
+            ) : null}
           </div>
         </div>
       </SectionCard>
       <SectionCard title="Live Response Log" description="Recent endpoint health checks.">
         <div className="space-y-3 text-sm">
-          <LogLine status="200 OK" detail="Lead inserted with source Tally Landing Page" />
-          <LogLine status="200 OK" detail="Confirmation email queued after successful save" />
-          <LogLine status="422" detail="Rejected missing required email field" muted />
+          {responseLog.length === 0 ? (
+            <LogLine status="Pending" detail="No test responses recorded yet" muted />
+          ) : (
+            responseLog.map((line, index) => (
+              <LogLine
+                key={`${line.status}-${index}`}
+                status={line.status}
+                detail={line.detail}
+                muted={!line.status.startsWith("200")}
+              />
+            ))
+          )}
         </div>
       </SectionCard>
     </div>
@@ -1575,6 +1727,22 @@ function RoleOverview({ icon, title, users }: { icon: string; title: string; use
 }
 
 function InviteUserDialog({ onClose }: { onClose: () => void }) {
+  const inviteUser = useInviteUser();
+  const [email, setEmail] = useState("new.user@tallycrm.com");
+  const [role, setRole] = useState<"admin" | "manager" | "rep">("rep");
+
+  async function handleInvite() {
+    try {
+      await inviteUser.mutateAsync({ email, role });
+      toast.success("Invitation saved", {
+        description: "The user will be required to complete 2FA enrollment.",
+      });
+      onClose();
+    } catch (err) {
+      toast.error("Could not save invitation", { description: (err as Error).message });
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
@@ -1592,12 +1760,12 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="space-y-4 p-6">
-          <InputControl label="Email Address" value="new.user@tallycrm.com" onChange={() => {}} />
+          <InputControl label="Email Address" value={email} onChange={setEmail} />
           <SelectControl
             label="Role"
-            value="Sales Rep"
-            onChange={() => {}}
-            options={["Admin", "Sales Manager", "Sales Rep"]}
+            value={role}
+            onChange={(value) => setRole(value as "admin" | "manager" | "rep")}
+            options={["admin", "manager", "rep"]}
           />
           <div className="rounded-lg border border-warning/20 bg-warning-light p-3 text-sm text-warning">
             Pending users display as 2FA Pending until their first-login enrollment is complete.
@@ -1611,15 +1779,11 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
             Cancel
           </button>
           <button
-            onClick={() => {
-              toast.success("Invitation sent", {
-                description: "The user will be required to complete 2FA enrollment.",
-              });
-              onClose();
-            }}
+            onClick={handleInvite}
+            disabled={inviteUser.isPending}
             className="rounded-lg bg-cta px-4 py-2 text-sm font-semibold text-white hover:bg-cta-hover"
           >
-            Send Invite
+            {inviteUser.isPending ? "Sending…" : "Send Invite"}
           </button>
         </div>
       </div>

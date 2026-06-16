@@ -25,15 +25,15 @@
 
 ## 2. Security & RLS (server-side, not UI-only)
 
-- [ ] RLS enabled on **every** table
-- [ ] Rep sees only own/assigned records (others return 0 rows / 403)
-- [ ] Rep cannot delete any record
-- [ ] Manager sees all records, can delete, but cannot manage users/settings
-- [ ] Admin unrestricted
-- [ ] Landing page can **insert** leads but **cannot read** CRM data
-- [ ] Secrets (Resend, service role) only in Edge Functions
-- [ ] Soft deletes (`deleted_at`) everywhere; audit integrity preserved
-- [ ] HTTPS enforced; CSRF protection
+- [x] RLS enabled on **every** table
+- [x] Rep sees only own/assigned records (others return 0 rows / 403)
+- [x] Rep cannot delete any record
+- [x] Manager sees all records, can delete, but cannot manage users/settings
+- [x] Admin unrestricted
+- [x] Landing page can **insert** leads but **cannot read** CRM data
+- [x] Secrets (Resend, service role) only in Edge Functions
+- [x] Soft deletes (`deleted_at`) everywhere; audit integrity preserved
+- [x] HTTPS enforced; CSRF protection
 
 ## 3. Landing page (public)
 
@@ -184,14 +184,14 @@ cod
 - [ ] Typography scale + 4px spacing grid followed
 - [ ] Single icon library throughout (Lucide)
 - [x] Hover/focus/active/disabled on all interactive elements
-- [ ] "Powered by TallyPrime" mark; login hero; Closed-Won confetti
-- [ ] Dark mode across all tokens; toggle persists
+- [x] "Powered by TallyPrime" mark; login hero; Closed-Won confetti
+- [x] Dark mode across all tokens; toggle persists
 
 ## 18. Responsiveness
 
 - [x] Desktop (1280+): full sidebar + multi-column
 - [x] Tablet (768–1279): collapsed sidebar + 2-col
-- [ ] Mobile (<767): bottom nav + 1-col + full-screen modals + kanban scroll
+- [x] Mobile (<767): bottom nav + 1-col + full-screen modals + kanban scroll
 
 ## 19. Performance (non-functional)
 

@@ -2,6 +2,7 @@ export { StatusBadge } from "./StatusBadge";
 export type { StatusTone } from "./StatusBadge";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
+export { Icon } from "./Icon";
 export {
   Skeleton,
   CardSkeleton,

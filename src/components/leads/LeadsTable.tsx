@@ -1,7 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { LEAD_STATUSES, type LeadRow } from "@/lib/leads-data";
 
-export function LeadsTable({ leads }: { leads: LeadRow[] }) {
+export function LeadsTable({
+  leads,
+  onConvert,
+  onDisqualify,
+}: {
+  leads: LeadRow[];
+  onConvert: (lead: LeadRow) => void;
+  onDisqualify: (lead: LeadRow) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)]">
       <div className="overflow-x-auto">
@@ -72,9 +80,33 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                     {new Date(l.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-4 text-right">
-                    <button className="rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-text-secondary">
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
+                    {l.status !== "converted" && l.status !== "disqualified" ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => onConvert(l)}
+                          className="rounded-md p-1 text-text-muted transition-colors hover:bg-primary-light hover:text-primary"
+                          title="Convert to deal"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">handshake</span>
+                        </button>
+                        <button
+                          onClick={() => onDisqualify(l)}
+                          className="rounded-md p-1 text-text-muted transition-colors hover:bg-danger-light hover:text-danger"
+                          title="Disqualify"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">block</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <Link
+                        to="/app/leads/$id"
+                        params={{ id: l.id }}
+                        className="inline-flex rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                        title="View lead"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                      </Link>
+                    )}
                   </td>
                 </tr>
               );

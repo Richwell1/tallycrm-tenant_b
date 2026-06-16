@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 export type AutomationStatus = "active" | "inactive" | "draft";
 export type AutomationTriggerType =
@@ -71,6 +73,8 @@ export interface AutomationTemplate {
 }
 
 export const automationsKey = ["automations"] as const;
+type AutomationRuleRow = Database["public"]["Tables"]["automation_rules"]["Row"];
+type AutomationRunRow = Database["public"]["Tables"]["automation_runs"]["Row"];
 
 const RULES: AutomationRule[] = [
   {
@@ -551,11 +555,35 @@ export function useAutomations() {
   return useQuery({
     queryKey: automationsKey,
     queryFn: async () => {
-      await delay(180);
+      await ensureDefaultRules();
+
+      const rulesRes = await supabase
+        .from("automation_rules")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (rulesRes.error) {
+        const rules = [...RULES].sort(byLastEditedDesc);
+        return {
+          rules,
+          runs: RUNS,
+          stats: buildAutomationStats(rules),
+        };
+      }
+
+      const runsRes = await supabase
+        .from("automation_runs")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const runs = runsRes.error ? RUNS : (runsRes.data ?? []).map(runFromRow);
+      const databaseRules = (rulesRes.data ?? []).map((row) => ruleFromRow(row, runs));
+      const rules = mergeSystemAndDatabaseRules(databaseRules).sort(byLastEditedDesc);
+
       return {
-        rules: RULES,
-        runs: RUNS,
-        stats: buildAutomationStats(RULES),
+        rules,
+        runs,
+        stats: buildAutomationStats(rules),
       };
     },
   });
@@ -565,8 +593,13 @@ export function useToggleAutomation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ rule, checked }: { rule: AutomationRule; checked: boolean }) => {
-      await delay(120);
-      return { ...rule, status: checked ? "active" : "inactive" } satisfies AutomationRule;
+      const saved = { ...rule, status: checked ? "active" : "inactive" } satisfies AutomationRule;
+      const { error } = await supabase
+        .from("automation_rules")
+        .update(ruleToRow(saved))
+        .eq("id", rule.id);
+      if (error) throw error;
+      return saved;
     },
     onMutate: async ({ rule, checked }) => {
       await qc.cancelQueries({ queryKey: automationsKey });
@@ -596,8 +629,12 @@ export function useSaveAutomation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (rule: AutomationRule) => {
-      await delay(160);
-      return { ...rule, lastEditedAt: new Date().toISOString() };
+      const saved = { ...rule, lastEditedAt: new Date().toISOString() };
+      const { error } = await supabase
+        .from("automation_rules")
+        .upsert(ruleToRow(saved), { onConflict: "id" });
+      if (error) throw error;
+      return saved;
     },
     onSuccess: (saved) => {
       qc.setQueryData<AutomationPayload>(automationsKey, (current) => {
@@ -616,7 +653,8 @@ export function useDeleteAutomation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (ruleId: string) => {
-      await delay(120);
+      const { error } = await supabase.from("automation_rules").delete().eq("id", ruleId);
+      if (error) throw error;
       return ruleId;
     },
     onMutate: async (ruleId) => {
@@ -667,8 +705,93 @@ interface AutomationPayload {
   stats: AutomationStats;
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
+async function ensureDefaultRules() {
+  const { count, error } = await supabase
+    .from("automation_rules")
+    .select("id", { count: "exact", head: true });
+  if (error) return;
+  if ((count ?? 0) > 0) return;
+
+  const { error: insertError } = await supabase.from("automation_rules").upsert(
+    RULES.map((rule) => ruleToRow(rule)),
+    { onConflict: "id" },
+  );
+  if (insertError) return;
+}
+
+function mergeSystemAndDatabaseRules(databaseRules: AutomationRule[]) {
+  const byId = new Map<string, AutomationRule>();
+  for (const rule of RULES) byId.set(rule.id, rule);
+  for (const rule of databaseRules) byId.set(rule.id, rule);
+  return Array.from(byId.values());
+}
+
+function byLastEditedDesc(a: AutomationRule, b: AutomationRule) {
+  return new Date(b.lastEditedAt).getTime() - new Date(a.lastEditedAt).getTime();
+}
+
+function ruleFromRow(row: AutomationRuleRow, runs: AutomationRun[]): AutomationRule {
+  const actions = Array.isArray(row.actions) ? row.actions : [];
+  const ruleRuns = runs.filter((run) => run.ruleId === row.id);
+  const successfulRuns = ruleRuns.filter((run) => run.result === "success").length;
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    triggerType: row.trigger_type as AutomationTriggerType,
+    triggerLabel: row.trigger_label,
+    triggerIcon: row.trigger_icon,
+    object: row.object as AutomationRule["object"],
+    condition: row.condition,
+    actions: actions as unknown as AutomationStep[],
+    status: row.status as AutomationStatus,
+    isDefault: row.is_default,
+    owner: row.owner,
+    runs: ruleRuns.length,
+    successRate: ruleRuns.length
+      ? (successfulRuns / ruleRuns.length) * 100
+      : Number(row.success_rate),
+    lastRunAt: row.last_run_at ?? ruleRuns[0]?.timestamp ?? null,
+    lastEditedAt: row.updated_at,
+    auditLogged: row.audit_logged,
+  };
+}
+
+function ruleToRow(
+  rule: AutomationRule,
+): Database["public"]["Tables"]["automation_rules"]["Insert"] {
+  return {
+    id: rule.id,
+    name: rule.name,
+    description: rule.description,
+    trigger_type: rule.triggerType,
+    trigger_label: rule.triggerLabel,
+    trigger_icon: rule.triggerIcon,
+    object: rule.object,
+    condition: rule.condition,
+    actions: rule.actions as unknown as Json,
+    status: rule.status,
+    is_default: rule.isDefault,
+    owner: rule.owner,
+    success_rate: rule.successRate,
+    audit_logged: rule.auditLogged,
+    last_run_at: rule.lastRunAt,
+  };
+}
+
+function runFromRow(row: AutomationRunRow): AutomationRun {
+  return {
+    id: row.id,
+    ruleId: row.rule_id ?? "",
+    timestamp: row.created_at,
+    recordName: row.record_name,
+    recordType: row.record_type as AutomationRun["recordType"],
+    actionTaken: row.action_taken,
+    result: row.result as AutomationRunResult,
+    durationMs: row.duration_ms,
+    auditActor: "System/Automation",
+    message: row.message ?? undefined,
+  };
 }
 
 function minutesAgo(minutes: number) {

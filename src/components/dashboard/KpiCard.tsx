@@ -1,3 +1,4 @@
+import { Icon } from "@/components/common";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -23,7 +24,7 @@ export function KpiCard({ icon, label, value, delta, caption, loading, tone = "p
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
       <div className="flex items-start justify-between gap-3">
         <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", tones[tone])}>
-          <span className="material-symbols-outlined">{icon}</span>
+          <Icon name={icon} />
         </div>
         {delta !== undefined && (
           <div
@@ -32,9 +33,7 @@ export function KpiCard({ icon, label, value, delta, caption, loading, tone = "p
               positive ? "bg-success/15 text-success" : "bg-cta/10 text-cta",
             )}
           >
-            <span className="material-symbols-outlined text-[14px]">
-              {positive ? "trending_up" : "trending_down"}
-            </span>
+            <Icon name={positive ? "trending_up" : "trending_down"} className="h-[14px] w-[14px]" />
             {Math.abs(delta).toFixed(0)}%
           </div>
         )}

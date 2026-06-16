@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { Icon } from "@/components/common";
 import { cn } from "@/lib/utils";
 import type { Breadcrumb } from "@/types";
 
@@ -75,7 +76,7 @@ export function ToolbarButton({
         : "border border-border bg-surface text-foreground hover:bg-surface-hover";
   return (
     <button onClick={onClick} title={title} className={cn(base, styles)}>
-      <span className="material-symbols-outlined text-[18px]">{icon}</span>
+      <Icon name={icon} className="h-[18px] w-[18px]" />
       {children}
     </button>
   );

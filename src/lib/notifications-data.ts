@@ -57,6 +57,7 @@ export function useNotifications(userId: string | undefined) {
         .from("notifications")
         .select("*")
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -194,7 +195,7 @@ export function useDeleteNotification(userId: string | undefined) {
 
       const { error } = await supabase
         .from("notifications")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id)
         .eq("user_id", userId);
       if (error) throw error;

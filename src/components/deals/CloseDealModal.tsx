@@ -5,6 +5,8 @@ import {
   useCloseDeal,
   useDealFormOptions,
 } from "@/lib/deals-data";
+import { Icon } from "@/components/common";
+import { toast } from "sonner";
 
 interface CloseDealModalProps {
   deal: DealSummary;
@@ -37,45 +39,53 @@ export function CloseDealModal({ deal, mode, open, onOpenChange }: CloseDealModa
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!targetStage) return;
-    await closeDeal.mutateAsync({
-      dealId: deal.id,
-      mode,
-      stageId: targetStage.id,
-      actualValue: Number(actualValue || deal.value || 0),
-      actualCloseDate,
-      note,
-      lostReason,
-    });
-    onOpenChange(false);
+    if (!note.trim()) {
+      toast.error(isWon ? "Win note required" : "Loss note required");
+      return;
+    }
+    if (!isWon && !lostReason) {
+      toast.error("Loss reason required");
+      return;
+    }
+    try {
+      await closeDeal.mutateAsync({
+        dealId: deal.id,
+        mode,
+        stageId: targetStage.id,
+        actualValue: Number(actualValue || deal.value || 0),
+        actualCloseDate,
+        note,
+        lostReason,
+      });
+      toast.success(isWon ? "Deal marked as won" : "Deal marked as lost");
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Could not close deal", { description: (err as Error).message });
+    }
   }
 
   const isWon = mode === "won";
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-foreground/60 p-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-foreground/60 p-0 backdrop-blur-sm sm:items-center sm:p-6">
       {isWon ? <Confetti /> : null}
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-[520px] overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+        className="relative max-h-[100dvh] w-full overflow-y-auto rounded-t-xl border border-border bg-card shadow-2xl sm:max-w-[520px] sm:rounded-xl"
       >
         <div
           className={`relative overflow-hidden px-8 py-8 text-center ${
             isWon ? "bg-primary" : "bg-danger"
           }`}
         >
-          <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_2px_2px,#fff_1px,transparent_0)] [background-size:20px_20px]" />
-          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white shadow-inner backdrop-blur">
-            <span
-              className="material-symbols-outlined text-[40px]"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              {isWon ? "workspace_premium" : "flag"}
-            </span>
+          <div className="absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_2px_2px,var(--color-primary-foreground)_1px,transparent_0)] [background-size:20px_20px]" />
+          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground shadow-inner backdrop-blur">
+            <Icon name={isWon ? "workspace_premium" : "flag"} className="h-10 w-10" />
           </div>
-          <h2 className="relative text-[28px] font-bold leading-tight text-white">
+          <h2 className="relative text-[28px] font-bold leading-tight text-primary-foreground">
             {isWon ? "Closed Won!" : "Close Deal Lost"}
           </h2>
-          <p className="relative mt-1 text-sm text-white/85">
+          <p className="relative mt-1 text-sm text-primary-foreground/85">
             Finalize the details for <span className="font-bold">{deal.name}</span>
           </p>
         </div>
@@ -136,7 +146,7 @@ export function CloseDealModal({ deal, mode, open, onOpenChange }: CloseDealModa
               {isWon ? "Win Summary Note" : "Loss Summary Note"}
             </span>
             <textarea
-              required={!isWon}
+              required
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="min-h-[100px] w-full resize-none rounded-lg border border-border bg-card p-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -150,9 +160,7 @@ export function CloseDealModal({ deal, mode, open, onOpenChange }: CloseDealModa
 
           <div className="flex gap-4 rounded-lg border border-primary/10 bg-muted p-4">
             <div className="rounded-full bg-primary-light p-2 text-primary">
-              <span className="material-symbols-outlined text-[18px]">
-                {isWon ? "stars" : "manage_history"}
-              </span>
+              <Icon name={isWon ? "stars" : "manage_history"} className="h-[18px] w-[18px]" />
             </div>
             <p className="text-sm leading-tight text-text-secondary">
               Completing this will move the deal to{" "}
@@ -175,8 +183,8 @@ export function CloseDealModal({ deal, mode, open, onOpenChange }: CloseDealModa
           <button
             type="submit"
             disabled={closeDeal.isPending || !targetStage}
-            className={`rounded-lg px-8 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] transition-all active:scale-95 disabled:opacity-60 ${
-              isWon ? "bg-danger hover:brightness-110" : "bg-danger hover:brightness-110"
+            className={`rounded-lg px-8 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-sm)] transition-all active:scale-95 disabled:opacity-60 ${
+              isWon ? "bg-success hover:brightness-110" : "bg-danger hover:brightness-110"
             }`}
           >
             {closeDeal.isPending ? "Confirming..." : isWon ? "Confirm Win" : "Confirm Loss"}
@@ -206,7 +214,13 @@ function Confetti() {
           style={{
             left: `${(index * 37) % 100}%`,
             animationDelay: `${(index % 12) * 0.12}s`,
-            backgroundColor: ["#0057b8", "#ffd700", "#adc7ff", "#ffffff", "#00408b"][index % 5],
+            backgroundColor: [
+              "var(--color-primary)",
+              "var(--color-accent)",
+              "var(--color-primary-mid)",
+              "var(--color-primary-foreground)",
+              "var(--color-primary-dark)",
+            ][index % 5],
           }}
         />
       ))}

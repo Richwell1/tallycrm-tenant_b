@@ -9,7 +9,15 @@ import { useState } from "react";
 import type { DragEvent, ReactNode } from "react";
 import { toast } from "sonner";
 
-export function LeadKanban({ leads }: { leads: LeadRow[] }) {
+export function LeadKanban({
+  leads,
+  onConvert,
+  onDisqualify,
+}: {
+  leads: LeadRow[];
+  onConvert: (lead: LeadRow) => void;
+  onDisqualify: (lead: LeadRow) => void;
+}) {
   const update = useUpdateLeadStatus();
   const [dragOver, setDragOver] = useState<LeadStatus | null>(null);
 
@@ -18,6 +26,16 @@ export function LeadKanban({ leads }: { leads: LeadRow[] }) {
     setDragOver(null);
     const id = e.dataTransfer.getData("text/lead-id");
     if (!id) return;
+    const lead = leads.find((item) => item.id === id);
+    if (!lead) return;
+    if (status === "converted") {
+      onConvert(lead);
+      return;
+    }
+    if (status === "disqualified") {
+      onDisqualify(lead);
+      return;
+    }
     update.mutate(
       { id, status },
       {
@@ -70,7 +88,15 @@ export function LeadKanban({ leads }: { leads: LeadRow[] }) {
                     No leads
                   </div>
                 ) : (
-                  items.map((l) => <LeadCard key={l.id} lead={l} tone={tone} />)
+                  items.map((l) => (
+                    <LeadCard
+                      key={l.id}
+                      lead={l}
+                      tone={tone}
+                      onConvert={() => onConvert(l)}
+                      onDisqualify={() => onDisqualify(l)}
+                    />
+                  ))
                 )}
               </div>
             </div>
@@ -81,40 +107,50 @@ export function LeadKanban({ leads }: { leads: LeadRow[] }) {
   );
 }
 
-function LeadCard({ lead, tone }: { lead: LeadRow; tone: ReturnType<typeof columnTone> }) {
+function LeadCard({
+  lead,
+  tone,
+  onConvert,
+  onDisqualify,
+}: {
+  lead: LeadRow;
+  tone: ReturnType<typeof columnTone>;
+  onConvert: () => void;
+  onDisqualify: () => void;
+}) {
   const name = `${lead.first_name} ${lead.last_name}`;
   const value =
     typeof lead.value === "number" ? money(lead.value, lead.currency ?? "USD") : "Unvalued";
 
   return (
-    <Link
-      to="/app/leads/$id"
-      params={{ id: lead.id }}
+    <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/lead-id", lead.id)}
       className="group block cursor-grab overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)] transition-shadow hover:shadow-[var(--shadow-sm)] active:cursor-grabbing"
     >
       <div className={`h-1 w-full ${tone.dot}`} />
       <div className="p-4">
-        <div className="mb-4 flex items-start justify-between">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-full ${tone.avatar} text-sm font-bold`}
-          >
-            {initials(name)}
+        <Link to="/app/leads/$id" params={{ id: lead.id }} className="block">
+          <div className="mb-4 flex items-start justify-between">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${tone.avatar} text-sm font-bold`}
+            >
+              {initials(name)}
+            </div>
+            <span className="material-symbols-outlined text-text-muted/50">drag_indicator</span>
           </div>
-          <span className="material-symbols-outlined text-text-muted/50">drag_indicator</span>
-        </div>
-        <h4 className="mb-1 text-[16px] font-semibold text-foreground">{name}</h4>
-        <div
-          className={`mb-4 text-xs font-bold ${lead.status === "converted" ? "text-success" : "text-primary"}`}
-        >
-          {value}
-        </div>
-        <div className="mb-5 space-y-2 text-sm text-text-secondary">
-          <IconLine icon="mail">{lead.email}</IconLine>
-          <IconLine icon="call">{lead.phone || "No phone"}</IconLine>
-          <IconLine icon="business">{lead.company_name || "No company"}</IconLine>
-        </div>
+          <h4 className="mb-1 text-[16px] font-semibold text-foreground">{name}</h4>
+          <div
+            className={`mb-4 text-xs font-bold ${lead.status === "converted" ? "text-success" : "text-primary"}`}
+          >
+            {value}
+          </div>
+          <div className="mb-5 space-y-2 text-sm text-text-secondary">
+            <IconLine icon="mail">{lead.email}</IconLine>
+            <IconLine icon="call">{lead.phone || "No phone"}</IconLine>
+            <IconLine icon="business">{lead.company_name || "No company"}</IconLine>
+          </div>
+        </Link>
         <div className="flex items-center justify-between border-t border-border pt-4">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-text-secondary">
             <span className="material-symbols-outlined text-[16px]">
@@ -122,17 +158,29 @@ function LeadCard({ lead, tone }: { lead: LeadRow; tone: ReturnType<typeof colum
             </span>
             {lead.source || "Manual Entry"}
           </div>
-          <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-            <span className="material-symbols-outlined text-[20px] text-text-muted hover:text-primary">
-              edit
-            </span>
-            <span className="material-symbols-outlined text-[20px] text-text-muted hover:text-primary">
-              history
-            </span>
-          </div>
+          {lead.status !== "converted" && lead.status !== "disqualified" ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onConvert}
+                className="rounded p-1 text-text-muted transition-colors hover:bg-primary-light hover:text-primary"
+                title="Convert to deal"
+              >
+                <span className="material-symbols-outlined text-[20px]">handshake</span>
+              </button>
+              <button
+                type="button"
+                onClick={onDisqualify}
+                className="rounded p-1 text-text-muted transition-colors hover:bg-danger-light hover:text-danger"
+                title="Disqualify"
+              >
+                <span className="material-symbols-outlined text-[20px]">block</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

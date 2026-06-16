@@ -430,6 +430,38 @@ function CompaniesGrid({
             <div className="mt-4">
               <Tags tags={company.tags.length ? company.tags : fallbackTags(company)} />
             </div>
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4">
+              <Link
+                to="/app/companies/$id"
+                params={{ id: company.id }}
+                className="inline-flex items-center justify-center gap-1 rounded border border-border px-2 py-1.5 text-xs font-semibold text-text-secondary hover:bg-muted hover:text-primary"
+              >
+                <span className="material-symbols-outlined text-[16px]">visibility</span>
+                View
+              </Link>
+              <button
+                onClick={() => onEdit(company)}
+                className="inline-flex items-center justify-center gap-1 rounded border border-border px-2 py-1.5 text-xs font-semibold text-text-secondary hover:bg-muted hover:text-primary"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">edit</span>
+                Edit
+              </button>
+              {onDelete ? (
+                <button
+                  onClick={() => onDelete(company)}
+                  className="inline-flex items-center justify-center gap-1 rounded border border-danger/20 px-2 py-1.5 text-xs font-semibold text-danger hover:bg-danger-light"
+                  type="button"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  Delete
+                </button>
+              ) : (
+                <span className="inline-flex items-center justify-center rounded border border-border px-2 py-1.5 text-xs font-semibold text-text-muted">
+                  Locked
+                </span>
+              )}
+            </div>
           </div>
         ))}
       </div>

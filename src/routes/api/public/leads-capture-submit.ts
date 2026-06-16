@@ -1,12 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
-  "Access-Control-Max-Age": "86400",
-};
+function securityHeaders(request: Request) {
+  const origin = new URL(request.url).origin;
+  return {
+    "Access-Control-Allow-Origin": origin,
+    Vary: "Origin",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+  };
+}
+
+function corsHeaders(request: Request) {
+  return {
+    ...securityHeaders(request),
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+    "Access-Control-Max-Age": "86400",
+  };
+}
 
 const payloadSchema = z.object({
   first_name: z.string().trim().min(1).max(80),
@@ -19,10 +31,10 @@ const payloadSchema = z.object({
   website: z.string().max(0).optional().or(z.literal("")),
 });
 
-function json(body: unknown, status = 200) {
+function json(request: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", ...corsHeaders },
+    headers: { "content-type": "application/json", ...securityHeaders(request) },
   });
 }
 
@@ -34,18 +46,23 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
   server: {
     handlers: {
       GET: async ({ request }) => redirectHome(request),
-      OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
+      OPTIONS: async ({ request }) =>
+        new Response(null, { status: 204, headers: corsHeaders(request) }),
       POST: async ({ request }) => {
+        const securityError = validatePublicPost(request);
+        if (securityError) return json(request, securityError.body, securityError.status);
+
         let raw: unknown;
         try {
           raw = await request.json();
         } catch {
-          return json({ error: "Invalid JSON", code: "bad_request" }, 400);
+          return json(request, { error: "Invalid JSON", code: "bad_request" }, 400);
         }
 
         const parsed = payloadSchema.safeParse(raw);
         if (!parsed.success) {
           return json(
+            request,
             { error: "Validation failed", code: "validation", issues: parsed.error.flatten() },
             400,
           );
@@ -54,19 +71,26 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
 
         // Honeypot tripped — silently succeed so bots don't retry.
         if (data.website && data.website.length > 0) {
-          return json({ ok: true }, 200);
+          return json(request, { ok: true }, 200);
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Round-robin assignee: pick the rep with the fewest open leads.
+        const [existingContactRes, repsRes] = await Promise.all([
+          supabaseAdmin
+            .from("contacts")
+            .select("id, assigned_to")
+            .eq("email", data.email)
+            .is("deleted_at", null)
+            .maybeSingle(),
+          supabaseAdmin.from("user_roles").select("user_id").eq("role", "rep"),
+        ]);
+
+        const existingContact = existingContactRes.data;
         let assignedTo: string | null = null;
-        try {
-          const { data: reps } = await supabaseAdmin
-            .from("user_roles")
-            .select("user_id")
-            .eq("role", "rep");
-          if (reps && reps.length > 0) {
+        const reps = repsRes.data ?? [];
+        if (reps.length > 0) {
+          try {
             const counts = await Promise.all(
               reps.map(async (r) => {
                 const { count } = await supabaseAdmin
@@ -79,19 +103,10 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
             );
             counts.sort((a, b) => a.count - b.count);
             assignedTo = counts[0]?.id ?? null;
+          } catch {
+            assignedTo = null;
           }
-        } catch {
-          // Non-fatal: leave unassigned.
-          assignedTo = null;
         }
-
-        // Dedupe by email — link to existing contact rather than duplicate.
-        const { data: existingContact } = await supabaseAdmin
-          .from("contacts")
-          .select("id, assigned_to")
-          .eq("email", data.email)
-          .is("deleted_at", null)
-          .maybeSingle();
 
         if (existingContact?.assigned_to) {
           assignedTo = existingContact.assigned_to as string;
@@ -116,35 +131,58 @@ export const Route = createFileRoute("/api/public/leads-capture-submit")({
           .single();
 
         if (insertError || !lead) {
-          return json(
-            { error: "Could not save lead", code: "insert_failed" },
-            500,
-          );
+          return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
         }
 
-        // Create "Make first contact" task due +4h.
+        // Non-critical side effects are intentionally fire-and-forget so the
+        // public capture response is gated only by validation and lead insert.
         const dueAt = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
-        await supabaseAdmin.from("tasks").insert({
-          title: `Make first contact: ${data.first_name} ${data.last_name}`,
-          type: "call",
-          due_at: dueAt,
-          priority: "high",
-          assigned_to: assignedTo,
-          contact_id: existingContact?.id ?? null,
-          notes: `Auto-created from Tally Landing Page lead. Email: ${data.email}`,
-        });
+        void Promise.all([
+          supabaseAdmin.from("tasks").insert({
+            title: `Make first contact: ${data.first_name} ${data.last_name}`,
+            type: "call",
+            due_at: dueAt,
+            priority: "high",
+            assigned_to: assignedTo,
+            contact_id: existingContact?.id ?? null,
+            notes: `Auto-created from Tally Landing Page lead. Email: ${data.email}`,
+          }),
+          supabaseAdmin.from("audit_log").insert({
+            entity: "lead",
+            entity_id: lead.id,
+            action: "create",
+            actor_id: null,
+            metadata: { source: "Tally Landing Page", assigned_to: assignedTo },
+          }),
+        ]);
 
-        // Audit log entry.
-        await supabaseAdmin.from("audit_log").insert({
-          entity: "lead",
-          entity_id: lead.id,
-          action: "create",
-          actor_id: null,
-          metadata: { source: "Tally Landing Page", assigned_to: assignedTo },
-        });
-
-        return json({ ok: true, lead_id: lead.id }, 200);
+        return json(request, { ok: true, lead_id: lead.id }, 200);
       },
     },
   },
 });
+
+function validatePublicPost(request: Request) {
+  const url = new URL(request.url);
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const isHttps = url.protocol === "https:" || forwardedProto === "https";
+  if (process.env.NODE_ENV === "production" && !isHttps) {
+    return {
+      status: 403,
+      body: { error: "HTTPS is required", code: "https_required" },
+    };
+  }
+
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const expectedOrigin = url.origin;
+  const sourceOrigin = origin ?? (referer ? new URL(referer).origin : null);
+  if (sourceOrigin && sourceOrigin !== expectedOrigin) {
+    return {
+      status: 403,
+      body: { error: "Cross-site submission blocked", code: "csrf" },
+    };
+  }
+
+  return null;
+}

@@ -5,7 +5,9 @@ import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { LeadKanban } from "@/components/leads/LeadKanban";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { AddLeadModal } from "@/components/leads/AddLeadModal";
-import { LEAD_STATUSES, useLeads, type LeadStatus } from "@/lib/leads-data";
+import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
+import { DisqualifyModal } from "@/components/leads/DisqualifyModal";
+import { LEAD_STATUSES, useLeads, type LeadRow, type LeadStatus } from "@/lib/leads-data";
 
 export const Route = createFileRoute("/_authenticated/app/leads/")({
   component: LeadsIndex,
@@ -22,6 +24,8 @@ function LeadsIndex() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [sortKey, setSortKey] = useState<LeadSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
+  const [convertLead, setConvertLead] = useState<LeadRow | null>(null);
+  const [disqualifyLead, setDisqualifyLead] = useState<LeadRow | null>(null);
 
   const sourceOptions = useMemo(
     () =>
@@ -159,12 +163,31 @@ function LeadsIndex() {
           description="Adjust search, status, source, or sort criteria to widen the result set."
         />
       ) : view === "kanban" ? (
-        <LeadKanban leads={filtered} />
+        <LeadKanban leads={filtered} onConvert={setConvertLead} onDisqualify={setDisqualifyLead} />
       ) : (
-        <LeadsTable leads={filtered} />
+        <LeadsTable leads={filtered} onConvert={setConvertLead} onDisqualify={setDisqualifyLead} />
       )}
 
       <AddLeadModal open={addOpen} onOpenChange={setAddOpen} />
+      {convertLead ? (
+        <ConvertLeadModal
+          open={!!convertLead}
+          onOpenChange={(open) => {
+            if (!open) setConvertLead(null);
+          }}
+          lead={convertLead}
+        />
+      ) : null}
+      {disqualifyLead ? (
+        <DisqualifyModal
+          open={!!disqualifyLead}
+          onOpenChange={(open) => {
+            if (!open) setDisqualifyLead(null);
+          }}
+          leadId={disqualifyLead.id}
+          onDone={() => refetch()}
+        />
+      ) : null}
     </>
   );
 }

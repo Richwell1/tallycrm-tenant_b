@@ -1,5 +1,5 @@
 import { SectionCard } from "@/components/layout";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Icon } from "@/components/common";
 import { useRecentActivity } from "@/lib/dashboard-data";
 import { formatRelative } from "@/lib/format";
 
@@ -20,7 +20,9 @@ export function ActivityFeed() {
     <SectionCard
       title="Recent Activity Feed"
       description="Last 10 events visible to you."
-      actions={<button className="text-xs font-semibold text-primary hover:underline">View All</button>}
+      actions={
+        <button className="text-xs font-semibold text-primary hover:underline">View All</button>
+      }
     >
       {isLoading ? (
         <div className="space-y-3">
@@ -30,7 +32,7 @@ export function ActivityFeed() {
         </div>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<span className="material-symbols-outlined text-[24px]">history</span>}
+          icon={<Icon name="history" className="h-6 w-6" />}
           title="No activity yet"
           description="Calls, emails and meetings appear here as your team logs them."
         />
@@ -39,15 +41,11 @@ export function ActivityFeed() {
           {items.map((a) => (
             <li key={a.id} className="flex items-start gap-3">
               <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <span className="material-symbols-outlined text-[18px]">
-                  {ICONS[a.type] ?? "bolt"}
-                </span>
+                <Icon name={ICONS[a.type] ?? "bolt"} className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-foreground">{a.title}</p>
-                {a.notes && (
-                  <p className="truncate text-xs text-text-secondary">{a.notes}</p>
-                )}
+                {a.notes && <p className="truncate text-xs text-text-secondary">{a.notes}</p>}
                 <p className="mt-0.5 text-[11px] text-text-secondary">
                   {formatRelative(a.created_at)}
                 </p>

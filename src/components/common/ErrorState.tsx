@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import { cn } from "@/lib/utils";
 
 interface ErrorStateProps {
@@ -21,7 +22,7 @@ export function ErrorState({
       )}
     >
       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-danger-light text-danger">
-        <span className="material-symbols-outlined text-[24px]">error</span>
+        <Icon name="error" className="h-6 w-6" />
       </div>
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="mt-1 max-w-md text-sm text-text-secondary">{description}</p>
@@ -30,7 +31,7 @@ export function ErrorState({
           onClick={onRetry}
           className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-dark"
         >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
+          <Icon name="refresh" className="h-[18px] w-[18px]" />
           Try again
         </button>
       ) : null}

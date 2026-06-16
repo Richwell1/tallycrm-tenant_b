@@ -28,39 +28,47 @@ export interface DashboardKpis {
 export function useDashboardKpis() {
   return useQuery<DashboardKpis>({
     queryKey: ["dashboard", "kpis"],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const today = startOfDay();
       const yesterday = addDays(today, -1);
       const tomorrow = addDays(today, 1);
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      const [todayLeads, yLeads, allDealsRes, wonRes, allLeadsRes] = await Promise.all([
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", today.toISOString())
-          .lt("created_at", tomorrow.toISOString())
-          .is("deleted_at", null),
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", yesterday.toISOString())
-          .lt("created_at", today.toISOString())
-          .is("deleted_at", null),
-        supabase
-          .from("deals")
-          .select("value,stage:pipeline_stages!inner(is_closed)")
-          .is("deleted_at", null),
-        supabase
-          .from("deals")
-          .select("value,actual_value,stage:pipeline_stages!inner(is_won)")
-          .gte("updated_at", monthStart.toISOString())
-          .is("deleted_at", null),
-        supabase
-          .from("leads")
-          .select("status")
-          .is("deleted_at", null),
-      ]);
+      const [todayLeads, yLeads, allDealsRes, wonRes, totalLeadsRes, convertedLeadsRes] =
+        await Promise.all([
+          supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", today.toISOString())
+            .lt("created_at", tomorrow.toISOString())
+            .is("deleted_at", null),
+          supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", yesterday.toISOString())
+            .lt("created_at", today.toISOString())
+            .is("deleted_at", null),
+          supabase
+            .from("deals")
+            .select("value,stage:pipeline_stages!inner(is_closed)")
+            .is("deleted_at", null),
+          supabase
+            .from("deals")
+            .select("value,actual_value,stage:pipeline_stages!inner(is_won)")
+            .gte("updated_at", monthStart.toISOString())
+            .is("deleted_at", null),
+          supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .is("deleted_at", null),
+          supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "converted")
+            .is("deleted_at", null),
+        ]);
 
       const openDeals = (allDealsRes.data ?? []).filter((d: any) => !d.stage?.is_closed);
       const openDealsValue = openDeals.reduce(
@@ -74,9 +82,8 @@ export function useDashboardKpis() {
         0,
       );
 
-      const totalLeads = allLeadsRes.data?.length ?? 0;
-      const converted =
-        (allLeadsRes.data ?? []).filter((l: any) => l.status === "converted").length ?? 0;
+      const totalLeads = totalLeadsRes.count ?? 0;
+      const converted = convertedLeadsRes.count ?? 0;
       const conversionRate = totalLeads > 0 ? (converted / totalLeads) * 100 : 0;
 
       const yCount = yLeads.count ?? 0;
@@ -108,6 +115,8 @@ export interface FunnelStage {
 export function usePipelineFunnel() {
   return useQuery<FunnelStage[]>({
     queryKey: ["dashboard", "funnel"],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const [stagesRes, dealsRes] = await Promise.all([
         supabase.from("pipeline_stages").select("*").order("position"),
@@ -138,6 +147,8 @@ export interface SourceSlice {
 export function useLeadSourceBreakdown() {
   return useQuery<SourceSlice[]>({
     queryKey: ["dashboard", "sources"],
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase.from("leads").select("source").is("deleted_at", null);
       const counts = new Map<string, number>();
@@ -163,6 +174,8 @@ export interface ActivityFeedItem {
 export function useRecentActivity(limit = 10) {
   return useQuery<ActivityFeedItem[]>({
     queryKey: ["dashboard", "activity", limit],
+    staleTime: 20_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("activities")
@@ -186,6 +199,8 @@ export function useMyTasks(userId: string | undefined) {
   return useQuery<MyTask[]>({
     queryKey: ["dashboard", "mytasks", userId],
     enabled: !!userId,
+    staleTime: 20_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("tasks")
@@ -218,6 +233,8 @@ export interface MiniPipelineStage {
 export function useMiniPipeline(role: Role | null, userId: string | undefined) {
   return useQuery<MiniPipelineStage[]>({
     queryKey: ["dashboard", "mini-pipeline", role, userId],
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const [stagesRes, dealsRes] = await Promise.all([
         supabase

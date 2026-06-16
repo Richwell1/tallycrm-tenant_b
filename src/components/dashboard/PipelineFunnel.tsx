@@ -1,5 +1,5 @@
 import { SectionCard } from "@/components/layout";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Icon } from "@/components/common";
 import { usePipelineFunnel } from "@/lib/dashboard-data";
 import { formatCurrency } from "@/lib/format";
 
@@ -18,7 +18,7 @@ export function PipelineFunnel() {
         </div>
       ) : stages.every((s) => s.count === 0) ? (
         <EmptyState
-          icon={<span className="material-symbols-outlined text-[24px]">filter_alt</span>}
+          icon={<Icon name="filter_alt" className="h-6 w-6" />}
           title="No deals yet"
           description="Funnel populates as soon as deals are created."
         />
@@ -34,10 +34,9 @@ export function PipelineFunnel() {
                 <div className="flex-1">
                   <div className="h-7 rounded-lg bg-muted">
                     <div
-                      className="flex h-full items-center justify-end rounded-lg px-3 text-[11px] font-bold text-white"
+                      className="flex h-full items-center justify-end rounded-lg bg-primary px-3 text-[11px] font-bold text-primary-foreground"
                       style={{
                         width: `${Math.max(pct, 6)}%`,
-                        backgroundColor: s.color,
                       }}
                     >
                       {s.count}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { MobileBottomNav, Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 interface AppShellProps {
@@ -15,7 +15,10 @@ export function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-background text-foreground">
       <Sidebar />
       <Topbar />
-      <main className="ml-[260px] min-h-[calc(100vh-64px)] p-6">{children}</main>
+      <main className="min-h-[calc(100vh-64px)] px-4 pb-24 pt-5 sm:px-6 md:ml-[260px] md:pb-6">
+        {children}
+      </main>
+      <MobileBottomNav />
     </div>
   );
 }

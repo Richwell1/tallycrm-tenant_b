@@ -9,6 +9,7 @@ import {
   type LeadRow,
   useLead,
   useLeadActivities,
+  useSaveLeadNote,
   useUpdateLeadStatus,
 } from "@/lib/leads-data";
 import { toast } from "sonner";
@@ -22,8 +23,10 @@ function LeadDetail() {
   const { data: lead, isLoading, isError, error, refetch } = useLead(id);
   const acts = useLeadActivities(lead?.email);
   const update = useUpdateLeadStatus();
+  const saveNote = useSaveLeadNote();
   const [convertOpen, setConvertOpen] = useState(false);
   const [disqOpen, setDisqOpen] = useState(false);
+  const [newNote, setNewNote] = useState("");
   const [tab, setTab] = useState<"timeline" | "convert" | "notes" | "source">("timeline");
 
   if (isLoading) return <TableSkeleton rows={4} />;
@@ -218,11 +221,31 @@ function LeadDetail() {
                 <div className="space-y-6">
                   <div className="relative">
                     <textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
                       className="min-h-[120px] w-full rounded-lg border border-border p-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       placeholder="Add a new internal note..."
                     />
-                    <button className="absolute bottom-4 right-4 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-white">
-                      Save Note
+                    <button
+                      onClick={() =>
+                        saveNote.mutate(
+                          { lead, note: newNote },
+                          {
+                            onSuccess: () => {
+                              toast.success("Lead note saved");
+                              setNewNote("");
+                            },
+                            onError: (err) =>
+                              toast.error("Could not save note", {
+                                description: (err as Error).message,
+                              }),
+                          },
+                        )
+                      }
+                      disabled={saveNote.isPending}
+                      className="absolute bottom-4 right-4 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      {saveNote.isPending ? "Saving..." : "Save Note"}
                     </button>
                   </div>
                   <div className="rounded-lg border border-border bg-muted p-4">

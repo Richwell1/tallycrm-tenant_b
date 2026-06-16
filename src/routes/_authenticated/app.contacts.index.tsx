@@ -283,11 +283,7 @@ function ContactsGrid({
           key={contact.id}
           className="group flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-[var(--shadow-xs)] transition-all hover:-translate-y-1 hover:border-primary"
         >
-          <Link
-            to="/app/contacts/$id"
-            params={{ id: contact.id }}
-            className="flex-1 p-6"
-          >
+          <Link to="/app/contacts/$id" params={{ id: contact.id }} className="flex-1 p-6">
             <div className="mb-4 flex items-start justify-between">
               <Avatar contact={contact} size="md" />
               <Tags tags={contact.tags ?? fallbackTags(contact)} compact />
@@ -310,20 +306,31 @@ function ContactsGrid({
           </Link>
           <div className="flex items-center justify-between border-t border-border bg-muted/40 px-6 py-4">
             <div className="flex items-center gap-1 text-text-muted">
+              <Link
+                to="/app/contacts/$id"
+                params={{ id: contact.id }}
+                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors hover:bg-muted hover:text-primary"
+                title="View"
+              >
+                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                View
+              </Link>
               <button
                 onClick={() => onEdit(contact)}
-                className="rounded p-1 transition-colors hover:bg-muted hover:text-primary"
+                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors hover:bg-muted hover:text-primary"
                 title="Edit"
               >
                 <span className="material-symbols-outlined text-[18px]">edit</span>
+                Edit
               </button>
               {onDelete && (
                 <button
                   onClick={() => onDelete(contact)}
-                  className="rounded p-1 transition-colors hover:bg-muted hover:text-danger"
+                  className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors hover:bg-danger-light hover:text-danger"
                   title="Delete"
                 >
                   <span className="material-symbols-outlined text-[18px]">delete</span>
+                  Delete
                 </button>
               )}
             </div>

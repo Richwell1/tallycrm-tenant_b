@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
@@ -18,7 +19,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       )}
     >
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary-light text-primary">
-        {icon ?? <span className="material-symbols-outlined text-[28px]">inbox</span>}
+        {icon ?? <Icon name="inbox" className="h-7 w-7" />}
       </div>
       <h3 className="text-lg font-semibold text-foreground">{title}</h3>
       {description ? (

@@ -1,5 +1,5 @@
 import { SectionCard } from "@/components/layout";
-import { EmptyState } from "@/components/common";
+import { EmptyState, Icon } from "@/components/common";
 import { useMyTasks } from "@/lib/dashboard-data";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export function MyTasks() {
         </div>
       ) : tasks.length === 0 ? (
         <EmptyState
-          icon={<span className="material-symbols-outlined text-[24px]">task_alt</span>}
+          icon={<Icon name="task_alt" className="h-6 w-6" />}
           title="You're all caught up"
           description="New tasks land here when they're assigned to you."
         />
@@ -48,7 +48,7 @@ export function MyTasks() {
                       overdue ? "font-semibold text-cta" : "text-text-secondary",
                     )}
                   >
-                    <span className="material-symbols-outlined text-[14px]">event</span>
+                    <Icon name="event" className="h-[14px] w-[14px]" />
                     {formatTaskDue(t.due_at)}
                   </p>
                 </div>

@@ -75,7 +75,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
 
-    supabase.auth.getUser().then(({ data }) => hydrate(data.user?.id, data.user?.email));
+    supabase.auth
+      .getUser()
+      .then(({ data }) => hydrate(data.user?.id, data.user?.email))
+      .catch((err: unknown) => {
+        console.warn("[Auth] Could not hydrate Supabase user", err);
+        if (mounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") {
