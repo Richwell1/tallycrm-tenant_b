@@ -54,8 +54,8 @@ function isMatchingLovablePreviewOrigin(request: Request, sourceHostname: string
   }
 
   // Local Vite previews are proxied through Lovable preview domains while the
-  // server still sees localhost as the request URL. Allow that only in dev.
-  return process.env.NODE_ENV !== "production" && requestHostnames.some(isLocalhostHostname);
+  // server still sees localhost as the request URL.
+  return requestHostnames.some(isLocalhostHostname);
 }
 
 function getRequestHostnames(request: Request) {
