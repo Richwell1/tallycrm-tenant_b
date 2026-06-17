@@ -209,9 +209,9 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
   }
 
-  // Fire-and-forget: send the confirmation email directly via Resend.
-  // Failures here must NOT block the visitor's success response.
-  void sendLeadConfirmationEmail(data, leadId);
+  // Await the email attempt so it is not cancelled when the serverless request
+  // finishes. Email failures are logged and do not block the visitor response.
+  await sendLeadConfirmationEmail(data, leadId);
 
   return json(request, { ok: true, lead_id: leadId }, 200);
 }
@@ -237,64 +237,140 @@ async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
     process.env.AUTOMATION_FROM_EMAIL ||
     "TallyPrime <onboarding@resend.dev>";
 
-  const first = escapeHtml(data.first_name || "there");
-  const company = data.company_name ? ` at <b>${escapeHtml(data.company_name)}</b>` : "";
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
-      <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
-      <p>Hi ${first}${company},</p>
-      <p>We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.</p>
-      <p>If it's urgent, just reply to this email and we'll prioritise it.</p>
-      <p style="margin-top:24px">— The TallyPrime team</p>
-    </div>`;
+  const primary = await sendResendEmail(RESEND_API_KEY, {
+    from: FROM_EMAIL,
+    to: [data.email],
+    subject: "We received your TallyPrime demo request",
+    html: buildLeadConfirmationHtml(data),
+  });
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [data.email],
-        subject: "We received your TallyPrime demo request",
-        html,
-      }),
+  if (primary.ok) {
+    await markLeadEmailStatus(leadId, "sent");
+    return;
+  }
+
+  const sandboxRecipient = extractResendSandboxRecipient(primary.body);
+  if (sandboxRecipient && sandboxRecipient.toLowerCase() !== data.email.toLowerCase()) {
+    const fallback = await sendResendEmail(RESEND_API_KEY, {
+      from: FROM_EMAIL,
+      to: [sandboxRecipient],
+      reply_to: data.email,
+      subject: `New TallyPrime lead request from ${data.first_name} ${data.last_name}`,
+      html: buildLeadNotificationHtml(data, leadId, primary.body),
     });
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
+    if (fallback.ok) {
+      await markLeadEmailStatus(leadId, "owner_notified");
       console.warn(
-        "[lead-capture] Resend send failed",
-        res.status,
-        sanitizeLogValue(body),
+        "[lead-capture] Resend sandbox restriction detected; sent lead notification to verified owner address",
         "lead:",
         leadId,
       );
       return;
     }
 
-    // Best-effort: mark the queued row as sent so it isn't re-sent later.
-    try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        await admin
-          .from("email_queue")
-          .update({ status: "sent", sent_at: new Date().toISOString() })
-          .eq("related_entity", "lead")
-          .eq("related_entity_id", leadId)
-          .eq("template", "landing_lead_confirmation");
-      }
-    } catch (err) {
-      console.warn("[lead-capture] Failed to mark queued email sent", sanitizeLogValue(err));
+    console.warn(
+      "[lead-capture] Resend fallback send failed",
+      fallback.status,
+      sanitizeLogValue(fallback.body),
+      "lead:",
+      leadId,
+    );
+    await markLeadEmailStatus(leadId, "failed");
+    return;
+  }
+
+  console.warn(
+    "[lead-capture] Resend send failed",
+    primary.status,
+    sanitizeLogValue(primary.body),
+    "lead:",
+    leadId,
+  );
+  await markLeadEmailStatus(leadId, "failed");
+}
+
+function buildLeadConfirmationHtml(data: CapturePayload) {
+  const first = escapeHtml(data.first_name || "there");
+  const company = data.company_name ? ` at <b>${escapeHtml(data.company_name)}</b>` : "";
+  return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
+      <p>Hi ${first}${company},</p>
+      <p>We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.</p>
+      <p>If it's urgent, just reply to this email and we'll prioritise it.</p>
+      <p style="margin-top:24px">— The TallyPrime team</p>
+    </div>`;
+}
+
+function buildLeadNotificationHtml(data: CapturePayload, leadId: string, providerMessage: string) {
+  return `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">New TallyPrime lead request</h2>
+      <p>A visitor submitted the landing page form. The lead was saved to the CRM.</p>
+      <table style="width:100%;border-collapse:collapse;margin:20px 0">
+        <tr><td style="padding:8px 0;color:#555">Name</td><td style="padding:8px 0;font-weight:700">${escapeHtml(data.first_name)} ${escapeHtml(data.last_name)}</td></tr>
+        <tr><td style="padding:8px 0;color:#555">Email</td><td style="padding:8px 0"><a href="mailto:${escapeHtml(data.email)}">${escapeHtml(data.email)}</a></td></tr>
+        <tr><td style="padding:8px 0;color:#555">Phone</td><td style="padding:8px 0">${escapeHtml(data.phone || "—")}</td></tr>
+        <tr><td style="padding:8px 0;color:#555">Company</td><td style="padding:8px 0">${escapeHtml(data.company_name || "—")}</td></tr>
+        <tr><td style="padding:8px 0;color:#555">Message</td><td style="padding:8px 0">${escapeHtml(data.message || "—")}</td></tr>
+        <tr><td style="padding:8px 0;color:#555">Lead ID</td><td style="padding:8px 0">${escapeHtml(leadId)}</td></tr>
+      </table>
+      <p style="font-size:12px;color:#666">The visitor confirmation could not be sent because the current email key is in test mode: ${escapeHtml(providerMessage)}</p>
+    </div>`;
+}
+
+async function sendResendEmail(
+  apiKey: string,
+  payload: {
+    from: string;
+    to: string[];
+    subject: string;
+    html: string;
+    reply_to?: string;
+  },
+) {
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.text().catch(() => "");
+    return { ok: res.ok, status: res.status, body };
+  } catch (err) {
+    return { ok: false, status: 0, body: String(err instanceof Error ? err.message : err) };
+  }
+}
+
+function extractResendSandboxRecipient(body: string) {
+  return body.match(/own email address \(([^)\s]+@[^)\s]+)\)/i)?.[1] ?? null;
+}
+
+async function markLeadEmailStatus(leadId: string, status: "sent" | "owner_notified" | "failed") {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
+
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    await admin.from("leads").update({ email_status: status }).eq("id", leadId);
+
+    if (status === "sent") {
+      await admin
+        .from("email_queue")
+        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .eq("related_entity", "lead")
+        .eq("related_entity_id", leadId)
+        .eq("template", "landing_lead_confirmation");
     }
   } catch (err) {
-    console.warn("[lead-capture] Resend request failed", sanitizeLogValue(err));
+    console.warn("[lead-capture] Failed to mark email status", sanitizeLogValue(err));
   }
 }
 
