@@ -45,9 +45,6 @@ import {
   Linkedin,
   Instagram,
   Twitter,
-  TrendingUp,
-  CalendarClock,
-  DatabaseZap,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -92,6 +89,11 @@ type FieldErrors = Partial<Record<keyof FormShape, string>>;
 /* ──────────────────────────────────────────────────────────────────── */
 
 function Landing() {
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <AnnouncementBar />
@@ -265,8 +267,8 @@ function Hero() {
         className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.04)_1px,transparent_1px),linear-gradient(180deg,rgba(15,23,42,0.04)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:linear-gradient(180deg,black,transparent_72%)]"
       />
 
-      <div className="relative mx-auto grid min-h-[calc(100svh-88px)] max-w-7xl items-center gap-12 px-4 py-14 sm:px-6 md:grid-cols-[1.02fr_0.98fr] md:py-20 lg:py-24">
-        <div className="max-w-2xl">
+      <div className="relative mx-auto grid min-h-[calc(100svh-88px)] max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.02fr_0.98fr] md:py-20 lg:py-24">
+        <div className="max-w-2xl md:pb-6">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary shadow-[var(--shadow-xs)] backdrop-blur">
             <Award className="h-3.5 w-3.5" />
             Authorized TallyPrime Partner in Ghana
@@ -279,40 +281,21 @@ function Hero() {
             together in one simple, reliable system trusted by millions of businesses. We help you
             buy, set up, and master it with local support every step of the way.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
               href="#contact"
-              className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-primary"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-primary"
             >
               Get a Free Demo
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#contact"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-[var(--shadow-xs)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-[var(--shadow-xs)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary"
             >
               Talk to a Tally Expert
               <Phone className="h-4 w-4" />
             </a>
-          </div>
-          <div className="mt-9 grid max-w-xl gap-3 sm:grid-cols-3">
-            {[
-              { icon: Users, value: "2.5M+", label: "businesses trust Tally" },
-              { icon: ShieldCheck, value: "36+", label: "years of reliability" },
-              { icon: CalendarClock, value: "< 24h", label: "sales follow-up target" },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-white bg-white/75 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur"
-                >
-                  <Icon className="h-4 w-4 text-primary" />
-                  <p className="mt-3 text-xl font-black text-slate-950">{item.value}</p>
-                  <p className="text-xs font-medium text-slate-500">{item.label}</p>
-                </div>
-              );
-            })}
           </div>
         </div>
 
@@ -324,105 +307,32 @@ function Hero() {
 
 function HeroVisual() {
   return (
-    <div className="relative min-h-[500px]">
-      <div className="absolute inset-x-2 top-8 rounded-[2rem] border border-white/80 bg-white/80 p-3 shadow-[0_35px_90px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:inset-x-0">
-        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-950">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="flex gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-            </div>
-            <p className="text-[11px] font-semibold text-white/55">TallyPrime demo workspace</p>
-          </div>
-          <div className="grid gap-0 md:grid-cols-[0.72fr_1fr]">
-            <div className="border-b border-white/10 bg-white/[0.03] p-5 md:border-b-0 md:border-r">
-              <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">
-                Business Health
-              </p>
-              <p className="mt-3 text-3xl font-black text-white">GHS 248k</p>
-              <p className="text-sm text-white/55">Sales booked this month</p>
-              <div className="mt-6 space-y-3">
-                {[
-                  ["Receivables", "GHS 62k", "bg-primary"],
-                  ["VAT ready", "98%", "bg-emerald-400"],
-                  ["Stock alerts", "12", "bg-amber-300"],
-                ].map(([label, value, tone]) => (
-                  <div key={label} className="rounded-2xl bg-white/[0.06] p-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/55">{label}</span>
-                      <span className="font-bold text-white">{value}</span>
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-white/10">
-                      <div className={`h-1.5 w-2/3 rounded-full ${tone}`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-black text-slate-950">Pipeline from landing page</p>
-                  <p className="text-xs text-slate-500">Write-only CRM capture active</p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-success-light px-2.5 py-1 text-[11px] font-bold text-success">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                  Live
-                </span>
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-3">
-                {[
-                  ["New", "24"],
-                  ["Contacted", "18"],
-                  ["Qualified", "9"],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl bg-slate-50 p-3">
-                    <p className="text-[11px] font-medium text-slate-500">{label}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 h-36 rounded-2xl bg-[linear-gradient(180deg,#eef5ff,transparent)] p-4">
-                <div className="flex h-full items-end gap-2">
-                  {[42, 64, 51, 78, 68, 92, 82].map((h, i) => (
-                    <div
-                      key={i}
-                      style={{ height: `${h}%` }}
-                      className="flex-1 rounded-t-lg bg-primary/80"
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-light text-primary">
-                    <DatabaseZap className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-slate-950">Lead saved to CRM</p>
-                    <p className="text-xs text-slate-500">
-                      Source, status, assignment, task, and email queue created.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="relative min-h-[520px]">
+      <div
+        aria-hidden
+        className="absolute inset-6 rounded-[2rem] bg-[linear-gradient(135deg,rgba(0,87,184,0.1),rgba(248,177,51,0.12)_48%,rgba(255,255,255,0.9))]"
+      />
 
-      <div className="absolute bottom-4 left-0 hidden w-64 rounded-2xl border border-white bg-white/85 p-4 shadow-[0_25px_70px_rgba(15,23,42,0.16)] backdrop-blur sm:block">
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-light text-accent-dark">
-            <TrendingUp className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-slate-500">This month</p>
-            <p className="text-2xl font-black text-slate-950">+18.4%</p>
-          </div>
+      <div className="absolute inset-x-2 top-6 overflow-hidden rounded-[2rem] border border-white/80 bg-white p-2 shadow-[0_35px_90px_rgba(15,23,42,0.16)] sm:inset-x-0">
+        <div className="relative aspect-square overflow-hidden rounded-[1.6rem] bg-primary-light">
+          <img
+            src="/images/tallyprime-hero.jpg"
+            alt="TallyPrime business software on a laptop for accounting and inventory management"
+            className="h-full w-full object-cover"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.48)_28%,rgba(0,87,184,0.08)_52%,rgba(0,63,138,0.44)_100%)]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-2/5 bg-[linear-gradient(0deg,rgba(10,22,40,0.66),rgba(10,22,40,0))]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0)_44%,rgba(248,177,51,0.16)_100%)]"
+          />
         </div>
-        <p className="mt-2 text-xs text-slate-500">Sales lift after structured follow-up</p>
       </div>
     </div>
   );

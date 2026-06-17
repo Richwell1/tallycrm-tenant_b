@@ -114,7 +114,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('tally-crm-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}",
+              "try{var l=location.pathname==='/';if(l){document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light'}else{var t=localStorage.getItem('tally-crm-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}}catch(e){}",
           }}
         />
         <HeadContent />

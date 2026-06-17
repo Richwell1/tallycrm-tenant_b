@@ -14,12 +14,14 @@ export function Topbar() {
     const nextDark = saved ? saved === "dark" : prefersDark;
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
+    document.documentElement.style.colorScheme = nextDark ? "dark" : "light";
   }, []);
 
   function toggleTheme() {
     const nextDark = !dark;
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
+    document.documentElement.style.colorScheme = nextDark ? "dark" : "light";
     localStorage.setItem("tally-crm-theme", nextDark ? "dark" : "light");
   }
 
