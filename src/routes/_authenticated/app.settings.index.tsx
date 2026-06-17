@@ -4,6 +4,14 @@ import { toast } from "sonner";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AUTOMATION_TEMPLATES,
   type AutomationRule,
   type AutomationRun,
@@ -28,6 +36,7 @@ import {
   useDeleteLossReason,
   useUpdateUserRole,
   useUpdateUserStatus,
+  useDeleteUser,
   useInviteUser,
   useSaveAssignmentQueue,
   useAppSettings,
@@ -466,13 +475,50 @@ function PipelineSettingsPanel() {
 
 function UsersSettingsPanel() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SettingsUser | null>(null);
   const { data: users = [], isLoading, isError, error, refetch } = useSettingsUsers();
   const updateRole = useUpdateUserRole();
   const updateStatus = useUpdateUserStatus();
+  const deleteUser = useDeleteUser();
 
   const adminCount = users.filter((u) => u.role === "admin").length;
   const managerCount = users.filter((u) => u.role === "manager").length;
   const repCount = users.filter((u) => u.role === "rep").length;
+
+  async function handleRoleChange(userId: string, role: "admin" | "manager" | "rep") {
+    try {
+      await updateRole.mutateAsync({ userId, role });
+      toast.success("Role updated");
+    } catch (err) {
+      toast.error("Could not update role", {
+        description: (err as Error).message,
+      });
+    }
+  }
+
+  async function handleStatusChange(userId: string, status: "active" | "inactive") {
+    try {
+      await updateStatus.mutateAsync({ userId, status });
+      toast.success("User status updated");
+    } catch (err) {
+      toast.error("Could not update status", {
+        description: (err as Error).message,
+      });
+    }
+  }
+
+  async function confirmDeleteUser() {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser.mutateAsync({ userId: deleteTarget.id });
+      toast.success("User deleted");
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error("Could not delete user", {
+        description: (err as Error).message,
+      });
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -547,12 +593,6 @@ function UsersSettingsPanel() {
               </thead>
               <tbody className="divide-y divide-border">
                 {users.map((user) => {
-                  const roleLabel =
-                    user.role === "admin"
-                      ? "Admin"
-                      : user.role === "manager"
-                        ? "Sales Manager"
-                        : "Sales Rep";
                   const statusTone: "success" | "warning" =
                     user.status === "active" ? "success" : "warning";
                   return (
@@ -570,17 +610,10 @@ function UsersSettingsPanel() {
                           className="input h-9 min-w-[150px]"
                           defaultValue={user.role}
                           onChange={async (e) => {
-                            try {
-                              await updateRole.mutateAsync({
-                                userId: user.id,
-                                role: e.target.value as "admin" | "manager" | "rep",
-                              });
-                              toast.success("Role updated");
-                            } catch (err) {
-                              toast.error("Could not update role", {
-                                description: (err as Error).message,
-                              });
-                            }
+                            await handleRoleChange(
+                              user.id,
+                              e.target.value as "admin" | "manager" | "rep",
+                            );
                           }}
                         >
                           <option value="admin">Admin</option>
@@ -600,21 +633,65 @@ function UsersSettingsPanel() {
                         <div className="flex items-center gap-2">
                           <AutomationSwitch
                             checked={user.status === "active"}
-                            onChange={async (checked) => {
-                              try {
-                                await updateStatus.mutateAsync({
-                                  userId: user.id,
-                                  status: checked ? "active" : "inactive",
-                                });
-                                toast.success("User status updated");
-                              } catch (err) {
-                                toast.error("Could not update status", {
-                                  description: (err as Error).message,
-                                });
-                              }
-                            }}
+                            onChange={(checked) =>
+                              void handleStatusChange(user.id, checked ? "active" : "inactive")
+                            }
                           />
-                          <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className="flex h-8 w-8 items-center justify-center rounded text-text-secondary hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                              aria-label="User actions"
+                            >
+                              <span className="material-symbols-outlined text-[19px]">
+                                more_vert
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuLabel className="text-xs text-text-muted">
+                                {user.full_name}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel
+                                inset
+                                className="text-[11px] uppercase tracking-wider text-text-muted"
+                              >
+                                Change role
+                              </DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "admin")}
+                              >
+                                Set as Admin
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "manager")}
+                              >
+                                Set as Sales Manager
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "rep")}
+                              >
+                                Set as Sales Rep
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  void handleStatusChange(
+                                    user.id,
+                                    user.status === "active" ? "inactive" : "active",
+                                  )
+                                }
+                              >
+                                {user.status === "active" ? "Deactivate user" : "Activate user"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-danger focus:text-danger"
+                                onSelect={() => setDeleteTarget(user)}
+                              >
+                                Delete user
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
@@ -645,6 +722,13 @@ function UsersSettingsPanel() {
       </div>
 
       {inviteOpen ? <InviteUserDialog onClose={() => setInviteOpen(false)} /> : null}
+      {deleteTarget ? (
+        <DeleteUserDialog
+          user={deleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => void confirmDeleteUser()}
+        />
+      ) : null}
     </div>
   );
 }
@@ -2593,6 +2677,51 @@ function DeleteAutomationDialog({
             className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white"
           >
             Delete Rule
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteUserDialog({
+  user,
+  onCancel,
+  onConfirm,
+}: {
+  user: SettingsUser | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!user) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
+        <div className="space-y-4 p-6">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-danger-light text-danger">
+              person_remove
+            </span>
+            <h3 className="text-[20px] font-semibold">Delete User?</h3>
+          </div>
+          <p className="text-sm leading-6 text-text-secondary">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">"{user.full_name}"</span>? This will
+            remove their account access and role assignment.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white"
+          >
+            Delete User
           </button>
         </div>
       </div>

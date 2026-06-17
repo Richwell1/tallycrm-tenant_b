@@ -154,6 +154,43 @@ export function useUpdateUserStatus() {
   });
 }
 
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!auth.user) throw new Error("You must be signed in to delete users.");
+      if (auth.user.id === userId) {
+        throw new Error("Admins cannot delete their own account.");
+      }
+
+      const { data: roleRow, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", auth.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleErr) throw roleErr;
+      if (!roleRow) throw new Error("Forbidden: admin role required");
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (authDeleteError) throw authDeleteError;
+
+      const [{ error: roleDeleteError }, { error: profileDeleteError }] = await Promise.all([
+        supabaseAdmin.from("user_roles").delete().eq("user_id", userId),
+        supabaseAdmin.from("profiles").delete().eq("id", userId),
+      ]);
+
+      if (roleDeleteError) throw roleDeleteError;
+      if (profileDeleteError) throw profileDeleteError;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings", "users"] }),
+  });
+}
+
 function getInviteFromEmail() {
   return (
     process.env.LANDING_FROM_EMAIL ||
