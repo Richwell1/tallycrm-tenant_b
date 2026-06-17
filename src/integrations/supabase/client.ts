@@ -3,9 +3,14 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 const serverEnv = typeof process !== "undefined" ? process.env : {};
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL;
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ||
+  serverEnv.SUPABASE_URL ||
+  "https://ncggjsjzjfgoceoszjhf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || serverEnv.SUPABASE_PUBLISHABLE_KEY;
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  serverEnv.SUPABASE_PUBLISHABLE_KEY ||
+  "sb_publishable_VO_1HPPNw-Y-nGVHLEdK8g_6Dkwq6zV";
 const LOCAL_PREVIEW_KEY = "tally-crm-local-preview";
 
 export function isSupabaseConfigured() {
