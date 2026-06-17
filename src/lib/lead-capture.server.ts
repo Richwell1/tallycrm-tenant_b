@@ -32,12 +32,77 @@ function isTrustedSourceOrigin(request: Request, sourceOrigin: string) {
   const requestUrl = new URL(request.url);
   if (sourceUrl.origin === requestUrl.origin) return true;
 
+  if (isMatchingLovablePreviewOrigin(request, sourceUrl.hostname)) return true;
+
   if (process.env.NODE_ENV !== "production") {
     const localhostHosts = new Set(["localhost", "127.0.0.1", "::1"]);
     if (localhostHosts.has(sourceUrl.hostname)) return true;
   }
 
   return getAllowedOrigins().some((allowedOrigin) => allowedOrigin === sourceUrl.origin);
+}
+
+function isMatchingLovablePreviewOrigin(request: Request, sourceHostname: string) {
+  const sourceProjectId = extractLovableProjectId(sourceHostname);
+  if (!sourceProjectId) return false;
+
+  const requestHostnames = getRequestHostnames(request);
+  if (
+    requestHostnames.some((hostname) => extractLovableProjectId(hostname) === sourceProjectId)
+  ) {
+    return true;
+  }
+
+  // Local Vite previews are proxied through Lovable preview domains while the
+  // server still sees localhost as the request URL.
+  return requestHostnames.some(isLocalhostHostname);
+}
+
+function getRequestHostnames(request: Request) {
+  const requestUrl = new URL(request.url);
+  const hostValues = [
+    requestUrl.host,
+    request.headers.get("host"),
+    request.headers.get("x-forwarded-host"),
+    request.headers.get("x-original-host"),
+  ];
+
+  return Array.from(
+    new Set(
+      hostValues
+        .filter((host): host is string => Boolean(host))
+        .flatMap((host) => host.split(","))
+        .map(normalizeHostname)
+        .filter(Boolean),
+    ),
+  );
+}
+
+function normalizeHostname(host: string) {
+  const value = host.trim().toLowerCase();
+  if (!value) return "";
+  try {
+    return new URL(value.includes("://") ? value : `https://${value}`).hostname;
+  } catch {
+    return value.replace(/^\[/, "").replace(/\]$/, "").split(":")[0] ?? "";
+  }
+}
+
+function extractLovableProjectId(hostname: string) {
+  const normalized = normalizeHostname(hostname);
+  if (!normalized.endsWith(".lovable.app") && !normalized.endsWith(".lovableproject.com")) {
+    return null;
+  }
+
+  return (
+    normalized.match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    )?.[0].toLowerCase() ?? null
+  );
+}
+
+function isLocalhostHostname(hostname: string) {
+  return ["localhost", "127.0.0.1", "::1"].includes(normalizeHostname(hostname));
 }
 
 function getCorsOrigin(request: Request) {
@@ -232,9 +297,7 @@ function validatePublicPost(request: Request) {
     };
   }
 
-  const origin = request.headers.get("origin");
-  const referer = request.headers.get("referer");
-  const sourceOrigin = origin ?? (referer ? new URL(referer).origin : null);
+  const sourceOrigin = getSourceOrigin(request);
   if (process.env.NODE_ENV === "production" && !sourceOrigin) {
     return {
       status: 403,
@@ -252,6 +315,20 @@ function validatePublicPost(request: Request) {
   }
 
   return null;
+}
+
+function getSourceOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin) return origin;
+
+  const referer = request.headers.get("referer");
+  if (!referer) return null;
+
+  try {
+    return new URL(referer).origin;
+  } catch {
+    return null;
+  }
 }
 
 function sanitizeLogValue(value: unknown) {
