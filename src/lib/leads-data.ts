@@ -59,6 +59,24 @@ export function useUpdateLeadStatus() {
   });
 }
 
+export function useAssignLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, assignedTo }: { id: string; assignedTo: string | null }) => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ assigned_to: assignedTo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: leadsKey });
+      qc.invalidateQueries({ queryKey: ["lead", v.id] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
 export interface CreateLeadInput {
   first_name: string;
   last_name: string;

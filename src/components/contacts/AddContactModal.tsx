@@ -88,7 +88,7 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
       ref={modal.ref}
       onKeyDown={modal.onKeyDown}
     >
-      <div className="flex w-full max-w-[720px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
+      <div className="flex w-full max-w-[960px] flex-col overflow-hidden rounded-xl bg-card shadow-2xl">
         <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">person_add</span>
@@ -104,8 +104,8 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
           </button>
         </header>
 
-        <form onSubmit={onSubmit} className="max-h-[76vh] overflow-y-auto p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <form onSubmit={onSubmit} className="max-h-[80vh] overflow-y-auto p-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-4">
               <Field label="First Name" required>
                 <input

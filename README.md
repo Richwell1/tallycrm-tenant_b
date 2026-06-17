@@ -40,8 +40,8 @@ write-only capture path. Full product/requirements specs are in [`docs/`](docs) 
 - Demo-request form with client-side validation and a honeypot field, posting to a server route
   that validates again and writes through a Postgres RPC (no direct table access from the public
   internet).
-- Auto-assignment (round-robin among reps), a "Make first contact" task, an audit-log entry, and
-  a queued confirmation email are created in the same transaction as the lead.
+- Landing-page leads are created unassigned for admin/manager review. A first-contact task and
+  rep notification are created only after an admin or sales manager assigns the lead.
 
 **Auth & 2FA**
 
@@ -120,17 +120,16 @@ separate deployment.
  ┌────────┐  POST JSON   ┌───────────────────────────┐      ┌─────────────────────────┐
  │ Landing │ ───────────▶│ /api/public/leads-capture  │      │ RPC capture_landing_lead │
  │  page   │              │  (lead-capture.server.ts) │─────▶│  • dedupe by email       │
- │  form   │              │  • zod validation          │      │  • round-robin assign   │
+ │  form   │              │  • zod validation          │      │  • leave unassigned     │
  └────────┘              │  • origin/CSRF/size checks │      │  • insert lead           │
-                          └─────────────┬───────────────┘     │  • insert task           │
-                                        │ fire-and-forget      │  • queue confirmation    │
-                                        ▼                      │    email (email_queue)   │
-                          ┌───────────────────────────┐      │  • write audit_log       │
-                          │ Edge Function:             │      └────────────┬────────────┘
-                          │ send-automation-email      │                   │
-                          │  • dispatch-secret auth     │◀──────────────────┘ trigger fires,
-                          │  • pulls email_queue rows   │                     row appears on
-                          │  • sends via Resend         │                     CRM dashboard
+                          └─────────────┬───────────────┘     │  • queue confirmation    │
+                                        │ awaited best-effort  │    email (email_queue)   │
+                                        ▼                      │  • write audit_log       │
+                          ┌───────────────────────────┐      └─────────────────────────┘
+                          │ Resend API                 │
+                          │  • visitor confirmation    │
+                          │  • internal lead notice    │
+                          │  • queue row marked sent   │
                           └───────────────────────────┘
 ```
 
@@ -240,8 +239,11 @@ Every variable below is read somewhere in the code (verified against `src/`,
 | `AUTOMATION_FROM_EMAIL`         | Optional (fallback if `LANDING_FROM_EMAIL` unset)         | Same as above                                                                                                                                    | `automations@yourdomain.com`  |
 | `PARTNER_NAME`                  | Optional                                                  | Free text, used in the confirmation email                                                                                                        | `Acme Tally Partners`         |
 | `PARTNER_PHONE`                 | Optional                                                  | Free text                                                                                                                                        | `+233 000 000 000`            |
-| `PARTNER_EMAIL`                 | Optional                                                  | Free text                                                                                                                                        | `hello@yourdomain.com`        |
-| `SALES_NOTIFY_BCC`              | Optional                                                  | An internal inbox to BCC on outbound automation emails                                                                                           | `sales@yourdomain.com`        |
+| `PARTNER_EMAIL`                 | Optional                                                  | Reply-to address for visitor confirmations; fallback internal notification recipient if no sales recipient is set                                 | `hello@yourdomain.com`        |
+| `LANDING_NOTIFY_EMAILS`         | Recommended                                               | Comma-separated internal inboxes that receive each new landing-page lead                                                                         | `sales@yourdomain.com`        |
+| `SALES_NOTIFY_EMAILS`           | Optional                                                  | Alias/fallback for `LANDING_NOTIFY_EMAILS`                                                                                                       | `sales@yourdomain.com`        |
+| `SALES_NOTIFY_BCC`              | Optional                                                  | Comma-separated internal inboxes BCC'd on visitor confirmations; also accepted as a fallback lead notification recipient                         | `sales@yourdomain.com`        |
+| `APP_URL`                       | Optional                                                  | Public app origin used to include a CRM lead link in internal notification emails                                                                 | `https://crm.example.com`     |
 | `EMAIL_ENABLED`                 | Optional (default `true` in `.env.example`)               | Safe-launch flag — see [Lead-capture & email flow](#lead-capture--email-flow)                                                                    | `true`                        |
 | `LEAD_CAPTURE_ALLOWED_ORIGINS`  | Optional                                                  | Comma-separated origins, only needed if the landing page is ever served from a **different** origin than this app                                | `https://landing.example.com` |
 | `PUBLIC_SITE_ORIGINS`           | Optional                                                  | Same purpose/format as above (fallback name)                                                                                                     | `https://landing.example.com` |
@@ -290,6 +292,8 @@ and never commit a real `.env`. `scripts/security-check.mjs` (run in CI) checks 
      SUPABASE_SERVICE_ROLE_KEY=<your service role key> \
      LANDING_FROM_EMAIL=<verified sender>
    ```
+   The sender must be a verified Resend address on your own domain. Do not use a sandbox-only
+   sender for this flow.
 7. Confirm RLS is on for every table — the migrations enable it, but if you add tables later,
    RLS does not apply by default; you must `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` and write
    policies yourself.
@@ -378,21 +382,21 @@ linter, not proof of functional correctness.
    - validates the payload shape with `zod` (name/email required, length caps, optional phone/
      company/message)
 3. On success it calls the `capture_landing_lead` Postgres RPC, which: dedupes by email against
-   existing contacts, round-robin assigns to the rep with the fewest open leads, inserts the lead
-   (`status = 'new'`, `source = 'Tally Landing Page'`), creates a "Make first contact" task due in
-   4 hours, queues a `landing_lead_confirmation` row in `email_queue`, and writes an `audit_log`
-   entry — all in one DB call.
-4. The lead now exists and is immediately visible on the CRM Kanban/dashboard (no polling delay —
-   it's a normal DB row).
-5. The server route then fires (and awaits) a call to the `send-automation-email` Edge Function,
-   authenticated with `AUTOMATION_DISPATCH_SECRET` (constant-time compared) plus the Supabase
-   anon key, which pulls the just-queued row (and any other pending rows) and sends it via the
-   Resend API, marking it `sent` or `failed` (retried up to 5 attempts).
+   existing contacts, inserts the lead unassigned (`status = 'new'`, `source = 'Tally Landing Page'`),
+   queues a `landing_lead_confirmation` row in `email_queue`, and writes an `audit_log` entry.
+4. The lead now exists and is immediately visible to admins and sales managers. Sales reps cannot
+   see unassigned landing-page leads; they only see leads assigned to them or leads they created
+   for themselves.
+5. The server route then awaits a best-effort Resend send before returning success. It sends the
+   visitor confirmation, marks the queued confirmation row `sent` when Resend accepts it, and sends
+   an internal lead notification to `LANDING_NOTIFY_EMAILS`/`SALES_NOTIFY_EMAILS`/`SALES_NOTIFY_BCC`
+   when one of those recipients is configured. The configured sender must be verified in Resend;
+   the app no longer rewrites local sends to a sandbox inbox.
 6. **`EMAIL_ENABLED` is a safe-launch flag** — `.env.example` defaults it to `true`, but the email
-   send only actually happens if `RESEND_API_KEY` and `AUTOMATION_DISPATCH_SECRET` are both
-   configured; if either is missing, the lead still saves successfully (the visitor still sees a
-   success state) and the email simply stays queued/unsent, logged via `console.warn` server-side
-   — there is no user-facing failure for a missing email configuration.
+   send only actually happens if `RESEND_API_KEY` is configured; if it is missing, the lead still
+   saves successfully (the visitor still sees a success state) and the email simply stays
+   queued/unsent, logged via `console.warn` server-side — there is no user-facing failure for a
+   missing email configuration.
 
 ---
 

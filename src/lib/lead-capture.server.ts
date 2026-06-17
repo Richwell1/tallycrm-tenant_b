@@ -209,9 +209,9 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
   }
 
-  // Fire-and-forget: send the confirmation email directly via Resend.
-  // Failures here must NOT block the visitor's success response.
-  void sendLeadConfirmationEmail(data, leadId);
+  // Await the best-effort send so serverless runtimes do not freeze the work
+  // after the success response has already been returned.
+  await sendLeadCaptureEmails(data, leadId);
 
   return json(request, { ok: true, lead_id: leadId }, 200);
 }
@@ -225,41 +225,95 @@ function escapeHtml(value: unknown) {
     .replaceAll("'", "&#39;");
 }
 
-async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!RESEND_API_KEY) {
-    console.warn("[lead-capture] RESEND_API_KEY not configured; skipping confirmation email");
+function emailEnabled() {
+  return (
+    (process.env.EMAIL_ENABLED ?? "true")
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .toLowerCase() !== "false"
+  );
+}
+
+function parseEmailList(value: string | undefined) {
+  return (value ?? "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
+function getLandingFromEmail() {
+  return (
+    process.env.LANDING_FROM_EMAIL ||
+    process.env.AUTOMATION_FROM_EMAIL ||
+    "TallyPrime <onboarding@resend.dev>"
+  );
+}
+
+function getSalesNotificationRecipients() {
+  return parseEmailList(
+    process.env.LANDING_NOTIFY_EMAILS ||
+      process.env.LANDING_NOTIFY_EMAIL ||
+      process.env.SALES_NOTIFY_EMAILS ||
+      process.env.SALES_NOTIFY_EMAIL ||
+      process.env.SALES_NOTIFY_TO ||
+      process.env.SALES_NOTIFY_BCC ||
+      process.env.PARTNER_EMAIL,
+  );
+}
+
+async function sendLeadCaptureEmails(data: CapturePayload, leadId: string) {
+  if (!emailEnabled()) {
+    console.warn("[lead-capture] EMAIL_ENABLED=false; skipping lead capture emails");
     return;
   }
 
-  const FROM_EMAIL =
-    process.env.LANDING_FROM_EMAIL ||
-    process.env.AUTOMATION_FROM_EMAIL ||
-    "TallyPrime <onboarding@resend.dev>";
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) {
+    console.warn("[lead-capture] RESEND_API_KEY not configured; skipping lead capture emails");
+    return;
+  }
 
+  await Promise.all([
+    sendLeadConfirmationEmail(data, leadId, RESEND_API_KEY),
+    sendInternalLeadNotification(data, leadId, RESEND_API_KEY),
+  ]);
+}
+
+async function sendLeadConfirmationEmail(
+  data: CapturePayload,
+  leadId: string,
+  RESEND_API_KEY: string,
+) {
   const first = escapeHtml(data.first_name || "there");
   const company = data.company_name ? ` at <b>${escapeHtml(data.company_name)}</b>` : "";
+  const partnerName = process.env.PARTNER_NAME || "The TallyPrime team";
+  const partnerEmail = process.env.PARTNER_EMAIL;
+  const salesBcc = parseEmailList(process.env.SALES_NOTIFY_BCC);
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
       <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
       <p>Hi ${first}${company},</p>
       <p>We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.</p>
       <p>If it's urgent, just reply to this email and we'll prioritise it.</p>
-      <p style="margin-top:24px">— The TallyPrime team</p>
+      <p style="margin-top:24px">— ${escapeHtml(partnerName)}</p>
     </div>`;
+  const text = [
+    `Hi ${data.first_name || "there"},`,
+    "",
+    "We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.",
+    "If it's urgent, just reply to this email and we'll prioritise it.",
+    "",
+    `- ${partnerName}`,
+  ].join("\n");
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [data.email],
-        subject: "We received your TallyPrime demo request",
-        html,
-      }),
+    const res = await sendResendEmail(RESEND_API_KEY, {
+      from: getLandingFromEmail(),
+      to: [data.email],
+      bcc: salesBcc,
+      reply_to: partnerEmail ? [partnerEmail] : undefined,
+      subject: "We received your TallyPrime demo request",
+      html,
+      text,
     });
 
     if (!res.ok) {
@@ -296,6 +350,105 @@ async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
   } catch (err) {
     console.warn("[lead-capture] Resend request failed", sanitizeLogValue(err));
   }
+}
+
+async function sendInternalLeadNotification(
+  data: CapturePayload,
+  leadId: string,
+  RESEND_API_KEY: string,
+) {
+  const recipients = getSalesNotificationRecipients();
+  if (recipients.length === 0) {
+    console.warn("[lead-capture] No sales notification recipient configured");
+    return;
+  }
+
+  const fullName = `${data.first_name} ${data.last_name}`.trim();
+  const leadUrl = process.env.APP_URL ? `${process.env.APP_URL}/app/leads/${leadId}` : null;
+  const details = [
+    ["Name", fullName],
+    ["Email", data.email],
+    ["Phone", data.phone || "Not provided"],
+    ["Company", data.company_name || "Not provided"],
+    ["Message", data.message || "Not provided"],
+    ["Lead ID", leadId],
+  ];
+
+  const detailRows = details
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#475569">${escapeHtml(
+          label,
+        )}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#0f172a">${escapeHtml(
+          value,
+        )}</td></tr>`,
+    )
+    .join("");
+  const html = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">New TallyPrime landing page lead</h2>
+      <p>A new demo request was captured and saved to the CRM.</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;border:1px solid #e5e7eb">${detailRows}</table>
+      ${leadUrl ? `<p style="margin-top:20px"><a href="${escapeHtml(leadUrl)}">Open lead in CRM</a></p>` : ""}
+    </div>`;
+  const text = [
+    "New TallyPrime landing page lead",
+    "",
+    ...details.map(([label, value]) => `${label}: ${value}`),
+    ...(leadUrl ? ["", `Open lead in CRM: ${leadUrl}`] : []),
+  ].join("\n");
+
+  try {
+    const res = await sendResendEmail(RESEND_API_KEY, {
+      from: getLandingFromEmail(),
+      to: recipients,
+      reply_to: [data.email],
+      subject: `New TallyPrime lead: ${fullName || data.email}`,
+      html,
+      text,
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn(
+        "[lead-capture] Internal lead notification failed",
+        res.status,
+        sanitizeLogValue(body),
+        "lead:",
+        leadId,
+      );
+    }
+  } catch (err) {
+    console.warn("[lead-capture] Internal lead notification request failed", sanitizeLogValue(err));
+  }
+}
+
+async function sendResendEmail(
+  RESEND_API_KEY: string,
+  payload: {
+    from: string;
+    to: string[];
+    bcc?: string[];
+    reply_to?: string[];
+    subject: string;
+    html: string;
+    text: string;
+  },
+) {
+  const body = Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return value != null && value !== "";
+    }),
+  );
+
+  return fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 function getVisitorCountry(request: Request) {

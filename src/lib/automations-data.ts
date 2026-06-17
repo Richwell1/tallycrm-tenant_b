@@ -79,9 +79,9 @@ type AutomationRunRow = Database["public"]["Tables"]["automation_runs"]["Row"];
 const RULES: AutomationRule[] = [
   {
     id: "new-lead-auto-assign",
-    name: "New Lead Auto-Assign",
+    name: "New Lead Manual Intake",
     description:
-      "When a new lead is captured, assign it by territory rotation, create first-contact work, and notify the owner.",
+      "When a new lead is captured, keep it in the manager queue until a specific rep is assigned.",
     triggerType: "new_lead",
     triggerLabel: "New Lead",
     triggerIcon: "person_add",
@@ -89,20 +89,20 @@ const RULES: AutomationRule[] = [
     condition: "Lead is created from landing page or manual entry",
     actions: [
       {
-        type: "field_update",
-        label: "Assign representative",
-        detail: "Round-robin by territory and active rep capacity",
+        type: "notification",
+        label: "Notify managers",
+        detail: "New landing-page lead is awaiting assignment",
       },
       {
         type: "task",
         label: "Create task: Make first contact",
-        detail: "Assign to record owner",
+        detail: "Create when the lead is assigned to a rep",
         dueOffset: "+4h",
       },
       {
         type: "notification",
         label: "Notify assigned representative",
-        detail: "In-app alert with lead source and message",
+        detail: "In-app alert after manual assignment",
       },
     ],
     status: "active",
@@ -477,11 +477,12 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   {
     id: "new-lead-email",
     name: "New Lead Email",
-    description: "Send a welcome email and notify the assigned rep instantly.",
+    description: "Send a welcome email and notify managers that a lead is awaiting assignment.",
     icon: "mail",
     rule: {
       name: "New Lead Welcome Email",
-      description: "When a new lead is created, send a welcome message and notify the owner.",
+      description:
+        "When a new lead is created, send a welcome message and notify the assignment queue.",
       triggerType: "new_lead",
       triggerLabel: "New Lead",
       triggerIcon: "person_add",
@@ -489,7 +490,7 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
       condition: "Lead is created",
       actions: [
         { type: "email", label: "Send welcome email", detail: "Template: New lead welcome" },
-        { type: "notification", label: "Notify owner", detail: "In-app alert" },
+        { type: "notification", label: "Notify managers", detail: "In-app alert" },
       ],
       status: "draft",
       isDefault: false,

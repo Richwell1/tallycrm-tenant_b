@@ -877,7 +877,7 @@ function LeadAssignmentPanel() {
   const saveSettings = useSaveAppSettings();
   const saveQueue = useSaveAssignmentQueue();
 
-  const [strategy, setStrategy] = useState<string>("round_robin");
+  const [strategy, setStrategy] = useState<string>("manual");
   const [queue, setQueue] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -911,44 +911,39 @@ function LeadAssignmentPanel() {
       <div className="space-y-4">
         <SectionCard
           title="Assignment Strategy"
-          description="Incoming landing-page leads can stay manual or use round-robin assignment."
+          description="Incoming landing-page leads stay unassigned until an admin or sales manager assigns them."
         >
           <div className="space-y-3">
             <StrategyOption
               title="Manual Assignment"
-              description="Leads go to a general pool for manual selection."
+              description="Admins and managers review the private queue, then assign each lead to a specific rep."
               active={strategy === "manual"}
               onClick={() => setStrategy("manual")}
-            />
-            <StrategyOption
-              title="Round-Robin"
-              description="Automatically distribute leads in a sequential loop."
-              active={strategy === "round_robin"}
-              onClick={() => setStrategy("round_robin")}
             />
             <div className="rounded-lg border border-border bg-muted p-4 opacity-70">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Territory-based</p>
+                  <p className="text-sm font-semibold">Automated routing</p>
                   <p className="mt-1 text-sm text-text-secondary">
-                    Assign leads by geography or industry segment.
+                    Rules-based distribution is disabled so reps only see assigned or self-created
+                    leads.
                   </p>
                 </div>
-                <Badge>Coming Soon</Badge>
+                <Badge>Disabled</Badge>
               </div>
             </div>
           </div>
         </SectionCard>
         <InfoPanel
           icon="info"
-          title="Round-Robin Rule"
-          body="Changes to representative order or active status apply to new leads immediately."
+          title="Manual Queue"
+          body="Unassigned landing-page leads are visible to admins and sales managers only."
         />
       </div>
 
       <SectionCard
-        title="Round-Robin Queue"
-        description="Drag handles indicate assignment priority; inactive reps are skipped."
+        title="Assignment Queue"
+        description="Use this list to review eligible reps and current assigned workload before assigning leads."
         bodyClassName="p-0"
         actions={
           <Badge>
@@ -1094,7 +1089,7 @@ function EmailNotificationsPanel() {
   }> = [
     {
       label: "New Lead Assigned",
-      detail: "When a lead is manually or auto-assigned.",
+      detail: "When a lead is assigned by an admin or sales manager.",
       emailKey: "newLeadEmail",
       appKey: "newLeadApp",
     },
@@ -1747,16 +1742,28 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
   const inviteUser = useInviteUser();
   const [email, setEmail] = useState("new.user@tallycrm.com");
   const [role, setRole] = useState<"admin" | "manager" | "rep">("rep");
+  const [deliveryMode, setDeliveryMode] = useState<"invite_link" | "temporary_password">(
+    "invite_link",
+  );
 
   async function handleInvite() {
     try {
-      await inviteUser.mutateAsync({ email, role });
-      toast.success("Invitation saved", {
-        description: "The user will be required to complete 2FA enrollment.",
+      await inviteUser.mutateAsync({
+        email,
+        role,
+        deliveryMode,
+        redirectTo:
+          typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
+      });
+      toast.success("Invitation sent", {
+        description:
+          deliveryMode === "invite_link"
+            ? "The user can set their own password from the email invite."
+            : "A temporary password was emailed to the user.",
       });
       onClose();
     } catch (err) {
-      toast.error("Could not save invitation", { description: (err as Error).message });
+      toast.error("Could not send invitation", { description: (err as Error).message });
     }
   }
 
@@ -1784,8 +1791,24 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
             onChange={(value) => setRole(value as "admin" | "manager" | "rep")}
             options={["admin", "manager", "rep"]}
           />
+          <label className="block space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+              Password Delivery
+            </span>
+            <select
+              value={deliveryMode}
+              onChange={(e) =>
+                setDeliveryMode(e.target.value as "invite_link" | "temporary_password")
+              }
+              className="input"
+            >
+              <option value="invite_link">Invite link (set password)</option>
+              <option value="temporary_password">Temporary password</option>
+            </select>
+          </label>
           <div className="rounded-lg border border-warning/20 bg-warning-light p-3 text-sm text-warning">
-            Pending users display as 2FA Pending until their first-login enrollment is complete.
+            Invite links let the user set their own password. Temporary passwords are emailed
+            directly and should be changed after first sign-in.
           </div>
         </div>
         <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">

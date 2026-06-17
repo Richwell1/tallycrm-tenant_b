@@ -156,7 +156,7 @@ export function ConvertLeadModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="w-[min(96vw,84rem)] max-w-none">
         <DialogHeader>
           <DialogTitle>Convert lead — step {step} of 3</DialogTitle>
         </DialogHeader>
@@ -166,7 +166,7 @@ export function ConvertLeadModal({
         {step === 1 && (
           <div className="space-y-3">
             <p className="text-sm text-text-secondary">Confirm contact details.</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <F label="First name *">
                 <input
                   className="input"
@@ -258,7 +258,7 @@ export function ConvertLeadModal({
               </F>
             )}
             {companyMode === "new" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <F label="Company name *" className="col-span-2">
                   <input
                     className="input"
@@ -384,7 +384,7 @@ export function ConvertLeadModal({
                 onChange={(e) => setDeal({ ...deal, name: e.target.value })}
               />
             </F>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <F label="Value">
                 <input
                   type="number"

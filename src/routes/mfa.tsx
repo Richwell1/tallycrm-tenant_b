@@ -151,6 +151,13 @@ function MfaPage() {
         code: code.trim(),
       });
       if (verify.error) throw verify.error;
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user?.id) {
+        await supabase
+          .from("profiles")
+          .update({ status: "active", last_login_at: new Date().toISOString() })
+          .eq("id", userData.user.id);
+      }
       toast.success(mode === "enroll" ? "Two-factor enrolled" : "Verified");
       navigate({ to: "/app", replace: true });
     } catch (err) {
