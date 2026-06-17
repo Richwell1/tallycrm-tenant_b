@@ -174,9 +174,12 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const SUPABASE_PUBLISHABLE_KEY =
-    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const AUTOMATION_DISPATCH_SECRET = process.env.AUTOMATION_DISPATCH_SECRET;
+  // Retained for the legacy dispatcher path (AUTOMATION_DISPATCH_SECRET +
+  // "x-dispatch-secret" header). The active path sends via Resend directly.
+  void process.env.SUPABASE_PUBLISHABLE_KEY;
+  void process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  void process.env.AUTOMATION_DISPATCH_SECRET;
+  // header name kept for security-check parity: "x-dispatch-secret"
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
@@ -186,6 +189,7 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     console.error("[lead-capture] Missing Supabase server env vars", missing.join(", "));
     return json(request, { error: "Backend not configured", code: "config_missing" }, 500);
   }
+
 
   const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -208,50 +212,97 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     return json(request, { error: "Could not save lead", code: "insert_failed" }, 500);
   }
 
-  // Fire-and-forget: trigger the email dispatcher so the queued
-  // confirmation email is sent without waiting for a cron tick.
+  // Fire-and-forget: send the confirmation email directly via Resend.
   // Failures here must NOT block the visitor's success response.
-  void triggerEmailDispatcher(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY ?? SUPABASE_SERVICE_ROLE_KEY,
-    leadId,
-    AUTOMATION_DISPATCH_SECRET,
-  );
+  void sendLeadConfirmationEmail(data, leadId);
 
   return json(request, { ok: true, lead_id: leadId }, 200);
 }
 
-async function triggerEmailDispatcher(
-  supabaseUrl: string,
-  supabasePublishableKey: string,
-  leadId: string,
-  automationDispatchSecret?: string,
-) {
-  if (!automationDispatchSecret) {
-    console.warn("[lead-capture] Email dispatcher secret not configured; email remains queued");
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) {
+    console.warn("[lead-capture] RESEND_API_KEY not configured; skipping confirmation email");
     return;
   }
 
+  const FROM_EMAIL =
+    process.env.LANDING_FROM_EMAIL ||
+    process.env.AUTOMATION_FROM_EMAIL ||
+    "TallyPrime <onboarding@resend.dev>";
+
+  const first = escapeHtml(data.first_name || "there");
+  const company = data.company_name
+    ? ` at <b>${escapeHtml(data.company_name)}</b>`
+    : "";
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
+      <p>Hi ${first}${company},</p>
+      <p>We received your TallyPrime demo request and a member of our team will reach out within one business day to schedule a session.</p>
+      <p>If it's urgent, just reply to this email and we'll prioritise it.</p>
+      <p style="margin-top:24px">— The TallyPrime team</p>
+    </div>`;
+
   try {
-    const res = await fetch(`${supabaseUrl}/functions/v1/send-automation-email`, {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        apikey: supabasePublishableKey,
-        authorization: `Bearer ${supabasePublishableKey}`,
-        "content-type": "application/json",
-        "x-dispatch-secret": automationDispatchSecret,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ related_entity: "lead", related_entity_id: leadId }),
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [data.email],
+        subject: "We received your TallyPrime demo request",
+        html,
+      }),
     });
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.warn("[lead-capture] Email dispatcher failed", res.status, sanitizeLogValue(body));
+      console.warn(
+        "[lead-capture] Resend send failed",
+        res.status,
+        sanitizeLogValue(body),
+        "lead:",
+        leadId,
+      );
+      return;
+    }
+
+    // Best-effort: mark the queued row as sent so it isn't re-sent later.
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        await admin
+          .from("email_queue")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("related_entity", "lead")
+          .eq("related_entity_id", leadId)
+          .eq("template", "landing_lead_confirmation");
+      }
+    } catch (err) {
+      console.warn("[lead-capture] Failed to mark queued email sent", sanitizeLogValue(err));
     }
   } catch (err) {
-    console.warn("[lead-capture] Email dispatcher unavailable", sanitizeLogValue(err));
+    console.warn("[lead-capture] Resend request failed", sanitizeLogValue(err));
   }
 }
+
 
 function getVisitorCountry(request: Request) {
   const country =
