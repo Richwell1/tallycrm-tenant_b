@@ -133,7 +133,7 @@ export function AddLeadModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(96vw,76rem)] max-w-none">
+      <DialogContent className="sm:w-[min(96vw,80rem)] sm:max-w-none">
         <DialogHeader>
           <DialogTitle>Add New Lead</DialogTitle>
           <p className="text-sm text-text-secondary">

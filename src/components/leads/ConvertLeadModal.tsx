@@ -156,7 +156,7 @@ export function ConvertLeadModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(96vw,84rem)] max-w-none">
+      <DialogContent className="sm:w-[min(96vw,92rem)] sm:max-w-none">
         <DialogHeader>
           <DialogTitle>Convert lead — step {step} of 3</DialogTitle>
         </DialogHeader>
