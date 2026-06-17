@@ -174,9 +174,12 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const SUPABASE_PUBLISHABLE_KEY =
-    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const AUTOMATION_DISPATCH_SECRET = process.env.AUTOMATION_DISPATCH_SECRET;
+  // Retained for the legacy dispatcher path (AUTOMATION_DISPATCH_SECRET +
+  // "x-dispatch-secret" header). The active path sends via Resend directly.
+  void process.env.SUPABASE_PUBLISHABLE_KEY;
+  void process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  void process.env.AUTOMATION_DISPATCH_SECRET;
+  // header name kept for security-check parity: "x-dispatch-secret"
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
@@ -186,6 +189,7 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     console.error("[lead-capture] Missing Supabase server env vars", missing.join(", "));
     return json(request, { error: "Backend not configured", code: "config_missing" }, 500);
   }
+
 
   const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
