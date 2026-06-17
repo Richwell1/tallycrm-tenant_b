@@ -47,9 +47,7 @@ function isMatchingLovablePreviewOrigin(request: Request, sourceHostname: string
   if (!sourceProjectId) return false;
 
   const requestHostnames = getRequestHostnames(request);
-  if (
-    requestHostnames.some((hostname) => extractLovableProjectId(hostname) === sourceProjectId)
-  ) {
+  if (requestHostnames.some((hostname) => extractLovableProjectId(hostname) === sourceProjectId)) {
     return true;
   }
 
@@ -95,9 +93,9 @@ function extractLovableProjectId(hostname: string) {
   }
 
   return (
-    normalized.match(
-      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-    )?.[0].toLowerCase() ?? null
+    normalized
+      .match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0]
+      .toLowerCase() ?? null
   );
 }
 
@@ -190,7 +188,6 @@ async function insertLandingLead(request: Request, data: CapturePayload) {
     return json(request, { error: "Backend not configured", code: "config_missing" }, 500);
   }
 
-
   const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -241,9 +238,7 @@ async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
     "TallyPrime <onboarding@resend.dev>";
 
   const first = escapeHtml(data.first_name || "there");
-  const company = data.company_name
-    ? ` at <b>${escapeHtml(data.company_name)}</b>`
-    : "";
+  const company = data.company_name ? ` at <b>${escapeHtml(data.company_name)}</b>` : "";
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
       <h2 style="margin:0 0 12px">Thanks, ${first} — we've got your request</h2>
       <p>Hi ${first}${company},</p>
@@ -302,7 +297,6 @@ async function sendLeadConfirmationEmail(data: CapturePayload, leadId: string) {
     console.warn("[lead-capture] Resend request failed", sanitizeLogValue(err));
   }
 }
-
 
 function getVisitorCountry(request: Request) {
   const country =

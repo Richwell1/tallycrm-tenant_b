@@ -16,6 +16,15 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.app_settings
+  ADD COLUMN IF NOT EXISTS company_name TEXT NOT NULL DEFAULT 'Tally CRM',
+  ADD COLUMN IF NOT EXISTS company_email TEXT,
+  ADD COLUMN IF NOT EXISTS company_phone TEXT,
+  ADD COLUMN IF NOT EXISTS company_address TEXT,
+  ADD COLUMN IF NOT EXISTS time_zone TEXT NOT NULL DEFAULT 'UTC',
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 GRANT SELECT, INSERT, UPDATE ON public.app_settings TO authenticated;
 GRANT ALL ON public.app_settings TO service_role;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
