@@ -23,6 +23,7 @@
     "local:env": "node scripts/populate-local-env.mjs",
     "branch:smoke": "node scripts/branch-smoke-check.mjs",
     "branch:backup": "node scripts/backup-branch-db.mjs",
+    "branch:provision-auth": "node scripts/provision-branch-auth-users.mjs",
     "sync:once": "node scripts/sync-once.mjs",
     "sync:watch": "node scripts/sync-watch.mjs"
   },

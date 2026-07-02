@@ -147,6 +147,54 @@ npm run branch:smoke -- --write
 npm run sync:once -- --dry-run
 ```
 
+## Branch Auth Provisioning
+
+Create users in the online CRM only. Do not manually create the same user in
+both online and branch-local Supabase.
+
+CRM data sync pulls profiles and roles into the branch database, but Supabase
+Auth login accounts live in the internal `auth` schema. The branch server must
+therefore provision matching local Auth accounts before users can sign in while
+offline.
+
+The sync watcher runs Auth provisioning automatically after each successful sync:
+
+```bash
+npm run sync:watch
+```
+
+You can also run it manually:
+
+```bash
+npm run branch:provision-auth
+```
+
+Existing local branch passwords are kept unchanged by default. Newly provisioned
+users get the configured branch temporary password:
+
+```text
+BRANCH_TEST_PASSWORD=...
+```
+
+If `BRANCH_TEST_PASSWORD` is not set, the script uses its built-in temporary
+branch password. To intentionally reset all mirrored local passwords, run:
+
+```bash
+npm run branch:provision-auth -- --reset-passwords
+```
+
+To disable automatic Auth provisioning in the watcher:
+
+```bash
+SYNC_PROVISION_AUTH_AFTER_SYNC=false npm run sync:watch
+```
+
+or:
+
+```bash
+npm run sync:watch -- --no-provision-auth
+```
+
 ## One-Time Sync
 
 ```bash

@@ -11,6 +11,8 @@ const DEFAULT_BRANCH_PASSWORD = "OpportunityOS-Branch-2026!";
 loadEnvFile(".env.branch");
 applyCloudFallbackFromEnvFiles([".env.production", ".env"]);
 
+const args = new Set(process.argv.slice(2));
+const resetPasswords = args.has("--reset-passwords");
 const cloudUrl = process.env.CLOUD_SUPABASE_URL;
 const cloudServiceKey = process.env.CLOUD_SUPABASE_SERVICE_ROLE_KEY;
 const branchPassword = process.env.BRANCH_TEST_PASSWORD || DEFAULT_BRANCH_PASSWORD;
@@ -93,7 +95,7 @@ select
 from source_users
 on conflict (id) do update set
   email = excluded.email,
-  encrypted_password = excluded.encrypted_password,
+  encrypted_password = ${resetPasswords ? "excluded.encrypted_password" : "auth.users.encrypted_password"},
   email_confirmed_at = excluded.email_confirmed_at,
   confirmation_token = excluded.confirmation_token,
   recovery_token = excluded.recovery_token,
@@ -158,4 +160,9 @@ for (const [name, sql] of [
 }
 
 console.log(`Provisioned ${users.length} local branch auth users.`);
-console.log("Temporary local branch password: OpportunityOS-Branch-2026!");
+if (resetPasswords) {
+  console.log("Reset existing local branch passwords to the configured temporary password.");
+} else {
+  console.log("Existing local branch passwords were kept unchanged.");
+}
+console.log(`Temporary password for newly created local users: ${branchPassword}`);
