@@ -157,7 +157,8 @@ Auth login accounts live in the internal `auth` schema. The branch server must
 therefore provision matching local Auth accounts before users can sign in while
 offline.
 
-The sync watcher runs Auth provisioning automatically after each successful sync:
+The sync watcher runs Auth provisioning automatically before each sync. This
+creates missing local `auth.users` rows before profile and role data is pulled:
 
 ```bash
 npm run sync:watch
@@ -186,7 +187,7 @@ npm run branch:provision-auth -- --reset-passwords
 To disable automatic Auth provisioning in the watcher:
 
 ```bash
-SYNC_PROVISION_AUTH_AFTER_SYNC=false npm run sync:watch
+SYNC_PROVISION_AUTH_BEFORE_SYNC=false npm run sync:watch
 ```
 
 or:
