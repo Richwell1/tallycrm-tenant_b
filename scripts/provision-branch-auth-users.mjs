@@ -34,6 +34,13 @@ for (let page = 1; ; page += 1) {
   if (data.users.length < 100) break;
 }
 
+const userIds = users.map((user) => user.id);
+const { data: cloudRoles, error: cloudRolesError } =
+  userIds.length > 0
+    ? await cloud.from("user_roles").select("user_id,role,created_at").in("user_id", userIds)
+    : { data: [], error: null };
+if (cloudRolesError) throw cloudRolesError;
+
 const payload = JSON.stringify(
   users.map((user) => ({
     id: user.id,
@@ -41,6 +48,7 @@ const payload = JSON.stringify(
     created_at: user.created_at,
   })),
 );
+const rolesPayload = JSON.stringify(cloudRoles ?? []);
 
 const userSql = `
 with source_users as (
@@ -139,9 +147,31 @@ on conflict (provider_id, provider) do update set
   updated_at = now();
 `;
 
+const roleDeleteSql = `
+with source_users as (
+  select * from jsonb_to_recordset($json$${payload}$json$::jsonb)
+    as u(id uuid)
+)
+delete from public.user_roles
+where user_id in (select id from source_users);
+`;
+
+const roleInsertSql = `
+with source_roles as (
+  select * from jsonb_to_recordset($json$${rolesPayload}$json$::jsonb)
+    as r(user_id uuid, role public.app_role, created_at timestamptz)
+)
+insert into public.user_roles (user_id, role, created_at)
+select user_id, role, coalesce(created_at, now())
+from source_roles
+on conflict (user_id, role) do nothing;
+`;
+
 for (const [name, sql] of [
   ["users", userSql],
   ["identities", identitySql],
+  ["role-delete", roleDeleteSql],
+  ["role-insert", roleInsertSql],
 ]) {
   const sqlPath = path.join(os.tmpdir(), `branch-provision-auth-${name}.sql`);
   fs.writeFileSync(sqlPath, sql, { mode: 0o600 });
