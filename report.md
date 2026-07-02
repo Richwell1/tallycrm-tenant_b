@@ -60,7 +60,7 @@ That means administrators do not need to manually create the same person online 
 
 ### 5. It handles connectivity realistically
 
-The sync worker runs continuously on an interval. The current interval is 300 seconds, or 5 minutes. When the internet is available, it synchronizes branch and cloud data. When the internet is unavailable, branch users continue working locally, and the worker retries on the next interval.
+The sync worker runs continuously on an interval. The current interval is 30 seconds, which keeps the branch sync under one minute. When the internet is available, it synchronizes branch and cloud data. When the internet is unavailable, branch users continue working locally, and the worker retries on the next interval.
 
 This is simple to operate and easy to reason about.
 

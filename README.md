@@ -474,7 +474,7 @@ Important branch docs:
 Operational defaults:
 
 - `npm run sync:watch` runs continuously.
-- The default sync interval is `300` seconds, or 5 minutes.
+- The default sync interval is `30` seconds, or under 1 minute.
 - Users are created online once; the branch watcher provisions matching local Auth users before sync.
 - Core CRM activity syncs bidirectionally; roles and configuration are cloud-controlled and pulled into the branch.
 

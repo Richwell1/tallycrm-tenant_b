@@ -44,7 +44,7 @@ The finalized branch operating model is:
 Default sync interval:
 
 ```text
-300 seconds / 5 minutes
+30 seconds / under 1 minute
 ```
 
 ## Notes

@@ -236,13 +236,13 @@ npm run sync:watch
 The interval is controlled by:
 
 ```text
-SYNC_INTERVAL_SECONDS=300
+SYNC_INTERVAL_SECONDS=30
 ```
 
 You can also override the interval without editing the env file:
 
 ```bash
-npm run sync:watch -- --interval=60
+npm run sync:watch -- --interval=30
 ```
 
 The watcher runs continuously and retries on the next interval if a sync attempt fails. In the
