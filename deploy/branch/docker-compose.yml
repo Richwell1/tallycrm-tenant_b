@@ -1,0 +1,28 @@
+services:
+  crm-app:
+    build:
+      context: ../..
+      dockerfile: deploy/branch/Dockerfile
+      args:
+        VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  sync-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/branch/Dockerfile
+    env_file:
+      - ./.env
+    command: ["npm", "run", "sync:watch"]
+    restart: unless-stopped
+    depends_on:
+      - crm-app

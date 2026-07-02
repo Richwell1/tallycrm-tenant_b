@@ -15,6 +15,15 @@ export const LEAD_STATUSES: { id: LeadStatus; label: string; color: string }[] =
 
 export const leadsKey = ["leads"] as const;
 
+type SyncMutationMetadata = {
+  last_modified_by?: string | null;
+};
+
+async function getSyncMutationMetadata(): Promise<SyncMutationMetadata> {
+  const { data } = await supabase.auth.getUser();
+  return { last_modified_by: data.user?.id ?? null };
+}
+
 export function useLeads() {
   return useQuery({
     queryKey: leadsKey,
@@ -46,9 +55,10 @@ export function useUpdateLeadStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; status: LeadStatus; extra?: Partial<LeadRow> }) => {
+      const syncMetadata = await getSyncMutationMetadata();
       const { error } = await supabase
         .from("leads")
-        .update({ status: vars.status, ...(vars.extra ?? {}) })
+        .update({ status: vars.status, ...(vars.extra ?? {}), ...syncMetadata })
         .eq("id", vars.id);
       if (error) throw error;
     },
@@ -63,9 +73,10 @@ export function useAssignLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, assignedTo }: { id: string; assignedTo: string | null }) => {
+      const syncMetadata = await getSyncMutationMetadata();
       const { error } = await supabase
         .from("leads")
-        .update({ assigned_to: assignedTo })
+        .update({ assigned_to: assignedTo, ...syncMetadata })
         .eq("id", id);
       if (error) throw error;
     },
@@ -96,12 +107,14 @@ export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateLeadInput) => {
+      const syncMetadata = await getSyncMutationMetadata();
       const { data, error } = await supabase
         .from("leads")
         .insert({
           ...input,
           source: input.source ?? "Manual Entry",
           status: input.status ?? "new",
+          ...syncMetadata,
         })
         .select("id")
         .single();
@@ -109,6 +122,25 @@ export function useCreateLead() {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: leadsKey }),
+  });
+}
+
+export function useUpdateLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<LeadRow> }) => {
+      const syncMetadata = await getSyncMutationMetadata();
+      const { error } = await supabase
+        .from("leads")
+        .update({ ...patch, ...syncMetadata })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: leadsKey });
+      qc.invalidateQueries({ queryKey: ["lead", v.id] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
   });
 }
 
@@ -131,9 +163,15 @@ export function useDisqualifyLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; reason: string }) => {
+      const syncMetadata = await getSyncMutationMetadata();
       const { error } = await supabase
         .from("leads")
-        .update({ status: "disqualified", disqualify_reason: vars.reason, qualified: false })
+        .update({
+          status: "disqualified",
+          disqualify_reason: vars.reason,
+          qualified: false,
+          ...syncMetadata,
+        })
         .eq("id", vars.id);
       if (error) throw error;
     },
@@ -150,11 +188,12 @@ export function useSaveLeadNote() {
     mutationFn: async ({ lead, note }: { lead: LeadRow; note: string }) => {
       const trimmed = note.trim();
       if (!trimmed) throw new Error("Note is required");
+      const syncMetadata = await getSyncMutationMetadata();
       const entry = `[${new Date().toLocaleString()}] ${trimmed}`;
       const nextMessage = lead.message ? `${lead.message}\n\n${entry}` : entry;
       const { error } = await supabase
         .from("leads")
-        .update({ message: nextMessage })
+        .update({ message: nextMessage, ...syncMetadata })
         .eq("id", lead.id);
       if (error) throw error;
     },
@@ -208,6 +247,7 @@ export function useConvertLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: ConvertLeadInput) => {
+      const syncMetadata = await getSyncMutationMetadata();
       // 1. Company: link existing or create
       let companyId: string | null = null;
       if (input.company?.id) {
@@ -238,6 +278,7 @@ export function useConvertLead() {
                 input.company.account_manager_id || input.lead.assigned_to || null,
               notes: input.company.notes || input.lead.message || null,
               rating: input.company.rating ?? 4,
+              ...syncMetadata,
             })
             .select("id")
             .single();
@@ -266,6 +307,7 @@ export function useConvertLead() {
             company_id: companyId,
             notes: input.contact.notes || input.lead.message || null,
             tags: input.contact.tags?.filter(Boolean) ?? null,
+            ...syncMetadata,
           })
           .eq("id", contactId);
       } else {
@@ -282,6 +324,7 @@ export function useConvertLead() {
             assigned_to: input.lead.assigned_to,
             notes: input.contact.notes || input.lead.message || null,
             tags: input.contact.tags?.filter(Boolean) ?? null,
+            ...syncMetadata,
           })
           .select("id")
           .single();
@@ -304,6 +347,7 @@ export function useConvertLead() {
           assigned_to: input.lead.assigned_to,
           description: input.deal.description || input.lead.message || null,
           tags: input.deal.tags?.filter(Boolean) ?? null,
+          ...syncMetadata,
         })
         .select("id")
         .single();
@@ -312,7 +356,12 @@ export function useConvertLead() {
       // 4. Mark lead converted
       await supabase
         .from("leads")
-        .update({ status: "converted", qualified: true, converted_deal_id: deal.id })
+        .update({
+          status: "converted",
+          qualified: true,
+          converted_deal_id: deal.id,
+          ...syncMetadata,
+        })
         .eq("id", input.lead.id);
 
       return { contact_id: contactId, company_id: companyId, deal_id: deal.id };

@@ -1,1 +1,29 @@
 project_id = "wzzqqcpcacvftgxwiyrh"
+
+[auth]
+site_url = "http://192.168.0.169:3000"
+additional_redirect_urls = [
+  "http://192.168.0.169",
+  "http://192.168.0.169:3000",
+  "http://192.168.0.169:5173",
+  "http://192.168.0.169:54321",
+  "http://192.168.0.234",
+  "http://192.168.0.234:3000",
+  "http://192.168.0.234:5173",
+  "http://192.168.0.234:54321",
+  "http://192.168.0.255",
+  "http://192.168.0.255:3000",
+  "http://192.168.0.255:5173",
+  "http://192.168.0.255:54321",
+  "http://crm.local",
+  "http://crm.local:3000",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

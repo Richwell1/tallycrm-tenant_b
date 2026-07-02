@@ -22,6 +22,7 @@ dist-ssr
 
 # Supabase local CLI state
 supabase/.temp/
+supabase/.branches/
 
 # Editor directories and files
 .vscode/*
@@ -37,4 +38,6 @@ supabase/.temp/
 .env
 .env.*
 !.env.example
+!.env.branch.example
 !.env.local.example
+!.env.staging.example

@@ -3,10 +3,32 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 const serverEnv = typeof process !== "undefined" ? process.env : {};
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL || "";
+const RAW_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL || "";
+const SUPABASE_URL = browserSafeSupabaseUrl(RAW_SUPABASE_URL);
 const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || serverEnv.SUPABASE_PUBLISHABLE_KEY || "";
 const LOCAL_PREVIEW_KEY = "tally-crm-local-preview";
+
+function browserSafeSupabaseUrl(value: string) {
+  if (typeof window === "undefined" || !value) return value;
+
+  try {
+    const url = new URL(value);
+    const appHostname = window.location.hostname;
+    if (isLoopbackHostname(url.hostname) && !isLoopbackHostname(appHostname)) {
+      url.hostname = appHostname;
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
+function isLoopbackHostname(hostname: string) {
+  return ["localhost", "127.0.0.1", "::1"].includes(hostname);
+}
 
 export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);

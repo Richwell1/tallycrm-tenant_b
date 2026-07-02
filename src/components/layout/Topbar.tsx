@@ -3,6 +3,7 @@ import { MessageCircle, Moon, Plus, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationCenter } from "./NotificationCenter";
+import { SyncStatusIndicator } from "./SyncStatusIndicator";
 
 export function Topbar() {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ export function Topbar() {
           >
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
+          <SyncStatusIndicator />
           <NotificationCenter />
           <button
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted hover:text-primary"

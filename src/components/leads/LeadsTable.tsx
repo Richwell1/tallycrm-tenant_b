@@ -3,10 +3,14 @@ import { LEAD_STATUSES, type LeadRow } from "@/lib/leads-data";
 
 export function LeadsTable({
   leads,
+  isPendingSync,
+  onEdit,
   onConvert,
   onDisqualify,
 }: {
   leads: LeadRow[];
+  isPendingSync?: (lead: LeadRow) => boolean;
+  onEdit: (lead: LeadRow) => void;
   onConvert: (lead: LeadRow) => void;
   onDisqualify: (lead: LeadRow) => void;
 }) {
@@ -36,6 +40,7 @@ export function LeadsTable({
             {leads.map((l) => {
               const s = LEAD_STATUSES.find((x) => x.id === l.status);
               const name = `${l.first_name} ${l.last_name}`;
+              const pendingSync = Boolean(isPendingSync?.(l));
               return (
                 <tr key={l.id} className="group transition-colors hover:bg-muted/40">
                   <td className="px-4 py-4">
@@ -69,11 +74,18 @@ export function LeadsTable({
                   <td className="px-4 py-4 text-text-secondary">{l.email}</td>
                   <td className="px-4 py-4 text-text-secondary">{l.company_name ?? "—"}</td>
                   <td className="px-4 py-4">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase ${statusTone(l.status)}`}
-                    >
-                      {s?.label}
-                    </span>
+                    <div className="flex flex-col items-start gap-1.5">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase ${statusTone(l.status)}`}
+                      >
+                        {s?.label}
+                      </span>
+                      {pendingSync ? (
+                        <span className="inline-flex rounded-full bg-warning-light px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
+                          Pending sync
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-text-secondary">{l.source}</td>
                   <td className="px-4 py-4 text-text-muted">
@@ -83,6 +95,15 @@ export function LeadsTable({
                     {l.status !== "converted" && l.status !== "disqualified" ? (
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          type="button"
+                          onClick={() => onEdit(l)}
+                          className="rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                          title="Edit lead"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => onConvert(l)}
                           className="rounded-md p-1 text-text-muted transition-colors hover:bg-primary-light hover:text-primary"
                           title="Convert to deal"
@@ -90,6 +111,7 @@ export function LeadsTable({
                           <span className="material-symbols-outlined text-[18px]">handshake</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => onDisqualify(l)}
                           className="rounded-md p-1 text-text-muted transition-colors hover:bg-danger-light hover:text-danger"
                           title="Disqualify"
@@ -98,14 +120,24 @@ export function LeadsTable({
                         </button>
                       </div>
                     ) : (
-                      <Link
-                        to="/app/leads/$id"
-                        params={{ id: l.id }}
-                        className="inline-flex rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
-                        title="View lead"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(l)}
+                          className="rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                          title="Edit lead"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <Link
+                          to="/app/leads/$id"
+                          params={{ id: l.id }}
+                          className="inline-flex rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                          title="View lead"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        </Link>
+                      </div>
                     )}
                   </td>
                 </tr>
