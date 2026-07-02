@@ -26,9 +26,10 @@ write-only capture path. Full product/requirements specs are in [`docs/`](docs) 
 11. [Lead-capture & email flow](#lead-capture--email-flow)
 12. [Security notes](#security-notes)
 13. [Deployment](#deployment)
-14. [Acceptance criteria](#acceptance-criteria)
-15. [Known limitations](#known-limitations)
-16. [License & credits](#license--credits)
+14. [Offline/branch operation](#offlinebranch-operation)
+15. [Acceptance criteria](#acceptance-criteria)
+16. [Known limitations](#known-limitations)
+17. [License & credits](#license--credits)
 
 ---
 
@@ -239,11 +240,11 @@ Every variable below is read somewhere in the code (verified against `src/`,
 | `AUTOMATION_FROM_EMAIL`         | Optional (fallback if `LANDING_FROM_EMAIL` unset)         | Same as above                                                                                                                                    | `automations@yourdomain.com`  |
 | `PARTNER_NAME`                  | Optional                                                  | Free text, used in the confirmation email                                                                                                        | `Acme Tally Partners`         |
 | `PARTNER_PHONE`                 | Optional                                                  | Free text                                                                                                                                        | `+233 000 000 000`            |
-| `PARTNER_EMAIL`                 | Optional                                                  | Reply-to address for visitor confirmations; fallback internal notification recipient if no sales recipient is set                                 | `hello@yourdomain.com`        |
+| `PARTNER_EMAIL`                 | Optional                                                  | Reply-to address for visitor confirmations; fallback internal notification recipient if no sales recipient is set                                | `hello@yourdomain.com`        |
 | `LANDING_NOTIFY_EMAILS`         | Recommended                                               | Comma-separated internal inboxes that receive each new landing-page lead                                                                         | `sales@yourdomain.com`        |
 | `SALES_NOTIFY_EMAILS`           | Optional                                                  | Alias/fallback for `LANDING_NOTIFY_EMAILS`                                                                                                       | `sales@yourdomain.com`        |
 | `SALES_NOTIFY_BCC`              | Optional                                                  | Comma-separated internal inboxes BCC'd on visitor confirmations; also accepted as a fallback lead notification recipient                         | `sales@yourdomain.com`        |
-| `APP_URL`                       | Optional                                                  | Public app origin used to include a CRM lead link in internal notification emails                                                                 | `https://crm.example.com`     |
+| `APP_URL`                       | Optional                                                  | Public app origin used to include a CRM lead link in internal notification emails                                                                | `https://crm.example.com`     |
 | `EMAIL_ENABLED`                 | Optional (default `true` in `.env.example`)               | Safe-launch flag — see [Lead-capture & email flow](#lead-capture--email-flow)                                                                    | `true`                        |
 | `LEAD_CAPTURE_ALLOWED_ORIGINS`  | Optional                                                  | Comma-separated origins, only needed if the landing page is ever served from a **different** origin than this app                                | `https://landing.example.com` |
 | `PUBLIC_SITE_ORIGINS`           | Optional                                                  | Same purpose/format as above (fallback name)                                                                                                     | `https://landing.example.com` |
@@ -304,17 +305,23 @@ and never commit a real `.env`. `scripts/security-check.mjs` (run in CI) checks 
 
 From [`package.json`](package.json):
 
-| Script              | Command                                         | Purpose                                     |
-| ------------------- | ----------------------------------------------- | ------------------------------------------- |
-| `npm run dev`       | `vite dev`                                      | Start the dev server (CRM + landing page)   |
-| `npm run build`     | `vite build`                                    | Production build                            |
-| `npm run build:dev` | `vite build --mode development`                 | Development-mode build                      |
-| `npm run preview`   | `vite preview`                                  | Preview a production build locally          |
-| `npm run lint`      | `eslint .`                                      | Lint the codebase                           |
-| `npm run test`      | `node scripts/security-check.mjs`               | Security regression checks (see note below) |
-| `npm run test:ci`   | `npm run test`                                  | Alias used by CI                            |
-| `npm run ci`        | `npm run lint && npm run test && npm run build` | Runs the full CI gate locally               |
-| `npm run format`    | `prettier --write .`                            | Format the codebase                         |
+| Script                          | Command                                         | Purpose                                     |
+| ------------------------------- | ----------------------------------------------- | ------------------------------------------- |
+| `npm run dev`                   | `vite dev`                                      | Start the dev server (CRM + landing page)   |
+| `npm run build`                 | `vite build`                                    | Production build                            |
+| `npm run build:dev`             | `vite build --mode development`                 | Development-mode build                      |
+| `npm run preview`               | `vite preview`                                  | Preview a production build locally          |
+| `npm run lint`                  | `eslint .`                                      | Lint the codebase                           |
+| `npm run test`                  | `node scripts/security-check.mjs`               | Security regression checks (see note below) |
+| `npm run test:ci`               | `npm run test`                                  | Alias used by CI                            |
+| `npm run ci`                    | `npm run lint && npm run test && npm run build` | Runs the full CI gate locally               |
+| `npm run format`                | `prettier --write .`                            | Format the codebase                         |
+| `npm run sync:once`             | `node scripts/sync-once.mjs`                    | Run one branch/cloud sync pass              |
+| `npm run sync:watch`            | `node scripts/sync-watch.mjs`                   | Run continuous interval sync                |
+| `npm run branch:provision-auth` | `node scripts/provision-branch-auth-users.mjs`  | Mirror cloud Auth users and roles locally   |
+| `npm run branch:doctor`         | `node scripts/branch-doctor.mjs`                | Diagnose branch/cloud sync readiness        |
+| `npm run branch:smoke`          | `node scripts/branch-smoke-check.mjs`           | Validate branch/cloud schema connectivity   |
+| `npm run branch:backup`         | `node scripts/backup-branch-db.mjs`             | Back up the local branch database           |
 
 **Note:** there is no unit/integration test framework installed (no Jest/Vitest). `npm run test`
 runs `scripts/security-check.mjs`, which is a static regression check (no `.env` tracked,
@@ -442,6 +449,34 @@ coordinate. To deploy:
    22 → `npm ci` → `npm run lint` → `npm run test` (security checks) → `npm run build`. There is
    no automatic deploy step in the committed workflow — wire one up for your hosting target if you
    want push-to-deploy.
+
+---
+
+## Offline/branch operation
+
+The finalized offline/online approach is documented in [`report.md`](report.md). The short version:
+
+```text
+LAN users -> local CRM app -> local Supabase Auth/Postgres/RLS -> sync worker -> online Supabase
+```
+
+In branch mode, the CRM runs against a local Supabase stack on the branch server. Users on the LAN
+can continue working when internet access is unavailable. When internet access returns, the sync
+worker exchanges CRM data with the online Supabase project.
+
+Important branch docs:
+
+- [`report.md`](report.md) — final supervisor-facing report and rationale.
+- [`docs/BRANCH_SYNC_RUNBOOK.md`](docs/BRANCH_SYNC_RUNBOOK.md) — commands and operating procedure.
+- [`docs/OFFLINE_FIRST_LAN_SYNC_PLAN.md`](docs/OFFLINE_FIRST_LAN_SYNC_PLAN.md) — implementation plan and design notes.
+- [`deploy/branch/README.md`](deploy/branch/README.md) — branch Docker/app deployment notes.
+
+Operational defaults:
+
+- `npm run sync:watch` runs continuously.
+- The default sync interval is `300` seconds, or 5 minutes.
+- Users are created online once; the branch watcher provisions matching local Auth users before sync.
+- Core CRM activity syncs bidirectionally; roles and configuration are cloud-controlled and pulled into the branch.
 
 ---
 

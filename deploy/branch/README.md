@@ -1,6 +1,7 @@
 # Branch/LAN Deployment
 
 The branch deployment lets local network users keep using the CRM when the internet is unavailable.
+For the finalized business rationale and supervisor-ready summary, see [`../../report.md`](../../report.md).
 
 Target shape:
 
@@ -28,19 +29,29 @@ Copy the root `.env.branch.example` into the branch deployment environment and f
 
 Use staging cloud Supabase first. Do not sync a new branch server directly to production until staging sync has been tested.
 
-## First Milestone
+## Finalized Operating Model
 
-The first milestone is intentionally narrow:
+The finalized branch operating model is:
 
-1. Run local Supabase.
+1. Run local Supabase on the branch server.
 2. Run the CRM app against local Supabase.
-3. Open the CRM from another device on the LAN.
-4. Create and update leads while internet is unavailable.
-5. Restore internet.
-6. Run `npm run sync:once`.
-7. Verify leads arrive in staging Supabase.
+3. Open the CRM from other devices on the LAN.
+4. Keep `npm run sync:watch` running through the sync worker.
+5. Create users online once; the branch worker provisions local Auth users before sync.
+6. Work locally when internet is unavailable.
+7. Sync branch and cloud data automatically when internet is available.
+
+Default sync interval:
+
+```text
+300 seconds / 5 minutes
+```
 
 ## Notes
+
+- Core CRM activity syncs bidirectionally.
+- Profiles, roles, pipeline setup, app settings, and automation rules are cloud-controlled and pulled into the branch.
+- Local branch passwords cannot be copied from cloud Supabase; newly provisioned local users use the branch temporary password and should change it after first login.
 
 ## App/Synchronizer Compose
 

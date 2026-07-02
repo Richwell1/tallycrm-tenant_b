@@ -1,5 +1,7 @@
 # Branch Sync Runbook
 
+For the supervisor-facing final report and architecture rationale, see [`../report.md`](../report.md).
+
 This runbook is for the first LAN/offline milestone:
 
 ```text

@@ -5,6 +5,7 @@
 **Date:** 2026-07-01
 **Status:** Planning document
 **Decision update:** For the current requirement, the recommended default is a local branch server running self-hosted Supabase/Postgres plus the CRM app. PowerSync remains an optional future layer for per-device offline use.
+**Implementation status:** The branch-local Supabase approach has been implemented and verified. See [`../report.md`](../report.md) for the final supervisor-facing report and [`BRANCH_SYNC_RUNBOOK.md`](BRANCH_SYNC_RUNBOOK.md) for operating commands.
 
 ---
 
@@ -490,28 +491,28 @@ Rep should not sync:
 
 ## 9. Feature Behavior Matrix
 
-| Feature | Offline Behavior | Online Sync Behavior | Notes |
-| --- | --- | --- | --- |
-| Sign in | Cached session only | Supabase Auth | First sign-in online-only |
-| MFA | Last verified state only | Supabase MFA | Enrollment/reset online-only |
-| Leads CRUD | Full offline | Upload queued changes | Needs local reads/writes |
-| Lead assignment | Offline for permitted users | Upload and trigger cloud notifications | Conflict-prone; log conflicts |
-| Lead capture public form | Local only if same app/device | Normal server route online | Public internet capture needs internet |
-| Contacts CRUD | Full offline | Upload queued changes | Good fit |
-| Companies CRUD | Full offline except logo upload | Upload queued changes | Logo upload phase 2 |
-| Deals/pipeline | Full offline | Upload queued changes | Stage triggers run after upload |
-| Activities | Full offline | Upload queued changes | Good fit |
-| Tasks | Full offline | Upload queued changes | Good fit |
-| Dashboard | Offline from local data | Refresh after sync | Some numbers may be partial |
-| Analytics | Offline from synced data | Refresh after sync | Role-based sync affects totals |
-| Notifications | Local list works | Realtime resumes online | Push/realtime online-only |
-| Email | Queue/skip offline | Send from cloud when synced | Must prevent duplicate sends |
-| Invites | Online-only | Supabase admin APIs | Do not support offline v1 |
-| Password reset | Online-only | Supabase Auth | Cannot work offline |
-| User deletion/status | Online-only v1 | Supabase admin APIs | Avoid local-only security changes |
-| Settings | Read offline; limited write offline | Upload settings updates | Admin only |
-| Audit log | Append locally for offline actions | Upload append-only rows | Prefer append-only |
-| Automations | Limited local behavior | Full DB triggers after upload | Decide per automation |
+| Feature                  | Offline Behavior                    | Online Sync Behavior                   | Notes                                  |
+| ------------------------ | ----------------------------------- | -------------------------------------- | -------------------------------------- |
+| Sign in                  | Cached session only                 | Supabase Auth                          | First sign-in online-only              |
+| MFA                      | Last verified state only            | Supabase MFA                           | Enrollment/reset online-only           |
+| Leads CRUD               | Full offline                        | Upload queued changes                  | Needs local reads/writes               |
+| Lead assignment          | Offline for permitted users         | Upload and trigger cloud notifications | Conflict-prone; log conflicts          |
+| Lead capture public form | Local only if same app/device       | Normal server route online             | Public internet capture needs internet |
+| Contacts CRUD            | Full offline                        | Upload queued changes                  | Good fit                               |
+| Companies CRUD           | Full offline except logo upload     | Upload queued changes                  | Logo upload phase 2                    |
+| Deals/pipeline           | Full offline                        | Upload queued changes                  | Stage triggers run after upload        |
+| Activities               | Full offline                        | Upload queued changes                  | Good fit                               |
+| Tasks                    | Full offline                        | Upload queued changes                  | Good fit                               |
+| Dashboard                | Offline from local data             | Refresh after sync                     | Some numbers may be partial            |
+| Analytics                | Offline from synced data            | Refresh after sync                     | Role-based sync affects totals         |
+| Notifications            | Local list works                    | Realtime resumes online                | Push/realtime online-only              |
+| Email                    | Queue/skip offline                  | Send from cloud when synced            | Must prevent duplicate sends           |
+| Invites                  | Online-only                         | Supabase admin APIs                    | Do not support offline v1              |
+| Password reset           | Online-only                         | Supabase Auth                          | Cannot work offline                    |
+| User deletion/status     | Online-only v1                      | Supabase admin APIs                    | Avoid local-only security changes      |
+| Settings                 | Read offline; limited write offline | Upload settings updates                | Admin only                             |
+| Audit log                | Append locally for offline actions  | Upload append-only rows                | Prefer append-only                     |
+| Automations              | Limited local behavior              | Full DB triggers after upload          | Decide per automation                  |
 
 ---
 
@@ -1475,7 +1476,7 @@ In branch-server mode, avoid a large data-layer rewrite. The existing hooks alre
 Most files like `src/lib/leads-data.ts`, `src/lib/deals-data.ts`, and `src/lib/tasks-data.ts` should keep using:
 
 ```ts
-supabase.from("leads").select("*")
+supabase.from("leads").select("*");
 ```
 
 The difference is environment configuration:
@@ -1633,16 +1634,16 @@ Phase 1 offline-first acceptance:
 
 ## 24. Risks And Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Local/cloud RLS drift | Data exposure | Apply same migrations to branch and cloud |
-| Branch server failure | Office outage | Backups, UPS, restore procedure |
-| Duplicate automation/email rows | User confusion/email spam | Idempotency keys and unique constraints |
-| Local trigger side effects duplicate in cloud | Data duplication | Deterministic IDs/origin event IDs |
-| Conflicting edits overwrite data | Data loss | Conflict logging; table-specific policies |
-| Local user remains active after cloud revocation | Security risk | Pull cloud user status on reconnect; local admin controls |
-| Large datasets sync slowly | Performance | Table checkpoints, batching, branch scoping |
-| Self-hosting operations burden | Maintenance risk | Docker deployment docs, monitoring, backups |
+| Risk                                             | Impact                    | Mitigation                                                |
+| ------------------------------------------------ | ------------------------- | --------------------------------------------------------- |
+| Local/cloud RLS drift                            | Data exposure             | Apply same migrations to branch and cloud                 |
+| Branch server failure                            | Office outage             | Backups, UPS, restore procedure                           |
+| Duplicate automation/email rows                  | User confusion/email spam | Idempotency keys and unique constraints                   |
+| Local trigger side effects duplicate in cloud    | Data duplication          | Deterministic IDs/origin event IDs                        |
+| Conflicting edits overwrite data                 | Data loss                 | Conflict logging; table-specific policies                 |
+| Local user remains active after cloud revocation | Security risk             | Pull cloud user status on reconnect; local admin controls |
+| Large datasets sync slowly                       | Performance               | Table checkpoints, batching, branch scoping               |
+| Self-hosting operations burden                   | Maintenance risk          | Docker deployment docs, monitoring, backups               |
 
 ---
 
