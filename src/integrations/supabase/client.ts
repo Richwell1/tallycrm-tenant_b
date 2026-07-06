@@ -15,7 +15,7 @@ function browserSafeSupabaseUrl(value: string) {
   try {
     const url = new URL(value);
     const appHostname = window.location.hostname;
-    if (isLoopbackHostname(url.hostname) && !isLoopbackHostname(appHostname)) {
+    if (shouldUseAppHostnameForSupabase(url.hostname, appHostname)) {
       url.hostname = appHostname;
       return url.toString().replace(/\/$/, "");
     }
@@ -28,6 +28,30 @@ function browserSafeSupabaseUrl(value: string) {
 
 function isLoopbackHostname(hostname: string) {
   return ["localhost", "127.0.0.1", "::1"].includes(hostname);
+}
+
+function shouldUseAppHostnameForSupabase(supabaseHostname: string, appHostname: string) {
+  if (!appHostname || supabaseHostname === appHostname) return false;
+  if (isLoopbackHostname(supabaseHostname)) return true;
+  if (!isPrivateLanHostname(supabaseHostname)) return false;
+  return isLoopbackHostname(appHostname) || isPrivateLanHostname(appHostname);
+}
+
+function isPrivateLanHostname(hostname: string) {
+  if (hostname === "crm.local" || hostname.endsWith(".local")) return true;
+  const parts = hostname.split(".").map((part) => Number(part));
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return false;
+  }
+  const [first, second] = parts;
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
 }
 
 export function isSupabaseConfigured() {

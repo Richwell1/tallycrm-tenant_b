@@ -99,11 +99,11 @@ function buildEnvContent(path) {
 const targets = [envPath, ...mirrorPaths];
 for (const target of targets) {
   if (target.includes("branch") && !publicUrl && isLoopbackUrl(supabaseUrl)) {
-    console.error(
+    console.warn(
       `${target} is a branch/LAN env file, but local Supabase reported ${supabaseUrl}. ` +
-        "Pass --public-url=http://<branch-server-lan-ip>:54321 so browser clients do not fetch localhost.",
+        "Browser clients will rewrite loopback to the app hostname at runtime. " +
+        "Pass --public-url=http://<branch-server-lan-ip>:54321 if this deployment needs an explicit public Supabase URL.",
     );
-    process.exit(1);
   }
   const next = buildEnvContent(target);
   if (!dryRun) {

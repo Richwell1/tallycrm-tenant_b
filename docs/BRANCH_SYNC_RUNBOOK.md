@@ -88,6 +88,15 @@ host's LAN URL for the browser-facing Supabase endpoint:
 npm run local:env -- --public-url=http://192.168.1.50:54321 --mirror=.env.branch --mirror=deploy/branch/.env
 ```
 
+If the branch server's LAN IP changes, prefer opening the app through a stable
+local hostname such as `http://crm.local:3000`. The browser Supabase client also
+rewrites loopback/private LAN Supabase URLs to the hostname currently used for
+the app, so a stale `VITE_SUPABASE_URL` IP does not break login as long as the
+app and local Supabase are on the same branch server. Supabase Auth still needs
+the matching origin in `supabase/config.toml`; the local config includes
+`crm.local`, localhost, and common private LAN wildcard origins for ports 3000
+and 5173.
+
 Then apply the migrations to the local stack:
 
 ```bash
