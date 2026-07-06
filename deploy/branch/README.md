@@ -29,6 +29,17 @@ Copy the root `.env.branch.example` into the branch deployment environment and f
 
 Use staging cloud Supabase first. Do not sync a new branch server directly to production until staging sync has been tested.
 
+Use a stable local hostname for operators and LAN users when possible:
+
+```text
+APP_URL=http://crm.local:3000
+```
+
+The branch templates are designed to tolerate branch LAN IP changes. Browser
+clients rewrite loopback/private LAN Supabase URLs to the hostname used to open
+the app, so a user opening `http://crm.local:3000` will call local Supabase on
+`crm.local` instead of their own `127.0.0.1`.
+
 ## Finalized Operating Model
 
 The finalized branch operating model is:
@@ -68,6 +79,20 @@ The compose file assumes Supabase is already running and reachable through the U
 Do not pass root `.env.production` directly to Docker Compose, because its `SUPABASE_URL`
 is the cloud Supabase URL. The branch app must use the local Supabase URL for `SUPABASE_URL`
 and the production cloud URL only through `CLOUD_SUPABASE_URL`.
+
+For the default host-run Supabase CLI stack plus Dockerized CRM app, use:
+
+```text
+SUPABASE_URL=http://host.docker.internal:54321
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+APP_URL=http://crm.local:3000
+```
+
+`SUPABASE_URL` is consumed from inside the app and sync-worker containers. The
+compose file maps `host.docker.internal` to the Docker host gateway so those
+containers can reach the host Supabase API. `VITE_SUPABASE_URL` is embedded into
+the browser bundle and is rewritten at runtime to the current branch app
+hostname for LAN users.
 
 `branch:init` reads `.env.production` for production public values and `.env` for
 server-only cloud secrets such as `SUPABASE_SERVICE_ROLE_KEY`.

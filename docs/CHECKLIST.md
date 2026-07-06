@@ -209,7 +209,26 @@
 - [ ] Clean clone builds & runs from README; no secrets committed
 - [ ] Final code merged to `main` via reviewed PRs
 
-## 21. Final acceptance (must all pass)
+## 21. Offline/LAN branch operation
+
+- [x] Branch-local Supabase runs separately from cloud Supabase
+- [x] Branch env template committed without real secrets
+- [x] Branch Docker env template committed without real secrets
+- [x] Stable branch hostname documented (`http://crm.local:3000`)
+- [x] Browser Supabase client rewrites loopback/private LAN hosts to the app hostname
+- [x] Supabase Auth allows `crm.local`, localhost, and common private LAN origins for local branch use
+- [x] Docker app and sync-worker containers can reach host Supabase through `host.docker.internal`
+- [x] React Query continues queries/mutations against branch-local Supabase while internet is offline
+- [x] Cloud users are provisioned into local branch Auth before sync
+- [x] Cloud roles/config are pulled into the branch
+- [x] Core CRM tables sync bidirectionally between branch and cloud
+- [x] Branch diagnostics, smoke check, continuous sync, one-time sync, and backup commands are documented
+- [ ] Conflict UX is finalized for non-admin users
+- [ ] File/storage sync policy is finalized
+- [ ] Local HTTPS/VPN policy is finalized for production branch rollout
+- [ ] Production branch backup schedule and monitoring are installed on the host
+
+## 22. Final acceptance (must all pass)
 
 - [ ] Visitor form → lead on dashboard ≤10s + email ≤60s
 - [ ] 3 users with correct matrix permissions

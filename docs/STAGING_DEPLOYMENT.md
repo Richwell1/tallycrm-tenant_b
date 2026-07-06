@@ -78,3 +78,22 @@ The public `VITE_SUPABASE_*` values are safe to expose, but they must still poin
 - Auth users are staging users.
 - No production leads/contacts/deals appear in staging.
 - Email is disabled or uses a staging-safe sender.
+
+## Branch Sync Validation
+
+Use staging as the first cloud target for any new branch server. The branch
+server should point `SUPABASE_URL` at local Supabase and point
+`CLOUD_SUPABASE_URL`/`CLOUD_SUPABASE_SERVICE_ROLE_KEY` at staging until the
+branch smoke checks and sync checks pass.
+
+Recommended branch validation sequence:
+
+```bash
+npm run branch:check -- deploy/branch/.env
+npm run branch:smoke -- --env-file=deploy/branch/.env
+npm run sync:once -- --env-file=deploy/branch/.env --dry-run
+```
+
+Only switch `CLOUD_*` values to production after staging confirms local Auth
+provisioning, role mirroring, bidirectional core CRM sync, and no unexpected
+production data exposure.

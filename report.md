@@ -67,7 +67,12 @@ This is simple to operate and easy to reason about.
 ## Implemented Capabilities
 
 - LAN access from another PC using the branch server IP.
+- Stable branch access through `http://crm.local:3000` so users do not depend on a changing LAN IP.
 - Browser-safe Supabase URL handling so remote PCs do not call their own `127.0.0.1`.
+- Runtime rewrite of loopback/private LAN Supabase hosts to the current app hostname for branch browsers.
+- Local Supabase Auth redirect allowlist for `crm.local`, localhost, and common private LAN origins.
+- Docker branch app and sync worker access to host-run Supabase through `host.docker.internal`.
+- React Query configured to keep running queries and mutations against branch-local Supabase while the internet is offline.
 - Local Supabase Auth with MFA/TOTP enabled.
 - Local Auth provisioning from online users.
 - Cloud-to-local role mirroring so an admin remains an admin locally.
@@ -174,6 +179,7 @@ The implementation has been verified through:
 - branch Auth provisioning before profile sync,
 - online and local login verification for a new admin account,
 - role mirroring validation so local roles match cloud roles.
+- branch/LAN configuration stabilized for changing LAN IPs and Dockerized app/sync-worker access.
 
 ## Risk Controls
 
@@ -182,6 +188,8 @@ The design includes practical controls for the major risks:
 - **Duplicate lookup data:** pipeline stages and loss reasons match by natural keys.
 - **Broken deal stage references:** stage IDs are mapped between local and cloud.
 - **Wrong local roles:** branch provisioning now mirrors cloud roles.
+- **Changing LAN IPs:** users can open the app through `crm.local`, and browser Supabase URLs rewrite to the app hostname at runtime.
+- **Container-to-host networking:** branch Docker services use `host.docker.internal` to reach the host Supabase stack.
 - **Manual sync dependency:** `sync:watch` runs continuously on an interval.
 - **Local database loss:** branch backup command is available for scheduled host backups.
 - **Accidental local state commits:** local Supabase branch state and env files are ignored.

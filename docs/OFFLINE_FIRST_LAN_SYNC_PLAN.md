@@ -700,16 +700,21 @@ Local services needed:
 Add a LAN deployment env profile:
 
 ```text
-SUPABASE_URL=http://localhost:8000
+SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
 SUPABASE_SERVICE_ROLE_KEY=<local-service-role-key>
-VITE_SUPABASE_URL=http://crm.local:8000
+VITE_SUPABASE_URL=http://127.0.0.1:54321
 VITE_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
 EMAIL_ENABLED=false
-APP_URL=http://crm.local
+APP_URL=http://crm.local:3000
 ```
 
-The exact URL/port depends on the local reverse proxy setup.
+For Dockerized CRM app/sync-worker deployments that talk to a host-run Supabase
+CLI stack, use `SUPABASE_URL=http://host.docker.internal:54321` inside
+`deploy/branch/.env`. The browser-facing `VITE_SUPABASE_URL` may stay on
+loopback because the browser client rewrites it to the app hostname at runtime
+for LAN users. The exact public hostname/port can still change if a local
+reverse proxy terminates `crm.local` on standard HTTP/HTTPS ports.
 
 ### 12.5 Local Database Setup
 
@@ -1483,15 +1488,20 @@ The difference is environment configuration:
 
 ```text
 cloud mode  -> VITE_SUPABASE_URL=https://project.supabase.co
-branch mode -> VITE_SUPABASE_URL=http://crm.local:8000
+branch mode -> VITE_SUPABASE_URL=http://127.0.0.1:54321 or http://crm.local:54321
 ```
+
+In the finalized branch configuration, browser clients rewrite loopback/private
+LAN Supabase URLs to the hostname used to open the app. This means operators can
+open `http://crm.local:3000` from LAN devices and avoid hard-coding changing
+branch IP addresses into browser env values.
 
 ### 19.2 Step 2: Add Deployment-Aware Config
 
 Add clear env profiles:
 
-- `.env.cloud.example`
 - `.env.branch.example`
+- `deploy/branch/.env.example`
 - branch deployment docs
 
 The app should be able to build/start against either cloud Supabase or local Supabase.
@@ -1505,6 +1515,10 @@ Add UI for:
 - Cloud sync pending.
 - Cloud sync successful.
 - Cloud sync failed.
+
+Current implementation note: sync status data helpers and a layout indicator
+exist, but full conflict/status presentation for non-admin users should continue
+to be hardened during branch rollout.
 
 ### 19.4 Step 4: Optional Repository Boundary Later
 
@@ -1618,15 +1632,15 @@ Test:
 
 Phase 1 offline-first acceptance:
 
-- A local branch server can run without internet.
-- Multiple LAN users can open the CRM through the local server.
-- Users can sign in against local Supabase Auth.
-- Leads, contacts, companies, deals, tasks, and activities can be created/updated while internet is unavailable.
-- Local RLS protects local reads/writes.
-- Local triggers/RPCs work while offline.
-- Local changes sync to cloud Supabase when internet returns.
-- Cloud changes can sync back to the branch.
-- Rep local access is limited by local RLS to rep-allowed records.
+- [x] A local branch server can run without internet.
+- [x] Multiple LAN users can open the CRM through the local server.
+- [x] Users can sign in against local Supabase Auth.
+- [x] Leads, contacts, companies, deals, tasks, and activities can be created/updated while internet is unavailable.
+- [x] Local RLS protects local reads/writes.
+- [x] Local triggers/RPCs work while offline.
+- [x] Local changes sync to cloud Supabase when internet returns.
+- [x] Cloud changes can sync back to the branch.
+- [x] Rep local access is limited by local RLS to rep-allowed records.
 - Email/admin/auth-only features do not break offline; they are disabled or queued.
 - Sync errors are visible to the user.
 
@@ -1647,29 +1661,37 @@ Phase 1 offline-first acceptance:
 
 ---
 
-## 25. Recommended First Milestone
+## 25. First Milestone Status
 
-The first practical milestone should be a narrow proof of concept:
+The first practical milestone has moved beyond the original narrow proof of
+concept. The branch implementation now supports a local branch server over LAN,
+local Supabase Auth, automatic branch Auth provisioning, bidirectional core CRM
+sync, cloud-controlled role/config pulls, sync diagnostics, Docker app/sync
+worker deployment, and host-side backups.
+
+Original proof-of-concept goal:
 
 **Goal:** One local branch server can run the CRM over LAN and sync leads to cloud.
 
 Scope:
 
-- Run self-hosted Supabase locally.
-- Apply current migrations locally.
-- Seed one admin, one manager, and one rep.
-- Run the CRM app against local Supabase.
-- Access the CRM from another device on the LAN.
-- Disconnect internet while keeping LAN active.
-- Create/update leads offline.
-- Restore internet.
-- Run `npm run sync:once`.
-- Verify leads exist in cloud Supabase.
-- Add sync status indicator.
+- [x] Run self-hosted Supabase locally.
+- [x] Apply current migrations locally.
+- [x] Provision users from cloud into local Supabase Auth.
+- [x] Run the CRM app against local Supabase.
+- [x] Access the CRM from another device on the LAN.
+- [x] Disconnect internet while keeping LAN active.
+- [x] Create/update core CRM records offline.
+- [x] Restore internet.
+- [x] Run `npm run sync:once` or continuous `npm run sync:watch`.
+- [x] Verify core CRM records sync with cloud Supabase.
+- [x] Add branch diagnostics and sync status plumbing.
 
-This proves the branch-server architecture before expanding sync to deals, contacts, tasks, activities, analytics, storage, and email.
+This proves the branch-server architecture and expands beyond leads to companies,
+contacts, deals, tasks, and activities.
 
-After the leads proof of concept works, expand table by table.
+Remaining hardening items are conflict UX, file/storage sync, local HTTPS/VPN
+policy, monitoring, and production backup scheduling.
 
 ---
 
@@ -1704,14 +1726,14 @@ Do not make PowerSync the default for this requirement. PowerSync is better for 
 
 Do not migrate to Nhost for offline-first. Nhost is a capable Postgres/Auth/Hasura backend, but it does not remove the need for local deployment and sync.
 
-Implementation should be incremental:
+Implementation status:
 
-1. Run local self-hosted Supabase.
-2. Run the CRM app against local Supabase over LAN.
-3. Prove local offline CRM use with leads.
-4. Build one-way local-to-cloud sync for leads.
-5. Add cloud-to-local pull.
-6. Expand sync to the rest of CRM CRUD.
-7. Harden auth, email, storage, backups, monitoring, and conflict handling.
+1. Local self-hosted Supabase support is in place.
+2. The CRM app can run against local Supabase over LAN.
+3. Core offline CRM use is proven beyond leads.
+4. Local-to-cloud and cloud-to-local sync are implemented for core CRM tables.
+5. Auth provisioning and role mirroring are implemented.
+6. Branch deployment, diagnostics, smoke checks, and backups are documented.
+7. Remaining work is hardening conflict UX, storage/file sync, local HTTPS/VPN policy, monitoring, and production backup scheduling.
 
 This path satisfies the requirement: keep the current backend stack, avoid a full backend rewrite, make the CRM usable by LAN users without internet, and sync with cloud Supabase when internet is available.

@@ -97,6 +97,21 @@ the matching origin in `supabase/config.toml`; the local config includes
 `crm.local`, localhost, and common private LAN wildcard origins for ports 3000
 and 5173.
 
+For Docker app deployments, keep the server-side and browser-facing Supabase
+URLs separate:
+
+```text
+SUPABASE_URL=http://host.docker.internal:54321
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+APP_URL=http://crm.local:3000
+```
+
+`SUPABASE_URL` is used inside the app and sync-worker containers, so it must
+reach the host Supabase stack through `host.docker.internal`. `VITE_SUPABASE_URL`
+is embedded for browsers, and the browser client rewrites it to the current app
+hostname at runtime for LAN users. The branch compose file already maps
+`host.docker.internal` to the host gateway.
+
 Then apply the migrations to the local stack:
 
 ```bash
@@ -256,6 +271,11 @@ npm run sync:watch -- --interval=30
 
 The watcher runs continuously and retries on the next interval if a sync attempt fails. In the
 Docker branch deployment, the `sync-worker` service starts this watcher automatically.
+
+React Query is configured with `networkMode: "always"` for this app. Browser
+queries and mutations therefore still run against branch-local Supabase while
+the internet is offline; the local branch server is the network boundary that
+matters for CRM use during an outage.
 
 ## Back Up The Branch Database
 

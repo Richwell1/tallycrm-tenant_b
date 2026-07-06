@@ -310,12 +310,19 @@ From [`package.json`](package.json):
 | `npm run dev`                   | `vite dev`                                      | Start the dev server (CRM + landing page)   |
 | `npm run build`                 | `vite build`                                    | Production build                            |
 | `npm run build:dev`             | `vite build --mode development`                 | Development-mode build                      |
+| `npm run build:staging`         | `vite build --mode staging`                     | Staging build                               |
+| `npm run build:branch`          | `vite build --mode branch`                      | Branch/LAN build                            |
 | `npm run preview`               | `vite preview`                                  | Preview a production build locally          |
 | `npm run lint`                  | `eslint .`                                      | Lint the codebase                           |
 | `npm run test`                  | `node scripts/security-check.mjs`               | Security regression checks (see note below) |
-| `npm run test:ci`               | `npm run test`                                  | Alias used by CI                            |
 | `npm run ci`                    | `npm run lint && npm run test && npm run build` | Runs the full CI gate locally               |
 | `npm run format`                | `prettier --write .`                            | Format the codebase                         |
+| `npm run deploy`                | `npm run build && wrangler deploy`              | Deploy production Worker                    |
+| `npm run deploy:staging`        | `npm run build:staging && ... wrangler deploy`  | Deploy staging Worker                       |
+| `npm run secrets:staging`       | `node scripts/push-cloudflare-secrets.mjs ...`  | Push staging Worker secrets                 |
+| `npm run branch:init`           | `node scripts/create-branch-env.mjs`            | Create a branch env from templates/cloud    |
+| `npm run branch:check`          | `node scripts/branch-env-check.mjs`             | Validate branch env values                  |
+| `npm run local:env`             | `node scripts/populate-local-env.mjs`           | Populate env files from local Supabase      |
 | `npm run sync:once`             | `node scripts/sync-once.mjs`                    | Run one branch/cloud sync pass              |
 | `npm run sync:watch`            | `node scripts/sync-watch.mjs`                   | Run continuous interval sync                |
 | `npm run branch:provision-auth` | `node scripts/provision-branch-auth-users.mjs`  | Mirror cloud Auth users and roles locally   |
@@ -341,7 +348,7 @@ linter, not proof of functional correctness.
 ├── docs/                        # PRD, URD, design spec, build plan, checklist (source of truth for scope)
 ├── supabase/
 │   ├── config.toml
-│   ├── migrations/              # 9 timestamped SQL migrations — schema, RLS, automations, RPCs
+│   ├── migrations/              # timestamped SQL migrations — schema, RLS, automations, RPCs, sync metadata
 │   └── functions/
 │       └── send-automation-email/index.ts   # the only Edge Function: drains email_queue via Resend
 ├── scripts/
@@ -464,6 +471,19 @@ In branch mode, the CRM runs against a local Supabase stack on the branch server
 can continue working when internet access is unavailable. When internet access returns, the sync
 worker exchanges CRM data with the online Supabase project.
 
+The preferred branch URL is a stable local hostname such as `http://crm.local:3000`. The branch
+templates default browser-facing Supabase URLs to loopback and the browser client rewrites
+loopback/private LAN Supabase hosts to the hostname currently used to open the app. This keeps
+remote LAN browsers from trying to call their own `127.0.0.1` and lets a branch survive LAN IP
+changes as long as the app and local Supabase stay on the same branch server. The local Supabase
+Auth config allows `crm.local`, localhost, and common private LAN origins on ports `3000` and
+`5173`.
+
+For Docker branch deployment, `deploy/branch/.env` intentionally uses
+`SUPABASE_URL=http://host.docker.internal:54321` for server-side container access and
+`VITE_SUPABASE_URL=http://127.0.0.1:54321` for browser builds. The compose file maps
+`host.docker.internal` to the host gateway for both the app and sync-worker containers.
+
 Important branch docs:
 
 - [`report.md`](report.md) — final supervisor-facing report and rationale.
@@ -482,7 +502,7 @@ Operational defaults:
 
 ## Acceptance criteria
 
-Restated from `docs/CHECKLIST.md` §21 ("Final acceptance"), checked against the current repo
+Restated from `docs/CHECKLIST.md` §22 ("Final acceptance"), checked against the current repo
 state. **Met** = implemented and traceable in code/migrations. **Partial** = some of the
 requirement is built. **Planned** = tracked in `docs/CHECKLIST.md` but not yet implemented.
 
