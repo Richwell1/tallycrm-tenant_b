@@ -256,7 +256,7 @@ async function sendResendEmail(payload: {
 
 export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
+  .inputValidator(
     z.object({
       email: z.string().trim().min(1),
       role: z.enum(["admin", "manager", "rep"]),
