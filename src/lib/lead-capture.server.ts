@@ -305,32 +305,47 @@ async function sendLeadConfirmationEmail(
     `- ${partnerName}`,
   ].join("\n");
 
-async function sendResendEmail(
-  apiKey: string,
-  payload: {
-    from: string;
-    to: string[];
-    subject: string;
-    html: string;
-    reply_to?: string;
-  },
-) {
-  try {
-    const res = await sendResendEmail(RESEND_API_KEY, {
-      from: getLandingFromEmail(),
-      to: [data.email],
-      bcc: salesBcc,
-      reply_to: partnerEmail ? [partnerEmail] : undefined,
-      subject: "We received your TallyPrime demo request",
-      html,
-      text,
-    });
-    const body = await res.text().catch(() => "");
-    return { ok: res.ok, status: res.status, body };
-  } catch (err) {
-    return { ok: false, status: 0, body: String(err instanceof Error ? err.message : err) };
+  const attempt = async (to: string[], bcc?: string[]) => {
+    try {
+      const res = await sendResendEmail(RESEND_API_KEY, {
+        from: getLandingFromEmail(),
+        to,
+        bcc,
+        reply_to: partnerEmail ? [partnerEmail] : undefined,
+        subject: "We received your TallyPrime demo request",
+        html,
+        text,
+      });
+      const body = await res.text().catch(() => "");
+      return { ok: res.ok, status: res.status, body };
+    } catch (err) {
+      return { ok: false, status: 0, body: String(err instanceof Error ? err.message : err) };
+    }
+  };
+
+  const first_try = await attempt([data.email], salesBcc);
+  if (first_try.ok) {
+    await markLeadEmailStatus(leadId, "sent");
+    return;
   }
+
+  const sandboxRecipient = extractResendSandboxRecipient(first_try.body);
+  if (sandboxRecipient) {
+    const fallback = await attempt([sandboxRecipient]);
+    await markLeadEmailStatus(leadId, fallback.ok ? "owner_notified" : "failed");
+    return;
+  }
+
+  console.warn(
+    "[lead-capture] Confirmation email failed",
+    first_try.status,
+    sanitizeLogValue(first_try.body),
+    "lead:",
+    leadId,
+  );
+  await markLeadEmailStatus(leadId, "failed");
 }
+
 
 function extractResendSandboxRecipient(body: string) {
   return body.match(/own email address \(([^)\s]+@[^)\s]+)\)/i)?.[1] ?? null;
