@@ -305,16 +305,6 @@ async function sendLeadConfirmationEmail(
     `- ${partnerName}`,
   ].join("\n");
 
-async function sendResendEmail(
-  apiKey: string,
-  payload: {
-    from: string;
-    to: string[];
-    subject: string;
-    html: string;
-    reply_to?: string;
-  },
-) {
   try {
     const res = await sendResendEmail(RESEND_API_KEY, {
       from: getLandingFromEmail(),
