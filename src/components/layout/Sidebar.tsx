@@ -9,6 +9,7 @@ import {
   KanbanSquare,
   LayoutDashboard,
   LogOut,
+  ReceiptText,
   Search,
   Settings,
   Users,
