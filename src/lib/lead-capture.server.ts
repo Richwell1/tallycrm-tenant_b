@@ -305,6 +305,16 @@ async function sendLeadConfirmationEmail(
     `- ${partnerName}`,
   ].join("\n");
 
+async function sendResendEmail(
+  apiKey: string,
+  payload: {
+    from: string;
+    to: string[];
+    subject: string;
+    html: string;
+    reply_to?: string;
+  },
+) {
   try {
     const res = await sendResendEmail(RESEND_API_KEY, {
       from: getLandingFromEmail(),
@@ -315,40 +325,40 @@ async function sendLeadConfirmationEmail(
       html,
       text,
     });
+    const body = await res.text().catch(() => "");
+    return { ok: res.ok, status: res.status, body };
+  } catch (err) {
+    return { ok: false, status: 0, body: String(err instanceof Error ? err.message : err) };
+  }
+}
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.warn(
-        "[lead-capture] Resend send failed",
-        res.status,
-        sanitizeLogValue(body),
-        "lead:",
-        leadId,
-      );
-      return;
-    }
+function extractResendSandboxRecipient(body: string) {
+  return body.match(/own email address \(([^)\s]+@[^)\s]+)\)/i)?.[1] ?? null;
+}
 
-    // Best-effort: mark the queued row as sent so it isn't re-sent later.
-    try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        await admin
-          .from("email_queue")
-          .update({ status: "sent", sent_at: new Date().toISOString() })
-          .eq("related_entity", "lead")
-          .eq("related_entity_id", leadId)
-          .eq("template", "landing_lead_confirmation");
-      }
-    } catch (err) {
-      console.warn("[lead-capture] Failed to mark queued email sent", sanitizeLogValue(err));
+async function markLeadEmailStatus(leadId: string, status: "sent" | "owner_notified" | "failed") {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return;
+
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    await admin.from("leads").update({ email_status: status }).eq("id", leadId);
+
+    if (status === "sent") {
+      await admin
+        .from("email_queue")
+        .update({ status: "sent", sent_at: new Date().toISOString() })
+        .eq("related_entity", "lead")
+        .eq("related_entity_id", leadId)
+        .eq("template", "landing_lead_confirmation");
     }
   } catch (err) {
-    console.warn("[lead-capture] Resend request failed", sanitizeLogValue(err));
+    console.warn("[lead-capture] Failed to mark email status", sanitizeLogValue(err));
   }
 }
 

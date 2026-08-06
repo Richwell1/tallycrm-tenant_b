@@ -79,13 +79,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Tally CRM" },
-      { name: "description", content: "Simple CRM for TallyPrime sales teams." },
-      { name: "author", content: "Tally CRM" },
-      { property: "og:title", content: "Tally CRM" },
-      { property: "og:description", content: "Simple CRM for TallyPrime sales teams." },
+      { title: "TallyPrime Ghana Partner | Demo, Setup & CRM" },
+      {
+        name: "description",
+        content:
+          "Authorized TallyPrime partner in Ghana for free demos, licensing, setup, training, support, and CRM-tracked sales follow-up.",
+      },
+      { name: "author", content: "TallyPrime Partner Ghana" },
+      { property: "og:title", content: "TallyPrime Ghana Partner" },
+      {
+        property: "og:description",
+        content:
+          "Book a free TallyPrime demo with local setup, training, support, and CRM-tracked follow-up in Ghana.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "TallyPrime Ghana Partner" },
+      {
+        name: "twitter:description",
+        content:
+          "Free TallyPrime demos, licensing, setup, training, support, and CRM-tracked follow-up in Ghana.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -99,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap",
       },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     ],
   }),
   shellComponent: RootShell,
