@@ -1993,6 +1993,7 @@ export type Database = {
       automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
       can_access_invoice: { Args: { _invoice_id: string }; Returns: boolean }
       can_access_quote: { Args: { _quote_id: string }; Returns: boolean }
+      can_assign_owner: { Args: { _target: string }; Returns: boolean }
       capture_landing_lead: {
         Args: {
           p_company_name: string
