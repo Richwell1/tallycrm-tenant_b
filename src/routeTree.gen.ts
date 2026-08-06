@@ -32,6 +32,7 @@ import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedAppQuotesCatalogRouteImport } from './routes/_authenticated/app.quotes.catalog'
 import { Route as AuthenticatedAppQuotesIdRouteImport } from './routes/_authenticated/app.quotes.$id'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
+import { Route as AuthenticatedAppInvoicesIdRouteImport } from './routes/_authenticated/app.invoices.$id'
 import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
 import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authenticated/app.contacts.$id'
 import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
@@ -166,6 +167,12 @@ const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
   path: '/leads/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppInvoicesIdRoute =
+  AuthenticatedAppInvoicesIdRouteImport.update({
+    id: '/invoices/$id',
+    path: '/invoices/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppDealsIdRoute = AuthenticatedAppDealsIdRouteImport.update({
   id: '/deals/$id',
   path: '/deals/$id',
@@ -209,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
@@ -268,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/app/companies/$id': typeof AuthenticatedAppCompaniesIdRoute
   '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/_authenticated/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/_authenticated/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/_authenticated/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
+    | '/app/invoices/$id'
     | '/app/leads/$id'
     | '/app/quotes/$id'
     | '/app/quotes/catalog'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
+    | '/app/invoices/$id'
     | '/app/leads/$id'
     | '/app/quotes/$id'
     | '/app/quotes/catalog'
@@ -357,6 +369,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/companies/$id'
     | '/_authenticated/app/contacts/$id'
     | '/_authenticated/app/deals/$id'
+    | '/_authenticated/app/invoices/$id'
     | '/_authenticated/app/leads/$id'
     | '/_authenticated/app/quotes/$id'
     | '/_authenticated/app/quotes/catalog'
@@ -547,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLeadsIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/invoices/$id': {
+      id: '/_authenticated/app/invoices/$id'
+      path: '/invoices/$id'
+      fullPath: '/app/invoices/$id'
+      preLoaderRoute: typeof AuthenticatedAppInvoicesIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/deals/$id': {
       id: '/_authenticated/app/deals/$id'
       path: '/deals/$id'
@@ -591,6 +611,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCompaniesIdRoute: typeof AuthenticatedAppCompaniesIdRoute
   AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
   AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
+  AuthenticatedAppInvoicesIdRoute: typeof AuthenticatedAppInvoicesIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
   AuthenticatedAppQuotesIdRoute: typeof AuthenticatedAppQuotesIdRoute
   AuthenticatedAppQuotesCatalogRoute: typeof AuthenticatedAppQuotesCatalogRoute
@@ -614,6 +635,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCompaniesIdRoute: AuthenticatedAppCompaniesIdRoute,
   AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
   AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
+  AuthenticatedAppInvoicesIdRoute: AuthenticatedAppInvoicesIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
   AuthenticatedAppQuotesIdRoute: AuthenticatedAppQuotesIdRoute,
   AuthenticatedAppQuotesCatalogRoute: AuthenticatedAppQuotesCatalogRoute,
