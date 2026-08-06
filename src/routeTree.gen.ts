@@ -38,6 +38,7 @@ import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
 import { Route as AuthenticatedAppAnalyticsRepIdRouteImport } from './routes/_authenticated/app.analytics.$repId'
 import { Route as AuthenticatedAppQuotesPrintIdRouteImport } from './routes/_authenticated/app.quotes.print.$id'
+import { Route as AuthenticatedAppInvoicesPrintIdRouteImport } from './routes/_authenticated/app.invoices.print.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -202,6 +203,12 @@ const AuthenticatedAppQuotesPrintIdRoute =
     path: '/quotes/print/$id',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppInvoicesPrintIdRoute =
+  AuthenticatedAppInvoicesPrintIdRouteImport.update({
+    id: '/invoices/print/$id',
+    path: '/invoices/print/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -231,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
+  '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRoutesByTo {
@@ -260,6 +268,7 @@ export interface FileRoutesByTo {
   '/app/quotes': typeof AuthenticatedAppQuotesIndexRoute
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
+  '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRoutesById {
@@ -292,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
+  '/_authenticated/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/_authenticated/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRouteTypes {
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/app/quotes/'
     | '/app/settings/'
     | '/app/tasks/'
+    | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -353,6 +364,7 @@ export interface FileRouteTypes {
     | '/app/quotes'
     | '/app/settings'
     | '/app/tasks'
+    | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
   id:
     | '__root__'
@@ -384,6 +396,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/quotes/'
     | '/_authenticated/app/settings/'
     | '/_authenticated/app/tasks/'
+    | '/_authenticated/app/invoices/print/$id'
     | '/_authenticated/app/quotes/print/$id'
   fileRoutesById: FileRoutesById
 }
@@ -602,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppQuotesPrintIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/invoices/print/$id': {
+      id: '/_authenticated/app/invoices/print/$id'
+      path: '/invoices/print/$id'
+      fullPath: '/app/invoices/print/$id'
+      preLoaderRoute: typeof AuthenticatedAppInvoicesPrintIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
@@ -626,6 +646,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppQuotesIndexRoute: typeof AuthenticatedAppQuotesIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
+  AuthenticatedAppInvoicesPrintIdRoute: typeof AuthenticatedAppInvoicesPrintIdRoute
   AuthenticatedAppQuotesPrintIdRoute: typeof AuthenticatedAppQuotesPrintIdRoute
 }
 
@@ -650,6 +671,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppQuotesIndexRoute: AuthenticatedAppQuotesIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
+  AuthenticatedAppInvoicesPrintIdRoute: AuthenticatedAppInvoicesPrintIdRoute,
   AuthenticatedAppQuotesPrintIdRoute: AuthenticatedAppQuotesPrintIdRoute,
 }
 
