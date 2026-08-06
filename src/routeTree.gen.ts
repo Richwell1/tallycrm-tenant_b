@@ -23,6 +23,7 @@ import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppQuotesIndexRouteImport } from './routes/_authenticated/app.quotes.index'
 import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_authenticated/app.pipeline.index'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
+import { Route as AuthenticatedAppInvoicesIndexRouteImport } from './routes/_authenticated/app.invoices.index'
 import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
 import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_authenticated/app.contacts.index'
 import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
@@ -110,6 +111,12 @@ const AuthenticatedAppLeadsIndexRoute =
   AuthenticatedAppLeadsIndexRouteImport.update({
     id: '/leads/',
     path: '/leads/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppInvoicesIndexRoute =
+  AuthenticatedAppInvoicesIndexRouteImport.update({
+    id: '/invoices/',
+    path: '/invoices/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppDealsIndexRoute =
@@ -210,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
+  '/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
+  '/app/invoices': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes': typeof AuthenticatedAppQuotesIndexRoute
@@ -267,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
+  '/_authenticated/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/_authenticated/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
+    | '/app/invoices/'
     | '/app/leads/'
     | '/app/pipeline/'
     | '/app/quotes/'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/app/companies'
     | '/app/contacts'
     | '/app/deals'
+    | '/app/invoices'
     | '/app/leads'
     | '/app/pipeline'
     | '/app/quotes'
@@ -353,6 +365,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/companies/'
     | '/_authenticated/app/contacts/'
     | '/_authenticated/app/deals/'
+    | '/_authenticated/app/invoices/'
     | '/_authenticated/app/leads/'
     | '/_authenticated/app/pipeline/'
     | '/_authenticated/app/quotes/'
@@ -471,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLeadsIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/invoices/': {
+      id: '/_authenticated/app/invoices/'
+      path: '/invoices'
+      fullPath: '/app/invoices/'
+      preLoaderRoute: typeof AuthenticatedAppInvoicesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/deals/': {
       id: '/_authenticated/app/deals/'
       path: '/deals'
@@ -579,6 +599,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
   AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
+  AuthenticatedAppInvoicesIndexRoute: typeof AuthenticatedAppInvoicesIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
   AuthenticatedAppQuotesIndexRoute: typeof AuthenticatedAppQuotesIndexRoute
@@ -601,6 +622,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
   AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
+  AuthenticatedAppInvoicesIndexRoute: AuthenticatedAppInvoicesIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
   AuthenticatedAppQuotesIndexRoute: AuthenticatedAppQuotesIndexRoute,
@@ -635,13 +657,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
