@@ -261,7 +261,7 @@ export function useCreateQuote() {
           discount_value: input.discount_value ?? 0,
           notes: input.notes || null,
           terms: input.terms || null,
-        } satisfies QuoteInsert)
+        } as QuoteInsert)
         .select("id,quote_number")
         .single();
       if (error) throw error;
