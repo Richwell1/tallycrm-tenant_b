@@ -135,6 +135,9 @@ function QuoteDetailPage() {
                 Convert to deal
               </ToolbarButton>
             ) : null}
+            <ToolbarButton icon="receipt_long" onClick={() => setInvoiceOpen(true)}>
+              Create invoice
+            </ToolbarButton>
             {quote.converted_deal_id ? (
               <Link
                 to="/app/deals/$id"
