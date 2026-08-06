@@ -30,6 +30,7 @@ function QuoteDetailPage() {
   const revise = useReviseQuote();
   const removeQuote = useDeleteQuote();
   const [convertOpen, setConvertOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   if (isLoading) return <CardSkeleton />;
   if (isError || !quote) {
