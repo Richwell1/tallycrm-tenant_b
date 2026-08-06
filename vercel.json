@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build:vercel",
+  "installCommand": "npm ci",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "master": false,
+      "lovable-implementation": false
+    }
+  }
+}

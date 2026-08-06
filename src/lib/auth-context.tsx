@@ -7,6 +7,7 @@ import {
   isSupabaseConfigured,
   supabase,
 } from "@/integrations/supabase/client";
+import { clearMfaSession } from "@/lib/mfa-session";
 import type { CurrentUser, Role } from "@/types";
 
 interface AuthContextValue {
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearMfaSession();
     if (!isSupabaseConfigured()) {
       disableLocalPreview();
       setUser(null);

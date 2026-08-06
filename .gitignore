@@ -20,6 +20,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Vercel
+.vercel/
+
 # Supabase local CLI state
 supabase/.temp/
 supabase/.branches/

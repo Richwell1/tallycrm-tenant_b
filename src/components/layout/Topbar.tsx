@@ -27,7 +27,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 shadow-[var(--shadow-xs)] md:ml-[260px] md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 shadow-[var(--shadow-xs)] md:ml-[260px] md:px-6 print:hidden">
       {/* Search */}
       <div className="hidden flex-1 items-center sm:flex">
         <div className="relative w-full max-w-md">

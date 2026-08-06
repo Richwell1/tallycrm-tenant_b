@@ -237,6 +237,7 @@ export function useCreateDeal() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: dealsKey });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["contact"] });
       qc.invalidateQueries({ queryKey: ["company"] });
     },
@@ -274,6 +275,7 @@ export function useUpdateDealStage() {
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: dealsKey });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["deal", vars.dealId] });
     },
   });
@@ -332,6 +334,7 @@ export function useCloseDeal() {
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: dealsKey });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["deal", vars.dealId] });
     },
   });

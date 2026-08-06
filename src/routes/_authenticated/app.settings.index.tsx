@@ -98,6 +98,14 @@ const STATUS_FILTERS: Array<{ label: string; value: "all" | AutomationStatus }> 
   { label: "Draft", value: "draft" },
 ];
 
+const AUTOMATION_ICON_BOX_CLASS =
+  "material-symbols-outlined flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-lg text-[20px] leading-none";
+const AUTOMATION_ICON_GLYPH_BASE_CLASS =
+  "material-symbols-outlined flex shrink-0 select-none items-center justify-center leading-none";
+const AUTOMATION_ICON_GLYPH_CLASS =
+  "material-symbols-outlined flex h-5 w-5 shrink-0 select-none items-center justify-center text-[18px] leading-none";
+const AUTOMATION_CONTROL_CLASS = "h-10 rounded-lg px-3 py-0 text-sm leading-none";
+
 const SETTINGS_TABS: Array<{ id: SettingsTab; label: string; icon: string }> = [
   { id: "general", label: "General", icon: "settings" },
   { id: "pipeline", label: "Pipeline Config", icon: "view_kanban" },
@@ -858,25 +866,27 @@ function AutomationsSettingsPanel() {
 
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto]">
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-xs)]">
-          {(["list", "builder", "detail", "empty", "error"] as ViewMode[]).map((item) => (
+          {(["list", "builder", "detail"] as ViewMode[]).map((item) => (
             <button
               key={item}
               onClick={() => setView(item)}
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold capitalize transition-colors",
+                "inline-flex h-10 items-center gap-2 rounded-lg px-3 text-[12px] font-semibold capitalize transition-colors",
                 view === item
                   ? "bg-primary text-primary-foreground"
                   : "text-text-secondary hover:bg-muted",
               )}
             >
-              <span className="material-symbols-outlined text-[17px]">{viewIcon(item)}</span>
+              <span className={AUTOMATION_ICON_GLYPH_CLASS}>{viewIcon(item)}</span>
               {item}
             </button>
           ))}
         </div>
-        <div className="rounded-xl border border-primary/20 bg-primary-light px-4 py-3 text-sm text-primary">
-          <span className="font-semibold">Audit:</span> automated actions are shown as{" "}
-          <span className="font-semibold">System/Automation</span> in run history.
+        <div className="flex min-h-14 items-center rounded-xl border border-primary/20 bg-primary-light px-4 py-3 text-sm text-primary">
+          <p>
+            <span className="font-semibold">Audit:</span> automated actions are shown as{" "}
+            <span className="font-semibold">System/Automation</span> in run history.
+          </p>
         </div>
       </div>
 
@@ -1935,19 +1945,24 @@ function AutomationToolbar({
   onSortChange: (value: SortKey) => void;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)] xl:flex-row xl:items-end">
-      <label className="block min-w-[260px] flex-1 space-y-1">
+    <div className="mb-6 flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)] xl:flex-row xl:items-end">
+      <label className="block min-w-[260px] flex-1 space-y-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           Search
         </span>
         <div className="relative">
-          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+          <span
+            className={cn(
+              AUTOMATION_ICON_GLYPH_CLASS,
+              "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted",
+            )}
+          >
             search
           </span>
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="input pl-10"
+            className={cn("input", AUTOMATION_CONTROL_CLASS, "pl-10")}
             placeholder="Search automations, triggers, actions..."
             type="search"
           />
@@ -1991,11 +2006,15 @@ function SelectField({
   options: Array<{ label: string; value: string }>;
 }) {
   return (
-    <label className="block min-w-[170px] space-y-1">
+    <label className="block min-w-[170px] space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      >
         {options.map((item) => (
           <option key={item.value} value={item.value}>
             {item.label}
@@ -2061,7 +2080,7 @@ function AutomationsTable({
               >
                 <td className="px-5 py-4">
                   <button onClick={() => onOpen(rule)} className="block text-left">
-                    <span className="inline-flex items-center gap-2 text-[15px] font-semibold text-foreground">
+                    <span className="inline-flex min-h-6 items-center gap-2 text-[15px] font-semibold leading-6 text-foreground">
                       {rule.name}
                       {rule.isDefault ? <Badge>Default</Badge> : null}
                     </span>
@@ -2071,8 +2090,8 @@ function AutomationsTable({
                   </button>
                 </td>
                 <td className="px-5 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
-                    <span className="material-symbols-outlined text-[15px]">
+                  <span className="inline-flex h-7 items-center gap-2 rounded-full bg-secondary px-3 text-xs font-semibold text-primary">
+                    <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-4 w-4 text-[15px]")}>
                       {rule.triggerIcon}
                     </span>
                     {rule.triggerLabel}
@@ -2095,7 +2114,7 @@ function AutomationsTable({
                   {rule.lastRunAt ? relative(rule.lastRunAt) : "Never"}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
+                  <div className="flex items-center justify-end gap-2 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
                     <IconButton icon="visibility" label="View" onClick={() => onOpen(rule)} />
                     <IconButton icon="edit" label="Edit" onClick={() => onEdit(rule)} />
                     <IconButton
@@ -2174,25 +2193,23 @@ function RuleBuilder({
     <div className="space-y-6">
       <section
         className={cn(
-          "flex items-start gap-3 rounded-xl border border-primary/20 bg-primary-light p-4 transition-transform",
+          "flex items-start gap-4 rounded-xl border border-primary/20 bg-primary-light p-4 transition-transform",
           pulse && "scale-[1.01]",
         )}
       >
-        <span className="material-symbols-outlined flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white">
-          bolt
-        </span>
-        <div>
+        <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-primary text-white")}>bolt</span>
+        <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
             Live Summary
           </p>
-          <p className="text-[15px] font-medium text-foreground">{summary}</p>
+          <p className="break-words text-[15px] font-medium leading-6 text-foreground">{summary}</p>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <div className="space-y-5">
           <BuilderBlock icon="play_arrow" tone="bg-primary text-white" label="WHEN" tag="Trigger">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-3">
               <SelectControl
                 label="Event Type"
                 value={draft.triggerLabel}
@@ -2214,8 +2231,8 @@ function RuleBuilder({
           </BuilderBlock>
 
           <BuilderBlock icon="filter_alt" tone="bg-warning text-white" label="IF" tag="Conditions">
-            <div className="rounded-lg border border-border bg-muted p-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-lg border border-border bg-muted p-4">
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_152px_minmax(0,1fr)_auto] xl:items-end">
                 <SelectControl
                   label="Field"
                   value="Value"
@@ -2229,8 +2246,8 @@ function RuleBuilder({
                   options={[">", "<", "=", "contains"]}
                 />
                 <InputControl label="Value" value="5000" onChange={() => undefined} />
-                <button className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                <button className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-light">
+                  <span className={AUTOMATION_ICON_GLYPH_CLASS}>add</span>
                   Add condition
                 </button>
               </div>
@@ -2248,7 +2265,7 @@ function RuleBuilder({
               {draft.actions.map((action, index) => (
                 <div
                   key={`${action.label}-${index}`}
-                  className="grid gap-3 rounded-lg border border-border bg-muted p-3 md:grid-cols-[1fr_1fr_auto]"
+                  className="grid min-w-0 gap-4 rounded-lg border border-border bg-muted p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
                 >
                   <InputControl
                     label={`Action ${index + 1}`}
@@ -2278,10 +2295,10 @@ function RuleBuilder({
                         actions: draft.actions.filter((_, itemIndex) => itemIndex !== index),
                       })
                     }
-                    className="mt-5 flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:bg-danger-light hover:text-danger"
+                    className="flex h-10 w-full shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-danger-light hover:text-danger md:w-10"
                     title="Remove action"
                   >
-                    <span className="material-symbols-outlined">delete</span>
+                    <span className={AUTOMATION_ICON_GLYPH_CLASS}>delete</span>
                   </button>
                 </div>
               ))}
@@ -2299,16 +2316,20 @@ function RuleBuilder({
                     ],
                   })
                 }
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-light"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold text-primary hover:bg-primary-light"
               >
-                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span className={AUTOMATION_ICON_GLYPH_CLASS}>add</span>
                 Add action
               </button>
             </div>
           </BuilderBlock>
         </div>
 
-        <SectionCard title="Rule Settings" description="Name, state, and audit behavior.">
+        <SectionCard
+          className="xl:sticky xl:top-24 xl:self-start"
+          title="Rule Settings"
+          description="Name, state, and audit behavior."
+        >
           <div className="space-y-4">
             <InputControl
               label="Automation name"
@@ -2322,7 +2343,7 @@ function RuleBuilder({
               <textarea
                 value={draft.description}
                 onChange={(e) => update({ description: e.target.value })}
-                className="min-h-28 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="min-h-28 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm leading-6 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
             <div className="rounded-lg border border-border bg-muted p-3 text-sm">
@@ -2335,24 +2356,24 @@ function RuleBuilder({
         </SectionCard>
       </div>
 
-      <footer className="sticky bottom-0 z-20 -mx-6 flex flex-col justify-between gap-3 border-t border-border bg-card px-6 py-4 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center">
-        <div className="flex gap-2">
+      <footer className="sticky bottom-3 z-20 flex flex-col justify-between gap-3 rounded-xl border border-border bg-card/95 p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-center">
+        <div className="grid gap-2 sm:flex">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+            className="h-10 rounded-lg border border-border px-4 text-sm font-semibold hover:bg-muted"
           >
             Cancel
           </button>
           <button
             onClick={onSaveDraft}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+            className="h-10 rounded-lg border border-border px-4 text-sm font-semibold hover:bg-muted"
           >
             Save as Draft
           </button>
         </div>
         <button
           onClick={onActivate}
-          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-primary-dark"
+          className="h-10 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-primary-dark"
         >
           Activate Rule
         </button>
@@ -2377,17 +2398,17 @@ function RuleDetail({
   return (
     <div className="space-y-6">
       <section className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)] md:flex-row md:items-center">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-[28px] font-semibold tracking-tight text-primary">{rule.name}</h2>
             <Badge>{rule.object} Automation</Badge>
           </div>
           <p className="mt-1 max-w-3xl text-sm text-text-secondary">{rule.description}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold",
+              "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-semibold",
               rule.status === "active"
                 ? "bg-success-light text-success"
                 : "bg-muted text-text-secondary",
@@ -2485,7 +2506,11 @@ function RunHistory({ runs }: { runs: AutomationRun[] }) {
               <tr>
                 <td colSpan={6} className="px-5 py-8">
                   <EmptyState
-                    icon={<span className="material-symbols-outlined text-[28px]">history</span>}
+                    icon={
+                      <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-7 w-7 text-[28px]")}>
+                        history
+                      </span>
+                    }
                     title="No runs yet"
                     description="Run history will appear after this automation is activated and triggered."
                   />
@@ -2563,13 +2588,17 @@ function AutomationEmptyState({
   return (
     <SectionCard>
       <EmptyState
-        icon={<span className="material-symbols-outlined text-[36px]">auto_mode</span>}
+        icon={
+          <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-9 w-9 text-[32px]")}>
+            auto_mode
+          </span>
+        }
         title="No automations yet"
         description="Streamline sales work with rule-based triggers, tasks, reminders, notifications, and audit-visible execution history."
         action={
           <button
             onClick={() => onCreate()}
-            className="rounded-lg bg-cta px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-cta-hover"
+            className="h-10 rounded-lg bg-cta px-5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-cta-hover"
           >
             Create your first automation
           </button>
@@ -2582,14 +2611,18 @@ function AutomationEmptyState({
             <button
               key={template.id}
               onClick={() => onCreate(template)}
-              className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4 text-left transition-colors hover:border-primary hover:bg-primary-light"
+              className="flex min-h-24 items-start gap-4 rounded-lg border border-border bg-muted p-4 text-left transition-colors hover:border-primary hover:bg-primary-light"
             >
-              <span className="material-symbols-outlined rounded-lg bg-card p-2 text-primary">
+              <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-card text-primary")}>
                 {template.icon}
               </span>
-              <span>
-                <span className="block text-sm font-semibold text-foreground">{template.name}</span>
-                <span className="block text-xs text-text-secondary">{template.description}</span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-5 text-foreground">
+                  {template.name}
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-text-secondary">
+                  {template.description}
+                </span>
               </span>
             </button>
           ))}
@@ -2603,7 +2636,7 @@ function AutomationErrorState({ onBack }: { onBack: () => void }) {
   return (
     <SectionCard title="Rule Builder">
       <div className="mb-6 flex items-start gap-3 rounded-lg border border-danger/20 bg-danger-light p-4 text-danger">
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+        <span className={AUTOMATION_ICON_GLYPH_CLASS} style={{ fontVariationSettings: "'FILL' 1" }}>
           error
         </span>
         <div>
@@ -2631,7 +2664,7 @@ function AutomationErrorState({ onBack }: { onBack: () => void }) {
       </div>
       <button
         onClick={onBack}
-        className="mt-6 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+        className="mt-6 h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white"
       >
         Return to builder
       </button>
@@ -2654,7 +2687,7 @@ function DeleteAutomationDialog({
       <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
         <div className="space-y-4 p-6">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-danger-light text-danger">
+            <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-danger-light text-danger")}>
               delete_forever
             </span>
             <h3 className="text-[20px] font-semibold">Delete Automation?</h3>
@@ -2668,13 +2701,13 @@ function DeleteAutomationDialog({
         <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold"
+            className="h-10 rounded-lg border border-border bg-card px-4 text-sm font-semibold"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white"
+            className="h-10 rounded-lg bg-danger px-4 text-sm font-semibold text-white"
           >
             Delete Rule
           </button>
@@ -2747,25 +2780,21 @@ function BuilderBlock({
   return (
     <section
       className={cn(
-        "rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]",
+        "min-w-0 rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-xs)]",
         highlight && "border-l-4 border-l-primary",
       )}
     >
-      <header className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "material-symbols-outlined flex h-9 w-9 items-center justify-center rounded-lg",
-              tone,
-            )}
-          >
-            {icon}
-          </span>
-          <h3 className="text-[16px] font-semibold">{label}</h3>
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <span className={cn(AUTOMATION_ICON_BOX_CLASS, tone)}>{icon}</span>
+          <h3 className="text-[16px] font-semibold leading-6">{label}</h3>
           <Badge>{tag}</Badge>
         </div>
-        <button className="rounded p-1 text-text-muted hover:bg-muted" title="Add block">
-          <span className="material-symbols-outlined">add_circle</span>
+        <button
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-muted hover:text-primary"
+          title="Add block"
+        >
+          <span className={AUTOMATION_ICON_GLYPH_CLASS}>add_circle</span>
         </button>
       </header>
       {children}
@@ -2783,11 +2812,15 @@ function InputControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block space-y-1">
+    <label className="block space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="input" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      />
     </label>
   );
 }
@@ -2804,11 +2837,15 @@ function SelectControl({
   options: string[];
 }) {
   return (
-    <label className="block space-y-1">
+    <label className="block space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      >
         {options.map((option) => (
           <option key={option}>{option}</option>
         ))}
@@ -2862,18 +2899,18 @@ function IconButton({
       onClick={onClick}
       title={label}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded text-text-secondary hover:bg-muted hover:text-primary",
+        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-muted hover:text-primary",
         danger && "hover:bg-danger-light hover:text-danger",
       )}
     >
-      <span className="material-symbols-outlined text-[19px]">{icon}</span>
+      <span className={AUTOMATION_ICON_GLYPH_CLASS}>{icon}</span>
     </button>
   );
 }
 
 function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
+    <span className="inline-flex h-6 items-center rounded bg-secondary px-2 text-[11px] font-semibold leading-none text-secondary-foreground">
       {children}
     </span>
   );
@@ -2891,18 +2928,11 @@ function StatCard({
   tone: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]">
-      <span
-        className={cn(
-          "material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full",
-          tone,
-        )}
-      >
-        {icon}
-      </span>
-      <div>
-        <p className="text-[20px] font-semibold text-foreground">{value}</p>
-        <p className="text-xs font-semibold text-text-secondary">{label}</p>
+    <div className="flex min-h-24 items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]">
+      <span className={cn(AUTOMATION_ICON_BOX_CLASS, tone)}>{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[20px] font-semibold leading-7 text-foreground">{value}</p>
+        <p className="text-xs font-semibold leading-5 text-text-secondary">{label}</p>
       </div>
     </div>
   );
@@ -2928,13 +2958,11 @@ function DefinitionNode({
   };
   return (
     <div className={cn("flex items-start gap-4 rounded-lg border p-4", tones[tone])}>
-      <span className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card">
-        {icon}
-      </span>
-      <div>
+      <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-card")}>{icon}</span>
+      <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase tracking-wider">{label}</p>
-        <p className="mt-1 text-[16px] font-semibold text-foreground">{title}</p>
-        <p className="text-sm text-text-secondary">{detail}</p>
+        <p className="mt-1 text-[16px] font-semibold leading-6 text-foreground">{title}</p>
+        <p className="text-sm leading-6 text-text-secondary">{detail}</p>
       </div>
     </div>
   );
@@ -2954,11 +2982,13 @@ function ResultBadge({ result }: { result: AutomationRun["result"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex h-7 items-center gap-2 rounded-full px-2.5 text-xs font-semibold",
         styles[result],
       )}
     >
-      <span className="material-symbols-outlined text-[14px]">{icons[result]}</span>
+      <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-4 w-4 text-[14px]")}>
+        {icons[result]}
+      </span>
       {capitalize(result)}
     </span>
   );

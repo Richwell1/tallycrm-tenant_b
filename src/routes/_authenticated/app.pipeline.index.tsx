@@ -10,11 +10,11 @@ export const Route = createFileRoute("/_authenticated/app/pipeline/")({
   component: PipelineIndex,
 });
 
-type Period = "month" | "quarter";
+type Period = "all" | "month" | "quarter";
 
 function PipelineIndex() {
   const { data, isLoading, isError, error, refetch } = useDealsBoard();
-  const [period, setPeriod] = useState<Period>("month");
+  const [period, setPeriod] = useState<Period>("all");
   const [owner, setOwner] = useState("all");
   const [activeStageId, setActiveStageId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -33,10 +33,12 @@ function PipelineIndex() {
     const now = new Date();
     const start = new Date(now);
     if (period === "month") start.setDate(1);
-    else start.setMonth(now.getMonth() - 3);
+    if (period === "quarter") start.setMonth(now.getMonth() - 3);
+    start.setHours(0, 0, 0, 0);
 
     return (data?.deals ?? []).filter((deal) => {
       const ownerMatch = owner === "all" || deal.assigned_to === owner;
+      if (period === "all") return ownerMatch;
       const date = new Date(deal.created_at);
       return ownerMatch && date >= start;
     });
@@ -76,6 +78,14 @@ function PipelineIndex() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg border border-border bg-card p-1">
+              <button
+                onClick={() => setPeriod("all")}
+                className={`rounded px-4 py-1.5 text-xs font-semibold ${
+                  period === "all" ? "bg-primary text-white" : "text-text-secondary hover:bg-muted"
+                }`}
+              >
+                All Time
+              </button>
               <button
                 onClick={() => setPeriod("month")}
                 className={`rounded px-4 py-1.5 text-xs font-semibold ${
@@ -149,8 +159,10 @@ function PipelineIndex() {
           />
         </section>
 
-        {deals.length === 0 ? (
+        {(data?.deals ?? []).length === 0 ? (
           <PipelineEmpty onAddDeal={() => setAddOpen(true)} />
+        ) : deals.length === 0 ? (
+          <PipelineNoResults period={period} />
         ) : (
           <>
             <section className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-xs)]">
@@ -163,17 +175,29 @@ function PipelineIndex() {
                   Active Deals
                 </div>
               </div>
-              <div className="relative flex h-64 items-end gap-1">
-                {stages.map((stage, index) => (
-                  <FunnelBar
-                    key={stage.stage.id}
-                    metric={stage}
-                    previous={stages[index - 1]}
-                    active={stage.stage.id === activeStage?.stage.id}
-                    maxCount={metrics.maxStageCount}
-                    onClick={() => setActiveStageId(stage.stage.id)}
-                  />
-                ))}
+              <div>
+                <div className="relative flex h-64 items-end gap-1">
+                  {stages.map((stage, index) => (
+                    <FunnelBar
+                      key={stage.stage.id}
+                      metric={stage}
+                      previous={stages[index - 1]}
+                      active={stage.stage.id === activeStage?.stage.id}
+                      maxCount={metrics.maxStageCount}
+                      onClick={() => setActiveStageId(stage.stage.id)}
+                    />
+                  ))}
+                </div>
+                <div className="mt-4 flex gap-1 border-t border-border pt-3">
+                  {stages.map((stage) => (
+                    <FunnelStageLabel
+                      key={stage.stage.id}
+                      metric={stage}
+                      active={stage.stage.id === activeStage?.stage.id}
+                      onClick={() => setActiveStageId(stage.stage.id)}
+                    />
+                  ))}
+                </div>
               </div>
 
               {activeStage ? <ExpandedStage metric={activeStage} /> : null}
@@ -300,22 +324,48 @@ function FunnelBar({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex flex-1 flex-col items-center justify-end rounded-t-lg p-4 text-center text-white transition-all hover:opacity-90 ${
+      aria-label={`${metric.stage.name}: ${metric.count} deals, ${formatCurrency(metric.value, metric.deals[0]?.currency ?? "USD")}`}
+      title={`${metric.stage.name}: ${metric.count} deals`}
+      className={`group relative flex flex-1 items-end justify-center rounded-t-lg transition-all hover:opacity-90 ${
         tone.bar
       } ${active ? `z-20 ring-4 ${tone.ring}` : ""}`}
       style={{ height: `${height}%` }}
     >
-      <p className="text-[11px] font-bold uppercase">{shortStage(metric.stage.name)}</p>
-      <p className="text-[16px] font-semibold">{metric.count}</p>
-      <p className="text-[10px] opacity-80">
-        {formatCurrency(metric.value, metric.deals[0]?.currency ?? "USD")}
-      </p>
       {dropoff > 0 ? (
         <span className="absolute -right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-bold text-danger shadow-[var(--shadow-xs)]">
           ↓ {dropoff}%
         </span>
       ) : null}
       {active ? <span className={`absolute -bottom-2 h-4 w-4 rotate-45 ${tone.bar}`} /> : null}
+    </button>
+  );
+}
+
+function FunnelStageLabel({
+  metric,
+  active,
+  onClick,
+}: {
+  metric: StageMetric;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`min-w-0 flex-1 rounded-lg px-2 py-2 text-center transition-colors ${
+        active ? "bg-primary-light text-primary" : "text-text-secondary hover:bg-muted"
+      }`}
+    >
+      <span className="block truncate text-[11px] font-bold uppercase leading-4">
+        {shortStage(metric.stage.name)}
+      </span>
+      <span className="mt-1 block text-[12px] font-semibold leading-4">
+        {metric.count} {metric.count === 1 ? "deal" : "deals"}
+      </span>
+      <span className="block truncate text-[10px] font-semibold leading-4">
+        {formatCurrency(metric.value, metric.deals[0]?.currency ?? "USD")}
+      </span>
     </button>
   );
 }
@@ -565,6 +615,23 @@ function PipelineEmpty({ onAddDeal }: { onAddDeal: () => void }) {
         </HelpCard>
       </section>
     </>
+  );
+}
+
+function PipelineNoResults({ period }: { period: Period }) {
+  const label =
+    period === "month" ? "this month" : period === "quarter" ? "the last quarter" : "these filters";
+  return (
+    <section className="rounded-xl border border-border bg-card px-6 py-16 text-center shadow-[var(--shadow-xs)]">
+      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary-light text-primary">
+        <span className="material-symbols-outlined text-[30px]">filter_alt_off</span>
+      </div>
+      <h2 className="text-[20px] font-semibold text-foreground">No deals in {label}</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">
+        Pipeline data exists, but the selected filters exclude it. Switch back to All Time and All
+        Owners to see the full pipeline overview.
+      </p>
+    </section>
   );
 }
 

@@ -101,6 +101,12 @@ export type Database = {
           notif_new_lead_email: boolean;
           notif_sla_app: boolean;
           notif_sla_email: boolean;
+          quote_default_tax_rate: number;
+          quote_default_validity_days: number;
+          quote_footer_note: string | null;
+          quote_number_node_prefix: string | null;
+          quote_number_prefix: string;
+          quote_terms: string | null;
           time_zone: string;
           timezone: string;
           updated_at: string;
@@ -134,6 +140,12 @@ export type Database = {
           notif_new_lead_email?: boolean;
           notif_sla_app?: boolean;
           notif_sla_email?: boolean;
+          quote_default_tax_rate?: number;
+          quote_default_validity_days?: number;
+          quote_footer_note?: string | null;
+          quote_number_node_prefix?: string | null;
+          quote_number_prefix?: string;
+          quote_terms?: string | null;
           time_zone?: string;
           timezone?: string;
           updated_at?: string;
@@ -167,6 +179,12 @@ export type Database = {
           notif_new_lead_email?: boolean;
           notif_sla_app?: boolean;
           notif_sla_email?: boolean;
+          quote_default_tax_rate?: number;
+          quote_default_validity_days?: number;
+          quote_footer_note?: string | null;
+          quote_number_node_prefix?: string | null;
+          quote_number_prefix?: string;
+          quote_terms?: string | null;
           time_zone?: string;
           timezone?: string;
           updated_at?: string;
@@ -930,6 +948,327 @@ export type Database = {
         };
         Relationships: [];
       };
+      quote_catalog_items: {
+        Row: {
+          category: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deleted_at: string | null;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          tax_rate: number;
+          unit: string;
+          unit_price: number;
+          updated_at: string;
+        };
+        Insert: {
+          category?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          tax_rate?: number;
+          unit?: string;
+          unit_price?: number;
+          updated_at?: string;
+        };
+        Update: {
+          category?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deleted_at?: string | null;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          tax_rate?: number;
+          unit?: string;
+          unit_price?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      quote_line_items: {
+        Row: {
+          catalog_item_id: string | null;
+          created_at: string;
+          description: string | null;
+          discount_percent: number;
+          id: string;
+          last_modified_by: string | null;
+          line_discount: number;
+          line_gross: number;
+          line_net: number;
+          line_tax: number;
+          line_total: number;
+          name: string;
+          origin_node_id: string | null;
+          position: number;
+          quantity: number;
+          quote_id: string;
+          tax_rate: number;
+          unit: string;
+          unit_price: number;
+          updated_at: string;
+        };
+        Insert: {
+          catalog_item_id?: string | null;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          last_modified_by?: string | null;
+          line_discount?: number;
+          line_gross?: number;
+          line_net?: number;
+          line_tax?: number;
+          line_total?: number;
+          name: string;
+          origin_node_id?: string | null;
+          position?: number;
+          quantity?: number;
+          quote_id: string;
+          tax_rate?: number;
+          unit?: string;
+          unit_price?: number;
+          updated_at?: string;
+        };
+        Update: {
+          catalog_item_id?: string | null;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          last_modified_by?: string | null;
+          line_discount?: number;
+          line_gross?: number;
+          line_net?: number;
+          line_tax?: number;
+          line_total?: number;
+          name?: string;
+          origin_node_id?: string | null;
+          position?: number;
+          quantity?: number;
+          quote_id?: string;
+          tax_rate?: number;
+          unit?: string;
+          unit_price?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quote_line_items_catalog_item_id_fkey";
+            columns: ["catalog_item_id"];
+            isOneToOne: false;
+            referencedRelation: "quote_catalog_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quote_line_items_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quote_status_history: {
+        Row: {
+          changed_at: string;
+          changed_by: string | null;
+          from_status: Database["public"]["Enums"]["quote_status"] | null;
+          id: string;
+          note: string | null;
+          quote_id: string;
+          to_status: Database["public"]["Enums"]["quote_status"];
+        };
+        Insert: {
+          changed_at?: string;
+          changed_by?: string | null;
+          from_status?: Database["public"]["Enums"]["quote_status"] | null;
+          id?: string;
+          note?: string | null;
+          quote_id: string;
+          to_status: Database["public"]["Enums"]["quote_status"];
+        };
+        Update: {
+          changed_at?: string;
+          changed_by?: string | null;
+          from_status?: Database["public"]["Enums"]["quote_status"] | null;
+          id?: string;
+          note?: string | null;
+          quote_id?: string;
+          to_status?: Database["public"]["Enums"]["quote_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quote_status_history_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quotes: {
+        Row: {
+          accepted_at: string | null;
+          assigned_to: string | null;
+          company_id: string | null;
+          contact_id: string | null;
+          converted_deal_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          deal_id: string | null;
+          decision_note: string | null;
+          deleted_at: string | null;
+          discount_amount: number;
+          discount_type: Database["public"]["Enums"]["quote_discount_type"];
+          discount_value: number;
+          id: string;
+          issue_date: string;
+          last_modified_by: string | null;
+          notes: string | null;
+          origin_node_id: string | null;
+          quote_number: string;
+          rejected_at: string | null;
+          root_quote_id: string | null;
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["quote_status"];
+          subtotal: number;
+          supersedes_quote_id: string | null;
+          tax_amount: number;
+          terms: string | null;
+          title: string;
+          total: number;
+          updated_at: string;
+          valid_until: string | null;
+          version: number;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          assigned_to?: string | null;
+          company_id?: string | null;
+          contact_id?: string | null;
+          converted_deal_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deal_id?: string | null;
+          decision_note?: string | null;
+          deleted_at?: string | null;
+          discount_amount?: number;
+          discount_type?: Database["public"]["Enums"]["quote_discount_type"];
+          discount_value?: number;
+          id?: string;
+          issue_date?: string;
+          last_modified_by?: string | null;
+          notes?: string | null;
+          origin_node_id?: string | null;
+          quote_number?: string;
+          rejected_at?: string | null;
+          root_quote_id?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["quote_status"];
+          subtotal?: number;
+          supersedes_quote_id?: string | null;
+          tax_amount?: number;
+          terms?: string | null;
+          title: string;
+          total?: number;
+          updated_at?: string;
+          valid_until?: string | null;
+          version?: number;
+        };
+        Update: {
+          accepted_at?: string | null;
+          assigned_to?: string | null;
+          company_id?: string | null;
+          contact_id?: string | null;
+          converted_deal_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          deal_id?: string | null;
+          decision_note?: string | null;
+          deleted_at?: string | null;
+          discount_amount?: number;
+          discount_type?: Database["public"]["Enums"]["quote_discount_type"];
+          discount_value?: number;
+          id?: string;
+          issue_date?: string;
+          last_modified_by?: string | null;
+          notes?: string | null;
+          origin_node_id?: string | null;
+          quote_number?: string;
+          rejected_at?: string | null;
+          root_quote_id?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["quote_status"];
+          subtotal?: number;
+          supersedes_quote_id?: string | null;
+          tax_amount?: number;
+          terms?: string | null;
+          title?: string;
+          total?: number;
+          updated_at?: string;
+          valid_until?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quotes_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_converted_deal_id_fkey";
+            columns: ["converted_deal_id"];
+            isOneToOne: false;
+            referencedRelation: "deals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_deal_id_fkey";
+            columns: ["deal_id"];
+            isOneToOne: false;
+            referencedRelation: "deals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_root_quote_id_fkey";
+            columns: ["root_quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_supersedes_quote_id_fkey";
+            columns: ["supersedes_quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       tasks: {
         Row: {
           assigned_to: string | null;
@@ -1147,6 +1486,26 @@ export type Database = {
         };
         Returns: string;
       };
+      can_access_quote: {
+        Args: { _quote_id: string };
+        Returns: boolean;
+      };
+      expire_stale_quotes: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      next_quote_number: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+      recalculate_quote_totals: {
+        Args: { _quote_id: string };
+        Returns: undefined;
+      };
+      revise_quote: {
+        Args: { _quote_id: string };
+        Returns: string;
+      };
       set_user_role: {
         Args: {
           target_role: Database["public"]["Enums"]["app_role"];
@@ -1163,6 +1522,8 @@ export type Database = {
       activity_type: "call" | "email" | "meeting" | "demo" | "proposal" | "note";
       app_role: "admin" | "manager" | "rep";
       lead_status: "new" | "contacted" | "qualified" | "converted" | "disqualified";
+      quote_discount_type: "none" | "percent" | "amount";
+      quote_status: "draft" | "sent" | "accepted" | "rejected" | "expired";
       task_priority: "low" | "medium" | "high";
       task_status: "pending" | "in_progress" | "done" | "cancelled";
       user_status: "active" | "inactive" | "invited";
@@ -1294,6 +1655,8 @@ export const Constants = {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
       app_role: ["admin", "manager", "rep"],
       lead_status: ["new", "contacted", "qualified", "converted", "disqualified"],
+      quote_discount_type: ["none", "percent", "amount"],
+      quote_status: ["draft", "sent", "accepted", "rejected", "expired"],
       task_priority: ["low", "medium", "high"],
       task_status: ["pending", "in_progress", "done", "cancelled"],
       user_status: ["active", "inactive", "invited"],

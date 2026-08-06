@@ -1,0 +1,59 @@
+name: Deploy — Cloudflare
+
+# main is the Cloudflare Workers branch. See docs/DEPLOYMENT_TARGETS.md.
+on:
+  push:
+    branches:
+      - main
+      - deploy/cloudflare
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cloudflare-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Optional: create a `cloudflare` GitHub Environment and add `environment: cloudflare`
+    # here to scope the secrets below and gate deploys behind a reviewer.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Confirm deploy target
+        run: npm run deploy:which
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security regression tests
+        run: npm run test
+
+      - name: Build (cloudflare-module preset)
+        run: npm run build:cloudflare
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config .output/server/wrangler.json

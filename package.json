@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "build:staging": "vite build --mode staging",
     "build:branch": "vite build --mode branch",
+    "build:cloudflare": "DEPLOY_TARGET=cloudflare vite build",
+    "build:vercel": "DEPLOY_TARGET=vercel vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node scripts/security-check.mjs",
@@ -25,7 +27,10 @@
     "branch:backup": "node scripts/backup-branch-db.mjs",
     "branch:provision-auth": "node scripts/provision-branch-auth-users.mjs",
     "sync:once": "node scripts/sync-once.mjs",
-    "sync:watch": "node scripts/sync-watch.mjs"
+    "sync:watch": "node scripts/sync-watch.mjs",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy --config .output/server/wrangler.json",
+    "deploy:vercel": "npm run build:vercel && vercel deploy --prebuilt --prod",
+    "deploy:which": "node scripts/deploy-target.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

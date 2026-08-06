@@ -11,13 +11,16 @@ import {
   useDeal,
   useDealFormOptions,
 } from "@/lib/deals-data";
-import { formatCurrency, formatRelative } from "@/lib/format";
+import { formatCurrency, formatMoney, formatRelative } from "@/lib/format";
+import { AddQuoteModal } from "@/components/quotes/AddQuoteModal";
+import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
+import { useQuotesForDeal } from "@/lib/quotes-data";
 
 export const Route = createFileRoute("/_authenticated/app/deals/$id")({
   component: DealDetailPage,
 });
 
-type Tab = "timeline" | "activities" | "proposals" | "contacts" | "history";
+type Tab = "timeline" | "activities" | "quotes" | "contacts" | "history";
 
 function DealDetailPage() {
   const { id } = Route.useParams();
@@ -96,8 +99,8 @@ function DealDetailPage() {
               <TabButton tab="activities" current={tab} icon="task_alt" onClick={setTab}>
                 Activities
               </TabButton>
-              <TabButton tab="proposals" current={tab} icon="description" onClick={setTab}>
-                Proposals
+              <TabButton tab="quotes" current={tab} icon="request_quote" onClick={setTab}>
+                Quotations
               </TabButton>
               <TabButton tab="contacts" current={tab} icon="group" onClick={setTab}>
                 Contacts
@@ -109,7 +112,9 @@ function DealDetailPage() {
             <div className="flex-1 p-6">
               {tab === "timeline" ? <TimelinePanel deal={deal} /> : null}
               {tab === "activities" ? <ActivitiesPanel activities={deal.activities} /> : null}
-              {tab === "proposals" ? <ProposalsPanel /> : null}
+              {tab === "quotes" ? (
+                <QuotesPanel dealId={id} currency={deal.currency ?? "GHS"} />
+              ) : null}
               {tab === "contacts" ? <ContactsPanel contacts={deal.contacts} /> : null}
               {tab === "history" ? <HistoryPanel deal={deal} /> : null}
             </div>
@@ -427,33 +432,63 @@ function ActivitiesPanel({ activities }: { activities: ActivityRow[] }) {
   );
 }
 
-function ProposalsPanel() {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <ProposalCard
-        icon="picture_as_pdf"
-        title="Master_Agreement_v2.pdf"
-        detail="Uploaded Oct 24 • 4.2 MB"
-      />
-      <ProposalCard
-        icon="description"
-        title="Technical_Specs_Draft.docx"
-        detail="Uploaded Oct 21 • 1.1 MB"
-      />
-      <button className="flex min-h-36 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-text-secondary transition-colors hover:bg-muted">
-        <span className="material-symbols-outlined text-[40px] text-text-muted">upload_file</span>
-        <span className="text-sm font-semibold">Upload New Document</span>
-      </button>
-    </div>
-  );
-}
+function QuotesPanel({ dealId, currency }: { dealId: string; currency: string }) {
+  const { data: quotes, isLoading } = useQuotesForDeal(dealId);
+  const [addOpen, setAddOpen] = useState(false);
 
-function ProposalCard({ icon, title, detail }: { icon: string; title: string; detail: string }) {
   return (
-    <div className="flex min-h-36 cursor-pointer flex-col items-center gap-2 rounded-lg border border-border p-4 text-center transition-colors hover:border-primary">
-      <span className="material-symbols-outlined text-[40px] text-primary">{icon}</span>
-      <span className="text-sm font-semibold text-foreground">{title}</span>
-      <span className="text-[10px] text-text-muted">{detail}</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-secondary">
+          Priced documents attached to this opportunity.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-cta px-3 py-2 text-xs font-semibold text-cta-foreground hover:bg-cta-hover"
+        >
+          <span className="material-symbols-outlined text-[16px]">add</span>
+          New quote
+        </button>
+      </div>
+
+      {isLoading ? (
+        <p className="py-8 text-center text-sm text-text-muted">Loading quotations...</p>
+      ) : (quotes?.length ?? 0) === 0 ? (
+        <EmptyState
+          icon={<span className="material-symbols-outlined text-[28px]">request_quote</span>}
+          title="No quotations yet"
+          description="Build a priced document for this deal and track it to acceptance."
+        />
+      ) : (
+        <ul className="space-y-2">
+          {quotes!.map((quote) => (
+            <li key={quote.id}>
+              <Link
+                to="/app/quotes/$id"
+                params={{ id: quote.id }}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 transition-colors hover:border-primary"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{quote.title}</p>
+                  <p className="font-mono text-[11px] text-text-muted">
+                    {quote.quote_number}
+                    {quote.version > 1 ? ` · rev ${quote.version}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <QuoteStatusBadge status={quote.status} validUntil={quote.valid_until} />
+                  <span className="text-sm font-semibold text-foreground">
+                    {formatMoney(Number(quote.total), quote.currency ?? currency)}
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <AddQuoteModal open={addOpen} onOpenChange={setAddOpen} dealId={dealId} />
     </div>
   );
 }

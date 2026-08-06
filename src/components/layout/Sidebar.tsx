@@ -4,6 +4,7 @@ import {
   BarChart3,
   Building2,
   CheckSquare,
+  FileText,
   Handshake,
   KanbanSquare,
   LayoutDashboard,
@@ -37,6 +38,7 @@ const SECTIONS: NavSection[] = [
       { label: "Contacts", to: "/app/contacts", icon: Users },
       { label: "Companies", to: "/app/companies", icon: Building2 },
       { label: "Deals", to: "/app/deals", icon: Handshake },
+      { label: "Quotations", to: "/app/quotes", icon: FileText },
       { label: "Leads", to: "/app/leads", icon: Search },
       { label: "Pipeline", to: "/app/pipeline", icon: KanbanSquare },
       { label: "Activities", to: "/app/activities", icon: Activity },
@@ -57,7 +59,7 @@ export function Sidebar() {
     user?.role === "admin" ? SECTIONS : SECTIONS.filter((section) => section.label !== "Admin");
 
   return (
-    <aside className="fixed left-0 top-0 z-50 hidden h-screen w-[260px] flex-col bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
+    <aside className="fixed left-0 top-0 z-50 hidden h-screen w-[260px] flex-col bg-sidebar px-4 py-6 text-sidebar-foreground md:flex print:hidden">
       {/* Logo */}
       <div className="mb-8 px-2">
         <h1 className="text-2xl font-black tracking-tight text-white">
@@ -140,7 +142,7 @@ export function MobileBottomNav() {
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 shadow-[var(--shadow-lg)] backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 shadow-[var(--shadow-lg)] backdrop-blur md:hidden print:hidden">
       <div className="grid grid-cols-5 gap-1">
         {items.map((item) => {
           const active =

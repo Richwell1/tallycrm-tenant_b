@@ -34,6 +34,10 @@ const TABLE_CONFIGS = {
   deal_stage_history: { cursorColumn: "changed_at", appendOnly: true },
   deal_value_history: { cursorColumn: "changed_at", appendOnly: true },
   lead_status_history: { cursorColumn: "changed_at", appendOnly: true },
+  quote_catalog_items: { cursorColumn: "updated_at", pullOnly: true },
+  quotes: { cursorColumn: "updated_at" },
+  quote_line_items: { cursorColumn: "updated_at" },
+  quote_status_history: { cursorColumn: "changed_at", appendOnly: true },
   automation_runs: { cursorColumn: "created_at", appendOnly: true },
   audit_log: { cursorColumn: "created_at", appendOnly: true },
 };
@@ -51,6 +55,9 @@ const DEFAULT_TABLES = [
   "leads",
   "tasks",
   "activities",
+  "quote_catalog_items",
+  "quotes",
+  "quote_line_items",
 ];
 const EPOCH = "1970-01-01T00:00:00.000Z";
 const LOOP_PREVENTION_COLUMNS = new Set([
