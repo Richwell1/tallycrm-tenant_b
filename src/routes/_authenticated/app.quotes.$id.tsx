@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CardSkeleton, ErrorState } from "@/components/common";
 import { PageHeader, ToolbarButton } from "@/components/layout";
+import { InvoiceFromQuoteModal } from "@/components/invoices/InvoiceFromQuoteModal";
 import { ConvertQuoteModal } from "@/components/quotes/ConvertQuoteModal";
 import { QuoteLineItemsEditor } from "@/components/quotes/QuoteLineItemsEditor";
 import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
@@ -30,6 +31,7 @@ function QuoteDetailPage() {
   const revise = useReviseQuote();
   const removeQuote = useDeleteQuote();
   const [convertOpen, setConvertOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   if (isLoading) return <CardSkeleton />;
   if (isError || !quote) {
@@ -135,6 +137,9 @@ function QuoteDetailPage() {
                 Convert to deal
               </ToolbarButton>
             ) : null}
+            <ToolbarButton icon="receipt_long" onClick={() => setInvoiceOpen(true)}>
+              Create invoice
+            </ToolbarButton>
             {quote.converted_deal_id ? (
               <Link
                 to="/app/deals/$id"
@@ -274,6 +279,11 @@ function QuoteDetailPage() {
       {convertOpen ? (
         <ConvertQuoteModal quote={quote} open={convertOpen} onOpenChange={setConvertOpen} />
       ) : null}
+      <InvoiceFromQuoteModal
+        open={invoiceOpen}
+        onOpenChange={setInvoiceOpen}
+        quoteId={quote.id}
+      />
     </>
   );
 }

@@ -1,0 +1,12 @@
+REVOKE ALL ON FUNCTION public.quote_line_items_guard() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.quote_line_items_recalculate() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.quotes_before_insert() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.quotes_before_update() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.quotes_log_status_change() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.quotes_recalculate_on_discount() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.recalculate_quote_totals(UUID) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.expire_stale_quotes() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.next_quote_number() FROM anon;
+REVOKE ALL ON FUNCTION public.can_access_quote(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION public.next_quote_number() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_access_quote(UUID) TO authenticated;

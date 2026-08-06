@@ -45,6 +45,9 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   quote_default_validity_days: 30,
   quote_terms: null,
   quote_footer_note: null,
+  invoice_number_prefix: "INV",
+  invoice_default_due_days: 30,
+  invoice_payment_terms: null,
   email_api_key_masked: "re_xxxxxxxxxxxxxxxxxxxx",
   landing_api_key: "sb_publishable_xxxxxxxxxxxxxxxxxxxx",
   landing_last_test_at: null,
@@ -256,7 +259,7 @@ async function sendResendEmail(payload: {
 
 export const inviteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
+  .inputValidator(
     z.object({
       email: z.string().trim().min(1),
       role: z.enum(["admin", "manager", "rep"]),
