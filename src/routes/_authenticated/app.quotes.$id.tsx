@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CardSkeleton, ErrorState } from "@/components/common";
 import { PageHeader, ToolbarButton } from "@/components/layout";
+import { InvoiceFromQuoteModal } from "@/components/invoices/InvoiceFromQuoteModal";
 import { ConvertQuoteModal } from "@/components/quotes/ConvertQuoteModal";
 import { QuoteLineItemsEditor } from "@/components/quotes/QuoteLineItemsEditor";
 import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
