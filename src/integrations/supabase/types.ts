@@ -106,6 +106,9 @@ export type Database = {
           from_email: string
           from_name: string
           id: string
+          invoice_default_due_days: number
+          invoice_number_prefix: string
+          invoice_payment_terms: string | null
           landing_api_key: string
           landing_last_test_at: string | null
           landing_last_test_status: string | null
@@ -145,6 +148,9 @@ export type Database = {
           from_email?: string
           from_name?: string
           id?: string
+          invoice_default_due_days?: number
+          invoice_number_prefix?: string
+          invoice_payment_terms?: string | null
           landing_api_key?: string
           landing_last_test_at?: string | null
           landing_last_test_status?: string | null
@@ -184,6 +190,9 @@ export type Database = {
           from_email?: string
           from_name?: string
           id?: string
+          invoice_default_due_days?: number
+          invoice_number_prefix?: string
+          invoice_payment_terms?: string | null
           landing_api_key?: string
           landing_last_test_at?: string | null
           landing_last_test_status?: string | null
@@ -762,6 +771,270 @@ export type Database = {
             columns: ["origin_node_id"]
             isOneToOne: false
             referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_line_items: {
+        Row: {
+          catalog_item_id: string | null
+          created_at: string
+          description: string | null
+          discount_percent: number
+          id: string
+          invoice_id: string
+          last_modified_by: string | null
+          line_discount: number
+          line_gross: number
+          line_net: number
+          line_tax: number
+          line_total: number
+          name: string
+          origin_node_id: string | null
+          position: number
+          quantity: number
+          tax_rate: number
+          unit: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          catalog_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          invoice_id: string
+          last_modified_by?: string | null
+          line_discount?: number
+          line_gross?: number
+          line_net?: number
+          line_tax?: number
+          line_total?: number
+          name: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          tax_rate?: number
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          catalog_item_id?: string | null
+          created_at?: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          invoice_id?: string
+          last_modified_by?: string | null
+          line_discount?: number
+          line_gross?: number
+          line_net?: number
+          line_tax?: number
+          line_total?: number
+          name?: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          tax_rate?: number
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "quote_catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          from_status: Database["public"]["Enums"]["invoice_status"] | null
+          id: string
+          invoice_id: string
+          note: string | null
+          to_status: Database["public"]["Enums"]["invoice_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["invoice_status"] | null
+          id?: string
+          invoice_id: string
+          note?: string | null
+          to_status: Database["public"]["Enums"]["invoice_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["invoice_status"] | null
+          id?: string
+          invoice_id?: string
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["invoice_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_status_history_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number
+          assigned_to: string | null
+          cancelled_at: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          deal_id: string | null
+          deleted_at: string | null
+          discount_amount: number
+          discount_type: Database["public"]["Enums"]["quote_discount_type"]
+          discount_value: number
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          last_modified_by: string | null
+          notes: string | null
+          origin_node_id: string | null
+          paid_at: string | null
+          payment_terms: string | null
+          quote_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          tax_amount: number
+          title: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deal_id?: string | null
+          deleted_at?: string | null
+          discount_amount?: number
+          discount_type?: Database["public"]["Enums"]["quote_discount_type"]
+          discount_value?: number
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          paid_at?: string | null
+          payment_terms?: string | null
+          quote_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax_amount?: number
+          title?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deal_id?: string | null
+          deleted_at?: string | null
+          discount_amount?: number
+          discount_type?: Database["public"]["Enums"]["quote_discount_type"]
+          discount_value?: number
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          paid_at?: string | null
+          payment_terms?: string | null
+          quote_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax_amount?: number
+          title?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -1718,6 +1991,7 @@ export type Database = {
     Functions: {
       automation_rule_config: { Args: { _rule_id: string }; Returns: Json }
       automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
+      can_access_invoice: { Args: { _invoice_id: string }; Returns: boolean }
       can_access_quote: { Args: { _quote_id: string }; Returns: boolean }
       capture_landing_lead: {
         Args: {
@@ -1751,6 +2025,10 @@ export type Database = {
           _title: string
           _type: string
         }
+        Returns: string
+      }
+      create_invoice_from_quote: {
+        Args: { _quote_id: string }
         Returns: string
       }
       cron_daily_digest: { Args: never; Returns: number }
@@ -1791,6 +2069,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      next_invoice_number: { Args: never; Returns: string }
       next_quote_number: { Args: never; Returns: string }
       notify_user: {
         Args: {
@@ -1814,6 +2093,10 @@ export type Database = {
         }
         Returns: string
       }
+      recalculate_invoice_totals: {
+        Args: { _invoice_id: string }
+        Returns: undefined
+      }
       recalculate_quote_totals: {
         Args: { _quote_id: string }
         Returns: undefined
@@ -1834,6 +2117,13 @@ export type Database = {
     Enums: {
       activity_type: "call" | "email" | "meeting" | "demo" | "proposal" | "note"
       app_role: "admin" | "manager" | "rep"
+      invoice_status:
+        | "draft"
+        | "sent"
+        | "partially_paid"
+        | "paid"
+        | "overdue"
+        | "cancelled"
       lead_status:
         | "new"
         | "contacted"
@@ -1974,6 +2264,14 @@ export const Constants = {
     Enums: {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
       app_role: ["admin", "manager", "rep"],
+      invoice_status: [
+        "draft",
+        "sent",
+        "partially_paid",
+        "paid",
+        "overdue",
+        "cancelled",
+      ],
       lead_status: [
         "new",
         "contacted",
