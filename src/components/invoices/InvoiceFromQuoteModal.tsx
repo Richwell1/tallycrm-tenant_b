@@ -17,11 +17,7 @@ interface InvoiceFromQuoteModalProps {
  * Select Quotation → invoice auto-populates → review on the detail page.
  * The clone happens in create_invoice_from_quote(); the quotation is untouched.
  */
-export function InvoiceFromQuoteModal({
-  open,
-  onOpenChange,
-  quoteId,
-}: InvoiceFromQuoteModalProps) {
+export function InvoiceFromQuoteModal({ open, onOpenChange, quoteId }: InvoiceFromQuoteModalProps) {
   const { data: quotes, isLoading } = useInvoiceableQuotes();
   const createFromQuote = useCreateInvoiceFromQuote();
   const navigate = useNavigate();
@@ -73,8 +69,8 @@ export function InvoiceFromQuoteModal({
             Invoice from quotation
           </h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Customer, items, discount, tax and currency are copied across. The quotation stays as
-            it is.
+            Customer, items, discount, tax and currency are copied across. The quotation stays as it
+            is.
           </p>
         </header>
 
