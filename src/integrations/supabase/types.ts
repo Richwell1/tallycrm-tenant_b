@@ -22,8 +22,10 @@ export type Database = {
           due_at: string | null
           duration_minutes: number | null
           id: string
+          last_modified_by: string | null
           locked_at: string | null
           notes: string | null
+          origin_node_id: string | null
           outcome: string | null
           owner_id: string | null
           title: string
@@ -37,8 +39,10 @@ export type Database = {
           due_at?: string | null
           duration_minutes?: number | null
           id?: string
+          last_modified_by?: string | null
           locked_at?: string | null
           notes?: string | null
+          origin_node_id?: string | null
           outcome?: string | null
           owner_id?: string | null
           title: string
@@ -52,8 +56,10 @@ export type Database = {
           due_at?: string | null
           duration_minutes?: number | null
           id?: string
+          last_modified_by?: string | null
           locked_at?: string | null
           notes?: string | null
+          origin_node_id?: string | null
           outcome?: string | null
           owner_id?: string | null
           title?: string
@@ -73,6 +79,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
             referencedColumns: ["id"]
           },
         ]
@@ -190,6 +203,7 @@ export type Database = {
           id: string
           ip: string | null
           metadata: Json | null
+          origin_node_id: string | null
         }
         Insert: {
           action: string
@@ -201,6 +215,7 @@ export type Database = {
           id?: string
           ip?: string | null
           metadata?: Json | null
+          origin_node_id?: string | null
         }
         Update: {
           action?: string
@@ -212,8 +227,17 @@ export type Database = {
           id?: string
           ip?: string | null
           metadata?: Json | null
+          origin_node_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_rules: {
         Row: {
@@ -339,10 +363,12 @@ export type Database = {
           email: string | null
           id: string
           industry: string | null
+          last_modified_by: string | null
           linkedin: string | null
           logo_url: string | null
           name: string
           notes: string | null
+          origin_node_id: string | null
           phone: string | null
           rating: number | null
           updated_at: string
@@ -358,10 +384,12 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          last_modified_by?: string | null
           linkedin?: string | null
           logo_url?: string | null
           name: string
           notes?: string | null
+          origin_node_id?: string | null
           phone?: string | null
           rating?: number | null
           updated_at?: string
@@ -377,16 +405,26 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          last_modified_by?: string | null
           linkedin?: string | null
           logo_url?: string | null
           name?: string
           notes?: string | null
+          origin_node_id?: string | null
           phone?: string | null
           rating?: number | null
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -398,8 +436,10 @@ export type Database = {
           first_name: string
           id: string
           job_title: string | null
+          last_modified_by: string | null
           last_name: string
           notes: string | null
+          origin_node_id: string | null
           phone: string | null
           source: string | null
           tags: string[] | null
@@ -414,8 +454,10 @@ export type Database = {
           first_name: string
           id?: string
           job_title?: string | null
+          last_modified_by?: string | null
           last_name: string
           notes?: string | null
+          origin_node_id?: string | null
           phone?: string | null
           source?: string | null
           tags?: string[] | null
@@ -430,8 +472,10 @@ export type Database = {
           first_name?: string
           id?: string
           job_title?: string | null
+          last_modified_by?: string | null
           last_name?: string
           notes?: string | null
+          origin_node_id?: string | null
           phone?: string | null
           source?: string | null
           tags?: string[] | null
@@ -443,6 +487,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
             referencedColumns: ["id"]
           },
         ]
@@ -546,9 +597,11 @@ export type Database = {
           description: string | null
           expected_close_date: string | null
           id: string
+          last_modified_by: string | null
           last_stage_change_at: string | null
           lost_reason: string | null
           name: string
+          origin_node_id: string | null
           overdue_at: string | null
           primary_contact_id: string | null
           probability: number
@@ -568,9 +621,11 @@ export type Database = {
           description?: string | null
           expected_close_date?: string | null
           id?: string
+          last_modified_by?: string | null
           last_stage_change_at?: string | null
           lost_reason?: string | null
           name: string
+          origin_node_id?: string | null
           overdue_at?: string | null
           primary_contact_id?: string | null
           probability?: number
@@ -590,9 +645,11 @@ export type Database = {
           description?: string | null
           expected_close_date?: string | null
           id?: string
+          last_modified_by?: string | null
           last_stage_change_at?: string | null
           lost_reason?: string | null
           name?: string
+          origin_node_id?: string | null
           overdue_at?: string | null
           primary_contact_id?: string | null
           probability?: number
@@ -607,6 +664,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
             referencedColumns: ["id"]
           },
           {
@@ -630,7 +694,9 @@ export type Database = {
           attempts: number
           created_at: string
           id: string
+          idempotency_key: string | null
           last_error: string | null
+          origin_node_id: string | null
           payload: Json
           recipient: string
           related_entity: string | null
@@ -644,7 +710,9 @@ export type Database = {
           attempts?: number
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           last_error?: string | null
+          origin_node_id?: string | null
           payload?: Json
           recipient: string
           related_entity?: string | null
@@ -658,7 +726,9 @@ export type Database = {
           attempts?: number
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           last_error?: string | null
+          origin_node_id?: string | null
           payload?: Json
           recipient?: string
           related_entity?: string | null
@@ -668,7 +738,15 @@ export type Database = {
           subject?: string
           template?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_assignment_queue: {
         Row: {
@@ -741,9 +819,11 @@ export type Database = {
           first_name: string
           id: string
           ip_country: string | null
+          last_modified_by: string | null
           last_name: string
           last_status_change_at: string | null
           message: string | null
+          origin_node_id: string | null
           overdue_at: string | null
           phone: string | null
           qualified: boolean
@@ -766,9 +846,11 @@ export type Database = {
           first_name: string
           id?: string
           ip_country?: string | null
+          last_modified_by?: string | null
           last_name: string
           last_status_change_at?: string | null
           message?: string | null
+          origin_node_id?: string | null
           overdue_at?: string | null
           phone?: string | null
           qualified?: boolean
@@ -791,9 +873,11 @@ export type Database = {
           first_name?: string
           id?: string
           ip_country?: string | null
+          last_modified_by?: string | null
           last_name?: string
           last_status_change_at?: string | null
           message?: string | null
+          origin_node_id?: string | null
           overdue_at?: string | null
           phone?: string | null
           qualified?: boolean
@@ -802,7 +886,15 @@ export type Database = {
           updated_at?: string
           value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loss_reasons: {
         Row: {
@@ -836,6 +928,7 @@ export type Database = {
           entity: string | null
           entity_id: string | null
           id: string
+          origin_node_id: string | null
           read: boolean
           title: string
           type: string
@@ -848,6 +941,7 @@ export type Database = {
           entity?: string | null
           entity_id?: string | null
           id?: string
+          origin_node_id?: string | null
           read?: boolean
           title: string
           type: string
@@ -860,12 +954,21 @@ export type Database = {
           entity?: string | null
           entity_id?: string | null
           id?: string
+          origin_node_id?: string | null
           read?: boolean
           title?: string
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pipeline_stages: {
         Row: {
@@ -936,6 +1039,195 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_checkpoints: {
+        Row: {
+          created_at: string
+          id: string
+          last_pulled_at: string | null
+          last_pushed_at: string | null
+          local_node_id: string
+          remote_node_id: string
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_pulled_at?: string | null
+          last_pushed_at?: string | null
+          local_node_id: string
+          remote_node_id: string
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_pulled_at?: string | null
+          last_pushed_at?: string | null
+          local_node_id?: string
+          remote_node_id?: string
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_checkpoints_local_node_id_fkey"
+            columns: ["local_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_checkpoints_remote_node_id_fkey"
+            columns: ["remote_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_conflicts: {
+        Row: {
+          conflict_type: string
+          created_at: string
+          id: string
+          local_node_id: string | null
+          local_payload: Json | null
+          remote_node_id: string | null
+          remote_payload: Json | null
+          resolution: string
+          resolved_payload: Json | null
+          row_pk: string
+          table_name: string
+        }
+        Insert: {
+          conflict_type: string
+          created_at?: string
+          id?: string
+          local_node_id?: string | null
+          local_payload?: Json | null
+          remote_node_id?: string | null
+          remote_payload?: Json | null
+          resolution: string
+          resolved_payload?: Json | null
+          row_pk: string
+          table_name: string
+        }
+        Update: {
+          conflict_type?: string
+          created_at?: string
+          id?: string
+          local_node_id?: string | null
+          local_payload?: Json | null
+          remote_node_id?: string | null
+          remote_payload?: Json | null
+          resolution?: string
+          resolved_payload?: Json | null
+          row_pk?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_conflicts_local_node_id_fkey"
+            columns: ["local_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_conflicts_remote_node_id_fkey"
+            columns: ["remote_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_nodes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          last_seen_at: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind: string
+          last_seen_at?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          last_seen_at?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      sync_runs: {
+        Row: {
+          direction: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          local_node_id: string | null
+          remote_node_id: string | null
+          rows_changed: number
+          rows_processed: number
+          started_at: string
+          status: string
+          tables_processed: string[]
+        }
+        Insert: {
+          direction: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          local_node_id?: string | null
+          remote_node_id?: string | null
+          rows_changed?: number
+          rows_processed?: number
+          started_at?: string
+          status: string
+          tables_processed?: string[]
+        }
+        Update: {
+          direction?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          local_node_id?: string | null
+          remote_node_id?: string | null
+          rows_changed?: number
+          rows_processed?: number
+          started_at?: string
+          status?: string
+          tables_processed?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_runs_local_node_id_fkey"
+            columns: ["local_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_runs_remote_node_id_fkey"
+            columns: ["remote_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -945,7 +1237,9 @@ export type Database = {
           deal_id: string | null
           due_at: string | null
           id: string
+          last_modified_by: string | null
           notes: string | null
+          origin_node_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           reminder_at: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -961,7 +1255,9 @@ export type Database = {
           deal_id?: string | null
           due_at?: string | null
           id?: string
+          last_modified_by?: string | null
           notes?: string | null
+          origin_node_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           reminder_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -977,7 +1273,9 @@ export type Database = {
           deal_id?: string | null
           due_at?: string | null
           id?: string
+          last_modified_by?: string | null
           notes?: string | null
+          origin_node_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           reminder_at?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -998,6 +1296,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
             referencedColumns: ["id"]
           },
         ]
