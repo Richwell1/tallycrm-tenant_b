@@ -1,9 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 type UserStatus = Database["public"]["Enums"]["user_status"];
+type InviteDeliveryMode = "invite_link" | "temporary_password";
 
 // ── App Settings (singleton row) ───────────────────────────────────────────────
 
@@ -34,7 +38,13 @@ const DEFAULT_APP_SETTINGS: AppSettings = {
   notif_sla_app: true,
   notif_digest_email: true,
   notif_digest_app: false,
-  assignment_strategy: "round_robin",
+  assignment_strategy: "manual",
+  quote_number_prefix: "QT",
+  quote_number_node_prefix: null,
+  quote_default_tax_rate: 0,
+  quote_default_validity_days: 30,
+  quote_terms: null,
+  quote_footer_note: null,
   email_api_key_masked: "re_xxxxxxxxxxxxxxxxxxxx",
   landing_api_key: "sb_publishable_xxxxxxxxxxxxxxxxxxxx",
   landing_last_test_at: null,
@@ -150,18 +160,265 @@ export function useUpdateUserStatus() {
   });
 }
 
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!auth.user) throw new Error("You must be signed in to delete users.");
+      if (auth.user.id === userId) {
+        throw new Error("Admins cannot delete their own account.");
+      }
+
+      const { data: roleRow, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", auth.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (roleErr) throw roleErr;
+      if (!roleRow) throw new Error("Forbidden: admin role required");
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (authDeleteError) throw authDeleteError;
+
+      const [{ error: roleDeleteError }, { error: profileDeleteError }] = await Promise.all([
+        supabaseAdmin.from("user_roles").delete().eq("user_id", userId),
+        supabaseAdmin.from("profiles").delete().eq("id", userId),
+      ]);
+
+      if (roleDeleteError) throw roleDeleteError;
+      if (profileDeleteError) throw profileDeleteError;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings", "users"] }),
+  });
+}
+
+function getInviteFromEmail() {
+  return (
+    process.env.LANDING_FROM_EMAIL ||
+    process.env.AUTOMATION_FROM_EMAIL ||
+    "Tally CRM <onboarding@resend.dev>"
+  );
+}
+
+function getTempPassword() {
+  return `${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}!Aa1`;
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+async function sendResendEmail(payload: {
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+}) {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+
+  const body = Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return value != null && value !== "";
+    }),
+  );
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Resend ${res.status}: ${text.slice(0, 240)}`);
+  }
+
+  return res;
+}
+
+export const inviteTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      email: z.string().trim().min(1),
+      role: z.enum(["admin", "manager", "rep"]),
+      deliveryMode: z.enum(["invite_link", "temporary_password"]),
+      redirectTo: z.string().trim().optional(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: roleRow, error: roleErr } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (roleErr) throw roleErr;
+    if (!roleRow) throw new Error("Forbidden: admin role required");
+
+    let authUserId: string | null = null;
+    let tempPassword = "";
+    let inviteLink = "";
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (data.deliveryMode === "invite_link") {
+      const { data: inviteData, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: "invite",
+        email: data.email.toLowerCase(),
+        options: {
+          redirectTo: data.redirectTo || undefined,
+          data: { invited_role: data.role },
+        },
+      });
+      if (error) throw error;
+      authUserId = inviteData.user?.id ?? null;
+      inviteLink = inviteData.properties.action_link;
+      if (!inviteLink) {
+        throw new Error("Invite link was not generated");
+      }
+    } else {
+      tempPassword = getTempPassword();
+      const { data: createData, error } = await supabaseAdmin.auth.admin.createUser({
+        email: data.email.toLowerCase(),
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { invited_role: data.role },
+      });
+      if (error) throw error;
+      authUserId = createData.user?.id ?? null;
+    }
+
+    if (!authUserId) {
+      throw new Error("Invite could not be created");
+    }
+
+    const { error: deleteRoleError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", authUserId);
+    if (deleteRoleError) throw deleteRoleError;
+
+    const { error: insertRoleError } = await supabaseAdmin.from("user_roles").insert({
+      user_id: authUserId,
+      role: data.role,
+    });
+    if (insertRoleError) throw insertRoleError;
+
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ status: "invited" })
+      .eq("id", authUserId);
+    if (profileUpdateError) throw profileUpdateError;
+
+    try {
+      if (data.deliveryMode === "temporary_password") {
+        const from = getInviteFromEmail();
+        const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
+          <h2 style="margin:0 0 12px">Your Tally CRM account is ready</h2>
+          <p>You can sign in with this temporary password:</p>
+          <p style="padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-family:monospace;font-size:16px;word-break:break-all">${escapeHtml(
+            tempPassword,
+          )}</p>
+          <p>After signing in, please change it from the password reset flow.</p>
+        </div>`;
+        const text = [
+          "Your Tally CRM account is ready",
+          "",
+          "You can sign in with this temporary password:",
+          tempPassword,
+          "",
+          "After signing in, please change it from the password reset flow.",
+        ].join("\n");
+        await sendResendEmail({
+          from,
+          to: [data.email.toLowerCase()],
+          subject: "Your Tally CRM temporary password",
+          html,
+          text,
+        });
+      } else {
+        const from = getInviteFromEmail();
+        const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111">
+          <h2 style="margin:0 0 12px">You're invited to Tally CRM</h2>
+          <p>Click the button below to finish setting up your account and choose your password.</p>
+          <p style="margin:24px 0">
+            <a href="${escapeHtml(inviteLink)}" style="display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">Set up your account</a>
+          </p>
+          <p>If the button does not work, paste this link into your browser:</p>
+          <p style="word-break:break-all;color:#334155">${escapeHtml(inviteLink)}</p>
+        </div>`;
+        const text = [
+          "You're invited to Tally CRM",
+          "",
+          "Finish setting up your account and choose your password:",
+          inviteLink,
+        ].join("\n");
+        await sendResendEmail({
+          from,
+          to: [data.email.toLowerCase()],
+          subject: "You're invited to Tally CRM",
+          html,
+          text,
+        });
+      }
+
+      const { error: inviteLogError } = await supabaseAdmin.from("user_invites").insert({
+        email: data.email.toLowerCase(),
+        role: data.role,
+        status: data.deliveryMode === "invite_link" ? "invite_sent" : "temp_password_sent",
+        invited_by: context.userId,
+      });
+      if (inviteLogError) throw inviteLogError;
+
+      return {
+        ok: true,
+        userId: authUserId,
+        deliveryMode: data.deliveryMode,
+      };
+    } catch (error) {
+      if (authUserId) {
+        await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => {});
+      }
+      throw error;
+    }
+  });
+
 export function useInviteUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: AppRole }) => {
-      const { data: auth } = await supabase.auth.getUser();
-      const { error } = await supabase.from("user_invites").insert({
-        email,
-        role,
-        invited_by: auth.user?.id ?? null,
-      });
-      if (error) throw error;
-    },
+    mutationFn: async ({
+      email,
+      role,
+      deliveryMode,
+      redirectTo,
+    }: {
+      email: string;
+      role: AppRole;
+      deliveryMode: InviteDeliveryMode;
+      redirectTo?: string;
+    }) =>
+      inviteTeamMember({
+        data: { email, role, deliveryMode, redirectTo },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["settings", "users"] }),
   });
 }

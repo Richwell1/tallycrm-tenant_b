@@ -3,6 +3,7 @@ import { MessageCircle, Moon, Plus, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationCenter } from "./NotificationCenter";
+import { SyncStatusIndicator } from "./SyncStatusIndicator";
 
 export function Topbar() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 shadow-[var(--shadow-xs)] md:ml-[260px] md:px-6">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 shadow-[var(--shadow-xs)] md:ml-[260px] md:px-6 print:hidden">
       {/* Search */}
       <div className="hidden flex-1 items-center sm:flex">
         <div className="relative w-full max-w-md">
@@ -57,6 +58,7 @@ export function Topbar() {
           >
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
+          <SyncStatusIndicator />
           <NotificationCenter />
           <button
             className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-muted hover:text-primary"

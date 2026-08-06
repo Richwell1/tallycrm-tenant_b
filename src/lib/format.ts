@@ -5,6 +5,26 @@ export function formatCurrency(value: number, currency = "GHS"): string {
   return `${currency} ${value.toFixed(0)}`;
 }
 
+/**
+ * Exact money, to the cent — for documents and totals where formatCurrency's
+ * "1.2K" abbreviation would be wrong.
+ */
+export function formatMoney(value: number | string | null | undefined, currency = "GHS"): string {
+  const amount = typeof value === "string" ? Number(value) : (value ?? 0);
+  const safe = Number.isFinite(amount) ? amount : 0;
+  return `${currency} ${safe.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export function formatDateOnly(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const parsed = new Date(iso.length <= 10 ? `${iso}T00:00:00` : iso);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+}
+
 export function formatRelative(iso: string | Date): string {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const diff = Date.now() - d.getTime();

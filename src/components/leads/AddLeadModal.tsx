@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { useCreateLead, useAssignableUsers, type LeadStatus } from "@/lib/leads-data";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth, useCurrentRole } from "@/lib/auth-context";
 import { toast } from "sonner";
 
 const SOURCES = ["Landing Page", "Manual", "Referral", "LinkedIn"] as const;
@@ -76,6 +76,9 @@ export function AddLeadModal({
 }) {
   const create = useCreateLead();
   const users = useAssignableUsers();
+  const { user } = useAuth();
+  const role = useCurrentRole();
+  const canAssignLead = role === "admin" || role === "manager";
   const [v, setV] = useState<FormState>(initial);
   const [errs, setErrs] = useState<Record<string, string>>({});
 
@@ -95,9 +98,10 @@ export function AddLeadModal({
     setErrs({});
 
     let assigned: string | null = null;
-    if (v.assigned_to === "self") {
-      const { data } = await supabase.auth.getUser();
-      assigned = data.user?.id ?? null;
+    if (!canAssignLead) {
+      assigned = user?.id ?? null;
+    } else if (v.assigned_to === "self") {
+      assigned = user?.id ?? null;
     } else if (v.assigned_to === "unassigned") {
       assigned = null;
     } else {
@@ -129,15 +133,15 @@ export function AddLeadModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:w-[min(96vw,80rem)] sm:max-w-none">
         <DialogHeader>
           <DialogTitle>Add New Lead</DialogTitle>
           <p className="text-sm text-text-secondary">
             Capture professional details for your potential prospect.
           </p>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Field label="First Name *" error={errs.first_name}>
               <input
                 className="input"
@@ -164,7 +168,7 @@ export function AddLeadModal({
             />
           </Field>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Field label="Phone Number">
               <input
                 className="input"
@@ -181,7 +185,7 @@ export function AddLeadModal({
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Field label="Lead Value">
               <div className="flex">
                 <input
@@ -231,21 +235,27 @@ export function AddLeadModal({
                 ))}
               </select>
             </Field>
-            <Field label="Assigned To">
-              <select
-                className="input"
-                value={v.assigned_to}
-                onChange={(e) => set("assigned_to", e.target.value)}
-              >
-                <option value="self">Self (Me)</option>
-                {(users.data ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name ?? "Unnamed user"}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
-            </Field>
+            {canAssignLead ? (
+              <Field label="Assigned To">
+                <select
+                  className="input"
+                  value={v.assigned_to}
+                  onChange={(e) => set("assigned_to", e.target.value)}
+                >
+                  <option value="self">Self (Me)</option>
+                  {(users.data ?? []).map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.full_name ?? "Unnamed user"}
+                    </option>
+                  ))}
+                  <option value="unassigned">Unassigned</option>
+                </select>
+              </Field>
+            ) : (
+              <Field label="Assigned To">
+                <input className="input" value="Self (Me)" readOnly />
+              </Field>
+            )}
           </div>
 
           <Field label="Expected Close Date">

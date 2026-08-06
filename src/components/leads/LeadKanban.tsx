@@ -11,10 +11,14 @@ import { toast } from "sonner";
 
 export function LeadKanban({
   leads,
+  isPendingSync,
+  onEdit,
   onConvert,
   onDisqualify,
 }: {
   leads: LeadRow[];
+  isPendingSync?: (lead: LeadRow) => boolean;
+  onEdit: (lead: LeadRow) => void;
   onConvert: (lead: LeadRow) => void;
   onDisqualify: (lead: LeadRow) => void;
 }) {
@@ -75,12 +79,6 @@ export function LeadKanban({
                     {items.length}
                   </span>
                 </div>
-                <button
-                  className="text-text-muted transition-colors hover:text-primary"
-                  title={`Add ${col.label} lead`}
-                >
-                  <span className="material-symbols-outlined">add_circle</span>
-                </button>
               </div>
               <div className="flex flex-col gap-4 pr-1">
                 {items.length === 0 ? (
@@ -93,6 +91,8 @@ export function LeadKanban({
                       key={l.id}
                       lead={l}
                       tone={tone}
+                      pendingSync={Boolean(isPendingSync?.(l))}
+                      onEdit={() => onEdit(l)}
                       onConvert={() => onConvert(l)}
                       onDisqualify={() => onDisqualify(l)}
                     />
@@ -110,11 +110,15 @@ export function LeadKanban({
 function LeadCard({
   lead,
   tone,
+  pendingSync,
+  onEdit,
   onConvert,
   onDisqualify,
 }: {
   lead: LeadRow;
   tone: ReturnType<typeof columnTone>;
+  pendingSync: boolean;
+  onEdit: () => void;
   onConvert: () => void;
   onDisqualify: () => void;
 }) {
@@ -145,6 +149,11 @@ function LeadCard({
           >
             {value}
           </div>
+          {pendingSync ? (
+            <div className="mb-4 inline-flex rounded-full bg-warning-light px-2 py-0.5 text-[11px] font-bold uppercase text-warning">
+              Pending sync
+            </div>
+          ) : null}
           <div className="mb-5 space-y-2 text-sm text-text-secondary">
             <IconLine icon="mail">{lead.email}</IconLine>
             <IconLine icon="call">{lead.phone || "No phone"}</IconLine>
@@ -162,7 +171,25 @@ function LeadCard({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={onConvert}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="rounded p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+                title="Edit lead"
+              >
+                <span className="material-symbols-outlined text-[20px]">edit</span>
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onConvert();
+                }}
                 className="rounded p-1 text-text-muted transition-colors hover:bg-primary-light hover:text-primary"
                 title="Convert to deal"
               >
@@ -170,14 +197,33 @@ function LeadCard({
               </button>
               <button
                 type="button"
-                onClick={onDisqualify}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDisqualify();
+                }}
                 className="rounded p-1 text-text-muted transition-colors hover:bg-danger-light hover:text-danger"
                 title="Disqualify"
               >
                 <span className="material-symbols-outlined text-[20px]">block</span>
               </button>
             </div>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="rounded p-1 text-text-muted transition-colors hover:bg-muted hover:text-primary"
+              title="Edit lead"
+            >
+              <span className="material-symbols-outlined text-[20px]">edit</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,0 +1,62 @@
+name: Deploy — Vercel
+
+# deploy/vercel is the Vercel branch. See docs/DEPLOYMENT_TARGETS.md.
+#
+# The build runs here rather than on Vercel so the Nitro `vercel` preset and the
+# repo's lint/test gates apply identically to every target; Vercel only receives
+# the finished Build Output API directory.
+on:
+  push:
+    branches:
+      - deploy/vercel
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-vercel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Optional: create a `vercel` GitHub Environment and add `environment: vercel`
+    # here to scope the secrets below and gate deploys behind a reviewer.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Confirm deploy target
+        run: npm run deploy:which
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security regression tests
+        run: npm run test
+
+      - name: Build (vercel preset)
+        run: npm run build:vercel
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Deploy prebuilt output
+        run: npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN" --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

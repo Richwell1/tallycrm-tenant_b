@@ -6,6 +6,7 @@ import {
   missingSupabaseConfigMessage,
   supabase,
 } from "@/integrations/supabase/client";
+import { clearMfaSession, hasFreshMfaSession } from "@/lib/mfa-session";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -31,7 +32,7 @@ function AuthPage() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal.data?.currentLevel === "aal2") {
+      if (aal.data?.currentLevel === "aal2" && hasFreshMfaSession(data.user.id)) {
         navigate({ to: "/app", replace: true });
       } else {
         navigate({ to: "/mfa", replace: true });
@@ -49,6 +50,7 @@ function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      clearMfaSession();
       toast.success("Signed in — verify two-factor to continue");
       navigate({ to: "/mfa", replace: true });
     } catch (err) {

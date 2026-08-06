@@ -20,6 +20,7 @@ import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/pu
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as AuthenticatedAppTasksIndexRouteImport } from './routes/_authenticated/app.tasks.index'
 import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
+import { Route as AuthenticatedAppQuotesIndexRouteImport } from './routes/_authenticated/app.quotes.index'
 import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_authenticated/app.pipeline.index'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
@@ -27,11 +28,14 @@ import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
 import { Route as AuthenticatedAppAnalyticsIndexRouteImport } from './routes/_authenticated/app.analytics.index'
 import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_authenticated/app.activities.index'
+import { Route as AuthenticatedAppQuotesCatalogRouteImport } from './routes/_authenticated/app.quotes.catalog'
+import { Route as AuthenticatedAppQuotesIdRouteImport } from './routes/_authenticated/app.quotes.$id'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
 import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
 import { Route as AuthenticatedAppContactsIdRouteImport } from './routes/_authenticated/app.contacts.$id'
 import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
 import { Route as AuthenticatedAppAnalyticsRepIdRouteImport } from './routes/_authenticated/app.analytics.$repId'
+import { Route as AuthenticatedAppQuotesPrintIdRouteImport } from './routes/_authenticated/app.quotes.print.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -90,6 +94,12 @@ const AuthenticatedAppSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppQuotesIndexRoute =
+  AuthenticatedAppQuotesIndexRouteImport.update({
+    id: '/quotes/',
+    path: '/quotes/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPipelineIndexRoute =
   AuthenticatedAppPipelineIndexRouteImport.update({
     id: '/pipeline/',
@@ -132,6 +142,18 @@ const AuthenticatedAppActivitiesIndexRoute =
     path: '/activities/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppQuotesCatalogRoute =
+  AuthenticatedAppQuotesCatalogRouteImport.update({
+    id: '/quotes/catalog',
+    path: '/quotes/catalog',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppQuotesIdRoute =
+  AuthenticatedAppQuotesIdRouteImport.update({
+    id: '/quotes/$id',
+    path: '/quotes/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
   id: '/leads/$id',
   path: '/leads/$id',
@@ -160,6 +182,12 @@ const AuthenticatedAppAnalyticsRepIdRoute =
     path: '/analytics/$repId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppQuotesPrintIdRoute =
+  AuthenticatedAppQuotesPrintIdRouteImport.update({
+    id: '/quotes/print/$id',
+    path: '/quotes/print/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -175,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
+  '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
   '/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
@@ -182,8 +212,10 @@ export interface FileRoutesByFullPath {
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
+  '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -198,6 +230,8 @@ export interface FileRoutesByTo {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
+  '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
   '/app/activities': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
@@ -205,8 +239,10 @@ export interface FileRoutesByTo {
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
+  '/app/quotes': typeof AuthenticatedAppQuotesIndexRoute
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
+  '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -224,6 +260,8 @@ export interface FileRoutesById {
   '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
+  '/_authenticated/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
+  '/_authenticated/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
   '/_authenticated/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/_authenticated/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
@@ -231,8 +269,10 @@ export interface FileRoutesById {
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
+  '/_authenticated/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
+  '/_authenticated/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,6 +290,8 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/quotes/$id'
+    | '/app/quotes/catalog'
     | '/app/activities/'
     | '/app/analytics/'
     | '/app/companies/'
@@ -257,8 +299,10 @@ export interface FileRouteTypes {
     | '/app/deals/'
     | '/app/leads/'
     | '/app/pipeline/'
+    | '/app/quotes/'
     | '/app/settings/'
     | '/app/tasks/'
+    | '/app/quotes/print/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -273,6 +317,8 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/leads/$id'
+    | '/app/quotes/$id'
+    | '/app/quotes/catalog'
     | '/app/activities'
     | '/app/analytics'
     | '/app/companies'
@@ -280,8 +326,10 @@ export interface FileRouteTypes {
     | '/app/deals'
     | '/app/leads'
     | '/app/pipeline'
+    | '/app/quotes'
     | '/app/settings'
     | '/app/tasks'
+    | '/app/quotes/print/$id'
   id:
     | '__root__'
     | '/'
@@ -298,6 +346,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app/contacts/$id'
     | '/_authenticated/app/deals/$id'
     | '/_authenticated/app/leads/$id'
+    | '/_authenticated/app/quotes/$id'
+    | '/_authenticated/app/quotes/catalog'
     | '/_authenticated/app/activities/'
     | '/_authenticated/app/analytics/'
     | '/_authenticated/app/companies/'
@@ -305,8 +355,10 @@ export interface FileRouteTypes {
     | '/_authenticated/app/deals/'
     | '/_authenticated/app/leads/'
     | '/_authenticated/app/pipeline/'
+    | '/_authenticated/app/quotes/'
     | '/_authenticated/app/settings/'
     | '/_authenticated/app/tasks/'
+    | '/_authenticated/app/quotes/print/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -398,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/quotes/': {
+      id: '/_authenticated/app/quotes/'
+      path: '/quotes'
+      fullPath: '/app/quotes/'
+      preLoaderRoute: typeof AuthenticatedAppQuotesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/pipeline/': {
       id: '/_authenticated/app/pipeline/'
       path: '/pipeline'
@@ -447,6 +506,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppActivitiesIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/quotes/catalog': {
+      id: '/_authenticated/app/quotes/catalog'
+      path: '/quotes/catalog'
+      fullPath: '/app/quotes/catalog'
+      preLoaderRoute: typeof AuthenticatedAppQuotesCatalogRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/quotes/$id': {
+      id: '/_authenticated/app/quotes/$id'
+      path: '/quotes/$id'
+      fullPath: '/app/quotes/$id'
+      preLoaderRoute: typeof AuthenticatedAppQuotesIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/leads/$id': {
       id: '/_authenticated/app/leads/$id'
       path: '/leads/$id'
@@ -482,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAnalyticsRepIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/quotes/print/$id': {
+      id: '/_authenticated/app/quotes/print/$id'
+      path: '/quotes/print/$id'
+      fullPath: '/app/quotes/print/$id'
+      preLoaderRoute: typeof AuthenticatedAppQuotesPrintIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
@@ -492,6 +572,8 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
   AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
+  AuthenticatedAppQuotesIdRoute: typeof AuthenticatedAppQuotesIdRoute
+  AuthenticatedAppQuotesCatalogRoute: typeof AuthenticatedAppQuotesCatalogRoute
   AuthenticatedAppActivitiesIndexRoute: typeof AuthenticatedAppActivitiesIndexRoute
   AuthenticatedAppAnalyticsIndexRoute: typeof AuthenticatedAppAnalyticsIndexRoute
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
@@ -499,8 +581,10 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
+  AuthenticatedAppQuotesIndexRoute: typeof AuthenticatedAppQuotesIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
+  AuthenticatedAppQuotesPrintIdRoute: typeof AuthenticatedAppQuotesPrintIdRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -510,6 +594,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
   AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
+  AuthenticatedAppQuotesIdRoute: AuthenticatedAppQuotesIdRoute,
+  AuthenticatedAppQuotesCatalogRoute: AuthenticatedAppQuotesCatalogRoute,
   AuthenticatedAppActivitiesIndexRoute: AuthenticatedAppActivitiesIndexRoute,
   AuthenticatedAppAnalyticsIndexRoute: AuthenticatedAppAnalyticsIndexRoute,
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
@@ -517,8 +603,10 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
+  AuthenticatedAppQuotesIndexRoute: AuthenticatedAppQuotesIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
+  AuthenticatedAppQuotesPrintIdRoute: AuthenticatedAppQuotesPrintIdRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =

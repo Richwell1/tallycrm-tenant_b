@@ -86,6 +86,9 @@ const formSchema = z.object({
 type FormShape = z.infer<typeof formSchema>;
 type FieldErrors = Partial<Record<keyof FormShape, string>>;
 
+const PARTNER_PHONE_DISPLAY = "0543358413";
+const PARTNER_PHONE_TEL = "+233543358413";
+
 /* ──────────────────────────────────────────────────────────────────── */
 
 function Landing() {
@@ -133,10 +136,10 @@ function AnnouncementBar() {
         </p>
         <div className="flex items-center gap-3">
           <a
-            href="tel:+233000000000"
+            href={`tel:${PARTNER_PHONE_TEL}`}
             className="hidden items-center gap-1.5 hover:text-accent sm:flex"
           >
-            <Phone className="h-3.5 w-3.5" /> +233 ___ ___ ___
+            <Phone className="h-3.5 w-3.5" /> {PARTNER_PHONE_DISPLAY}
           </a>
           <button
             onClick={() => setOpen(false)}
@@ -203,7 +206,7 @@ function Navbar() {
 
         <div className="flex items-center gap-2">
           <a
-            href="tel:+233000000000"
+            href={`tel:${PARTNER_PHONE_TEL}`}
             className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-primary hover:bg-primary-light md:inline-flex"
           >
             <Phone className="h-4 w-4" />
@@ -1158,7 +1161,7 @@ function LeadCapture() {
             <p className="mt-5 text-base leading-7 text-slate-600">
               Tell us a little about your business and our Tally experts will reach out with a free
               demo and a tailored recommendation. Every request is written directly into the CRM,
-              assigned for follow-up, and queued for confirmation.
+              queued for manager review, and confirmed by email.
             </p>
             <ul className="mt-7 space-y-3 text-sm text-slate-700">
               {[
@@ -1174,11 +1177,14 @@ function LeadCapture() {
               ))}
             </ul>
             <div className="mt-8 grid gap-3 border-t border-slate-200 pt-7 text-sm text-slate-700">
-              <a href="tel:+233000000000" className="flex items-center gap-3 hover:text-primary">
+              <a
+                href={`tel:${PARTNER_PHONE_TEL}`}
+                className="flex items-center gap-3 hover:text-primary"
+              >
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-primary">
                   <Phone className="h-4 w-4" />
                 </span>
-                +233 ___ ___ ___
+                {PARTNER_PHONE_DISPLAY}
               </a>
               <a
                 href="mailto:hello@partner.com"
@@ -1531,7 +1537,7 @@ function Footer() {
             <p className="text-sm font-bold uppercase tracking-wider text-white/90">Contact</p>
             <ul className="mt-4 space-y-3 text-sm text-white/70">
               <li className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-accent" /> +233 ___ ___ ___
+                <Phone className="h-4 w-4 text-accent" /> {PARTNER_PHONE_DISPLAY}
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-accent" /> hello@partner.com

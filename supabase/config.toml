@@ -1,1 +1,39 @@
 project_id = "wzzqqcpcacvftgxwiyrh"
+
+[auth]
+site_url = "http://crm.local:3000"
+additional_redirect_urls = [
+  "http://crm.local",
+  "http://crm.local/**",
+  "http://crm.local:3000",
+  "http://crm.local:3000/**",
+  "http://crm.local:5173",
+  "http://crm.local:5173/**",
+  "http://localhost:3000",
+  "http://localhost:3000/**",
+  "http://localhost:5173",
+  "http://localhost:5173/**",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3000/**",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5173/**",
+  "http://192.168.*.*:3000",
+  "http://192.168.*.*:3000/**",
+  "http://192.168.*.*:5173",
+  "http://192.168.*.*:5173/**",
+  "http://10.*.*.*:3000",
+  "http://10.*.*.*:3000/**",
+  "http://10.*.*.*:5173",
+  "http://10.*.*.*:5173/**",
+  "http://172.*.*.*:3000",
+  "http://172.*.*.*:3000/**",
+  "http://172.*.*.*:5173",
+  "http://172.*.*.*:5173/**",
+]
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

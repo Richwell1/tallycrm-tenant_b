@@ -15,7 +15,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-background text-foreground">
       <Sidebar />
       <Topbar />
-      <main className="min-h-[calc(100vh-64px)] px-4 pb-24 pt-5 sm:px-6 md:ml-[260px] md:pb-6">
+      <main className="min-h-[calc(100vh-64px)] px-4 pb-24 pt-5 sm:px-6 md:ml-[260px] md:pb-6 print:m-0 print:min-h-0 print:p-0">
         {children}
       </main>
       <MobileBottomNav />

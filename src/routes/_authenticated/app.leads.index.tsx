@@ -7,7 +7,10 @@ import { LeadsTable } from "@/components/leads/LeadsTable";
 import { AddLeadModal } from "@/components/leads/AddLeadModal";
 import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
 import { DisqualifyModal } from "@/components/leads/DisqualifyModal";
+import { EditLeadModal } from "@/components/leads/EditLeadModal";
+import { useCurrentRole } from "@/lib/auth-context";
 import { LEAD_STATUSES, useLeads, type LeadRow, type LeadStatus } from "@/lib/leads-data";
+import { useSyncStatus } from "@/lib/sync-status-data";
 
 export const Route = createFileRoute("/_authenticated/app/leads/")({
   component: LeadsIndex,
@@ -18,12 +21,16 @@ type LeadSort = "recent" | "name" | "value";
 
 function LeadsIndex() {
   const { data: leads, isLoading, isError, error, refetch } = useLeads();
+  const role = useCurrentRole();
+  const canReadSyncStatus = role === "admin" || role === "manager";
+  const syncStatus = useSyncStatus(canReadSyncStatus);
   const [view, setView] = useState<View>("kanban");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [sortKey, setSortKey] = useState<LeadSort>("recent");
   const [addOpen, setAddOpen] = useState(false);
+  const [editLead, setEditLead] = useState<LeadRow | null>(null);
   const [convertLead, setConvertLead] = useState<LeadRow | null>(null);
   const [disqualifyLead, setDisqualifyLead] = useState<LeadRow | null>(null);
 
@@ -54,6 +61,11 @@ function LeadsIndex() {
       return dateRank(b.created_at) - dateRank(a.created_at);
     });
   }, [leads, search, sortKey, sourceFilter, statusFilter]);
+
+  const leadLastPushedAt = syncStatus.data?.leadLastPushedAt ?? null;
+  const isPendingSync = (lead: LeadRow) =>
+    canReadSyncStatus &&
+    (!leadLastPushedAt || dateRank(lead.updated_at) > dateRank(leadLastPushedAt));
 
   return (
     <>
@@ -136,12 +148,31 @@ function LeadsIndex() {
           description="Adjust search, status, source, or sort criteria to widen the result set."
         />
       ) : view === "kanban" ? (
-        <LeadKanban leads={filtered} onConvert={setConvertLead} onDisqualify={setDisqualifyLead} />
+        <LeadKanban
+          leads={filtered}
+          isPendingSync={isPendingSync}
+          onEdit={setEditLead}
+          onConvert={setConvertLead}
+          onDisqualify={setDisqualifyLead}
+        />
       ) : (
-        <LeadsTable leads={filtered} onConvert={setConvertLead} onDisqualify={setDisqualifyLead} />
+        <LeadsTable
+          leads={filtered}
+          isPendingSync={isPendingSync}
+          onEdit={setEditLead}
+          onConvert={setConvertLead}
+          onDisqualify={setDisqualifyLead}
+        />
       )}
 
       <AddLeadModal open={addOpen} onOpenChange={setAddOpen} />
+      <EditLeadModal
+        lead={editLead}
+        open={!!editLead}
+        onOpenChange={(open) => {
+          if (!open) setEditLead(null);
+        }}
+      />
       {convertLead ? (
         <ConvertLeadModal
           open={!!convertLead}

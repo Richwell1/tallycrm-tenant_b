@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+import { hasFreshMfaSession, markMfaVerified } from "@/lib/mfa-session";
 import { toast } from "sonner";
 import {
   ShieldCheck,
@@ -72,7 +73,7 @@ function MfaPage() {
       }
       setEmail(userRes.data.user.email ?? "");
 
-      if (aalRes.data?.currentLevel === "aal2") {
+      if (aalRes.data?.currentLevel === "aal2" && hasFreshMfaSession(userRes.data.user.id)) {
         navigate({ to: "/app", replace: true });
         return;
       }
@@ -151,6 +152,14 @@ function MfaPage() {
         code: code.trim(),
       });
       if (verify.error) throw verify.error;
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user?.id) {
+        markMfaVerified(userData.user.id);
+        await supabase
+          .from("profiles")
+          .update({ status: "active", last_login_at: new Date().toISOString() })
+          .eq("id", userData.user.id);
+      }
       toast.success(mode === "enroll" ? "Two-factor enrolled" : "Verified");
       navigate({ to: "/app", replace: true });
     } catch (err) {

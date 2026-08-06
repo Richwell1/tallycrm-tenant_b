@@ -38,6 +38,9 @@ export interface RepPerformance {
   initials: string;
   leads: number;
   closed: number;
+  lost: number;
+  totalClosed: number;
+  openDeals: number;
   revenue: number;
   winRate: number;
   trend: "up" | "down" | "flat";
@@ -97,6 +100,20 @@ function periodRange(period: AnalyticsPeriod): { start: string; end: string } {
       start = new Date(now.getFullYear(), now.getMonth(), 1);
   }
   return { start: start.toISOString(), end };
+}
+
+function previousPeriodRange(period: AnalyticsPeriod): { start: string; end: string } {
+  const current = periodRange(period);
+  const currentStart = new Date(current.start);
+  const currentEnd = new Date(current.end);
+  const duration = currentEnd.getTime() - currentStart.getTime();
+  const end = new Date(currentStart.getTime() - 1);
+  const start = new Date(end.getTime() - duration);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function isWithinRange(value: string | null | undefined, start: string, end: string) {
+  return Boolean(value && value >= start && value <= end);
 }
 
 function nameInitials(name: string | null | undefined): string {
@@ -354,10 +371,12 @@ export function useConversionFunnel() {
 
 // ── Rep Leaderboard ────────────────────────────────────────────────────────────
 
-export function useRepLeaderboard() {
+export function useRepLeaderboard(period: AnalyticsPeriod) {
   return useQuery({
-    queryKey: ["analytics", "leaderboard"],
+    queryKey: ["analytics", "leaderboard", period],
     queryFn: async (): Promise<RepPerformance[]> => {
+      const { start, end } = periodRange(period);
+      const previous = previousPeriodRange(period);
       const [rolesRes, dealsRes, leadsRes] = await Promise.all([
         supabase.from("user_roles").select("user_id, role"),
         supabase
@@ -366,13 +385,15 @@ export function useRepLeaderboard() {
             "assigned_to, value, actual_value, actual_close_date, created_at, stage:pipeline_stages!stage_id(is_won, is_closed)",
           )
           .is("deleted_at", null),
-        supabase.from("leads").select("assigned_to, status").is("deleted_at", null),
+        supabase.from("leads").select("assigned_to, status, created_at").is("deleted_at", null),
       ]);
       if (rolesRes.error) throw rolesRes.error;
       if (dealsRes.error) throw dealsRes.error;
       if (leadsRes.error) throw leadsRes.error;
 
-      const roles = rolesRes.data ?? [];
+      const roles = (rolesRes.data ?? []).filter(
+        ({ role }) => role === "rep" || role === "manager",
+      );
       if (roles.length === 0) return [];
 
       const userIds = roles.map((r) => r.user_id);
@@ -398,18 +419,34 @@ export function useRepLeaderboard() {
 
           const repDeals = allDeals.filter((d) => d.assigned_to === user_id);
           const openDeals = repDeals.filter((d) => !d.stage?.is_closed);
-          const wonDeals = repDeals.filter((d) => d.stage?.is_won);
-          const lostDeals = repDeals.filter((d) => d.stage?.is_closed && !d.stage?.is_won);
+          const periodWonDeals = repDeals.filter(
+            (d) => d.stage?.is_won && isWithinRange(d.actual_close_date, start, end),
+          );
+          const periodLostDeals = repDeals.filter(
+            (d) =>
+              d.stage?.is_closed &&
+              !d.stage?.is_won &&
+              isWithinRange(d.actual_close_date, start, end),
+          );
+          const previousWonDeals = repDeals.filter(
+            (d) =>
+              d.stage?.is_won && isWithinRange(d.actual_close_date, previous.start, previous.end),
+          );
           const pipeline = openDeals.reduce((s, d) => s + (d.value ?? 0), 0);
-          const revenue = wonDeals.reduce((s, d) => s + (d.actual_value ?? d.value ?? 0), 0);
+          const revenue = periodWonDeals.reduce((s, d) => s + (d.actual_value ?? d.value ?? 0), 0);
+          const previousRevenue = previousWonDeals.reduce(
+            (s, d) => s + (d.actual_value ?? d.value ?? 0),
+            0,
+          );
           const avgDealSize =
-            repDeals.length > 0
-              ? repDeals.reduce((s, d) => s + (d.value ?? 0), 0) / repDeals.length
+            periodWonDeals.length > 0
+              ? periodWonDeals.reduce((s, d) => s + (d.actual_value ?? d.value ?? 0), 0) /
+                periodWonDeals.length
               : 0;
-          const closed = wonDeals.length + lostDeals.length;
-          const winRate = closed > 0 ? (wonDeals.length / closed) * 100 : 0;
+          const totalClosed = periodWonDeals.length + periodLostDeals.length;
+          const winRate = totalClosed > 0 ? (periodWonDeals.length / totalClosed) * 100 : 0;
 
-          const wonWithDates = wonDeals.filter((d) => d.actual_close_date && d.created_at);
+          const wonWithDates = periodWonDeals.filter((d) => d.actual_close_date && d.created_at);
           const avgVelocity =
             wonWithDates.length > 0
               ? wonWithDates.reduce((s, d) => {
@@ -420,7 +457,11 @@ export function useRepLeaderboard() {
                 }, 0) / wonWithDates.length
               : 0;
 
-          const repLeads = allLeads.filter((l) => l.assigned_to === user_id);
+          const repLeads = allLeads.filter(
+            (l) => l.assigned_to === user_id && isWithinRange(l.created_at, start, end),
+          );
+          const trend =
+            revenue > previousRevenue ? "up" : revenue < previousRevenue ? "down" : "flat";
 
           return {
             id: user_id,
@@ -430,10 +471,13 @@ export function useRepLeaderboard() {
             location: "",
             initials: nameInitials(name),
             leads: repLeads.length,
-            closed: wonDeals.length,
+            closed: periodWonDeals.length,
+            lost: periodLostDeals.length,
+            totalClosed,
+            openDeals: openDeals.length,
             revenue,
             winRate,
-            trend: "flat" as const,
+            trend,
             rank: 0,
             quota: Math.min(100, Math.round((revenue / 500_000) * 100)),
             pipeline,
@@ -444,7 +488,13 @@ export function useRepLeaderboard() {
         .filter(Boolean) as RepPerformance[];
 
       return repMetrics
-        .sort((a, b) => b.revenue - a.revenue)
+        .sort(
+          (a, b) =>
+            b.closed - a.closed ||
+            b.revenue - a.revenue ||
+            b.winRate - a.winRate ||
+            b.pipeline - a.pipeline,
+        )
         .map((rep, index) => ({ ...rep, rank: index + 1 }));
     },
   });
@@ -592,6 +642,9 @@ export function useRepDetails(repId: string | undefined) {
         initials: nameInitials(name),
         leads: 0,
         closed: wonDeals.length,
+        lost: lostDeals.length,
+        totalClosed: closed,
+        openDeals: openDeals.length,
         revenue,
         winRate,
         trend: "flat",

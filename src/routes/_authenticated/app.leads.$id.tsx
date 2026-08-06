@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader, ToolbarButton } from "@/components/layout";
 import { ErrorState, TableSkeleton } from "@/components/common";
 import { ConvertLeadModal } from "@/components/leads/ConvertLeadModal";
@@ -7,11 +7,14 @@ import { DisqualifyModal } from "@/components/leads/DisqualifyModal";
 import {
   LEAD_STATUSES,
   type LeadRow,
+  useAssignableUsers,
+  useAssignLead,
   useLead,
   useLeadActivities,
   useSaveLeadNote,
   useUpdateLeadStatus,
 } from "@/lib/leads-data";
+import { useCurrentRole } from "@/lib/auth-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/app/leads/$id")({
@@ -23,11 +26,24 @@ function LeadDetail() {
   const { data: lead, isLoading, isError, error, refetch } = useLead(id);
   const acts = useLeadActivities(lead?.email);
   const update = useUpdateLeadStatus();
+  const assignLead = useAssignLead();
+  const users = useAssignableUsers();
+  const role = useCurrentRole();
   const saveNote = useSaveLeadNote();
   const [convertOpen, setConvertOpen] = useState(false);
   const [disqOpen, setDisqOpen] = useState(false);
+  const [assignedTo, setAssignedTo] = useState("");
   const [newNote, setNewNote] = useState("");
   const [tab, setTab] = useState<"timeline" | "convert" | "notes" | "source">("timeline");
+  const canAssignLead = role === "admin" || role === "manager";
+  const assigneeNameById = useMemo(
+    () => new Map((users.data ?? []).map((user) => [user.id, user.full_name ?? "Unnamed user"])),
+    [users.data],
+  );
+
+  useEffect(() => {
+    setAssignedTo(lead?.assigned_to ?? "");
+  }, [lead?.assigned_to]);
 
   if (isLoading) return <TableSkeleton rows={4} />;
   if (isError || !lead)
@@ -43,6 +59,9 @@ function LeadDetail() {
   const name = `${lead.first_name} ${lead.last_name}`;
   const value =
     typeof lead.value === "number" ? money(lead.value, lead.currency ?? "USD") : "$0.00";
+  const assigneeLabel = lead.assigned_to
+    ? (assigneeNameById.get(lead.assigned_to) ?? "Assigned rep")
+    : "Unassigned";
 
   return (
     <>
@@ -108,8 +127,50 @@ function LeadDetail() {
               </Row>
               <Row label="Phone">{lead.phone || "—"}</Row>
               <Row label="Value">{value}</Row>
+              <Row label="Assigned">{assigneeLabel}</Row>
             </dl>
           </section>
+
+          {canAssignLead ? (
+            <section className="rounded-lg border border-border bg-card p-4 shadow-[var(--shadow-xs)]">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                Assignment
+              </h3>
+              <div className="mt-3 space-y-3">
+                <select
+                  className="input"
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                >
+                  <option value="">Unassigned</option>
+                  {(users.data ?? []).map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.full_name ?? "Unnamed user"}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={assignLead.isPending || assignedTo === (lead.assigned_to ?? "")}
+                  onClick={() =>
+                    assignLead.mutate(
+                      { id: lead.id, assignedTo: assignedTo || null },
+                      {
+                        onSuccess: () => toast.success("Lead assignment updated"),
+                        onError: (err) =>
+                          toast.error("Could not assign lead", {
+                            description: (err as Error).message,
+                          }),
+                      },
+                    )
+                  }
+                  className="w-full rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {assignLead.isPending ? "Saving..." : "Save assignment"}
+                </button>
+              </div>
+            </section>
+          ) : null}
 
           <section className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-xs)]">
             <div className="border-b border-border bg-muted px-4 py-3">

@@ -126,7 +126,7 @@ function AnalyticsOverviewPage() {
 
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
         <section className="xl:col-span-2">
-          <RepLeaderboard />
+          <RepLeaderboard period={period} />
         </section>
         <WinLossAnalysis period={period} />
       </div>
@@ -490,18 +490,29 @@ function ConversionFunnel() {
   );
 }
 
-function RepLeaderboard() {
-  const { data: reps = [], isLoading, isError, error, refetch } = useRepLeaderboard();
+function RepLeaderboard({ period }: { period: AnalyticsPeriod }) {
+  const { data: reps = [], isLoading, isError, error, refetch } = useRepLeaderboard(period);
+  const topCloser = reps[0];
+  const topRevenue = reps.reduce<RepPerformance | null>(
+    (best, rep) => (!best || rep.revenue > best.revenue ? rep : best),
+    null,
+  );
+  const bestWinRate = reps
+    .filter((rep) => rep.totalClosed > 0)
+    .reduce<RepPerformance | null>(
+      (best, rep) => (!best || rep.winRate > best.winRate ? rep : best),
+      null,
+    );
 
   if (isLoading)
     return (
-      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+      <SectionCard title="Rep Closing Leaderboard" bodyClassName="p-0">
         <TableSkeleton rows={4} columns={7} />
       </SectionCard>
     );
   if (isError)
     return (
-      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+      <SectionCard title="Rep Closing Leaderboard" bodyClassName="p-0">
         <ErrorState
           description={(error as Error)?.message ?? "Could not load leaderboard"}
           onRetry={() => refetch()}
@@ -510,18 +521,19 @@ function RepLeaderboard() {
     );
   if (reps.length === 0)
     return (
-      <SectionCard title="Rep Leaderboard" bodyClassName="p-0">
+      <SectionCard title="Rep Closing Leaderboard" bodyClassName="p-0">
         <EmptyState
           icon={<span className="material-symbols-outlined text-[28px]">leaderboard</span>}
           title="No rep data yet"
-          description="Revenue data will appear here once deals are closed."
+          description="Closed-won performance will appear here once reps close deals."
         />
       </SectionCard>
     );
 
   return (
     <SectionCard
-      title="Rep Leaderboard"
+      title="Rep Closing Leaderboard"
+      description={`Won deals, revenue, win rate, and pipeline for ${periodLabel(period)}`}
       actions={
         reps[0] ? (
           <Link
@@ -535,15 +547,38 @@ function RepLeaderboard() {
       }
       bodyClassName="overflow-x-auto p-0"
     >
-      <table className="w-full min-w-[760px] border-collapse text-left">
+      <div className="grid gap-3 border-b border-border p-4 md:grid-cols-3">
+        <LeaderboardHighlight
+          icon="workspace_premium"
+          label="Top closer"
+          value={topCloser ? topCloser.name : "—"}
+          detail={topCloser ? `${topCloser.closed} won · ${formatCurrency(topCloser.revenue)}` : ""}
+        />
+        <LeaderboardHighlight
+          icon="payments"
+          label="Highest revenue"
+          value={topRevenue ? topRevenue.name : "—"}
+          detail={topRevenue ? formatCurrency(topRevenue.revenue) : ""}
+        />
+        <LeaderboardHighlight
+          icon="percent"
+          label="Best win rate"
+          value={bestWinRate ? bestWinRate.name : "—"}
+          detail={bestWinRate ? `${bestWinRate.winRate.toFixed(1)}% win rate` : ""}
+        />
+      </div>
+      <table className="w-full min-w-[920px] border-collapse text-left">
         <thead className="bg-primary-light text-[11px] uppercase tracking-wider text-text-secondary">
           <tr>
             <th className="px-5 py-3 text-center font-bold">Rank</th>
             <th className="px-5 py-3 font-bold">Rep Name</th>
-            <th className="px-4 py-3 text-center font-bold">Leads</th>
+            <th className="px-4 py-3 text-center font-bold">New Leads</th>
+            <th className="px-4 py-3 text-center font-bold">Won</th>
             <th className="px-4 py-3 text-center font-bold">Closed</th>
             <th className="px-4 py-3 text-right font-bold">Revenue</th>
             <th className="px-4 py-3 text-center font-bold">Win Rate</th>
+            <th className="px-4 py-3 text-right font-bold">Avg Won Deal</th>
+            <th className="px-4 py-3 text-center font-bold">Open</th>
             <th className="px-4 py-3 text-center font-bold">Trend</th>
           </tr>
         </thead>
@@ -577,6 +612,12 @@ function RepLeaderboard() {
               </td>
               <td className="px-4 py-4 text-center text-sm">{rep.leads}</td>
               <td className="px-4 py-4 text-center text-sm">{rep.closed}</td>
+              <td className="px-4 py-4 text-center text-sm">
+                {rep.totalClosed}
+                {rep.lost > 0 ? (
+                  <span className="ml-1 text-[11px] text-text-muted">({rep.lost} lost)</span>
+                ) : null}
+              </td>
               <td className="px-4 py-4 text-right text-sm font-semibold">
                 {formatCurrency(rep.revenue)}
               </td>
@@ -594,6 +635,8 @@ function RepLeaderboard() {
                   {rep.winRate.toFixed(1)}%
                 </span>
               </td>
+              <td className="px-4 py-4 text-right text-sm">{formatCurrency(rep.dealSize)}</td>
+              <td className="px-4 py-4 text-center text-sm">{rep.openDeals}</td>
               <td className={cn("px-4 py-4 text-center", trendColor(rep.trend))}>
                 <span className="material-symbols-outlined">{trendIcon(rep.trend)}</span>
               </td>
@@ -602,6 +645,31 @@ function RepLeaderboard() {
         </tbody>
       </table>
     </SectionCard>
+  );
+}
+
+function LeaderboardHighlight({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
+        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">{label}</p>
+        <p className="truncate text-sm font-semibold text-foreground">{value}</p>
+        {detail ? <p className="truncate text-[12px] text-text-secondary">{detail}</p> : null}
+      </div>
+    </div>
   );
 }
 

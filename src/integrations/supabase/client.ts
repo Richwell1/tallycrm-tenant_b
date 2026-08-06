@@ -3,10 +3,56 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 const serverEnv = typeof process !== "undefined" ? process.env : {};
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL || "";
+const RAW_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL || "";
+const SUPABASE_URL = browserSafeSupabaseUrl(RAW_SUPABASE_URL);
 const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || serverEnv.SUPABASE_PUBLISHABLE_KEY || "";
 const LOCAL_PREVIEW_KEY = "tally-crm-local-preview";
+
+function browserSafeSupabaseUrl(value: string) {
+  if (typeof window === "undefined" || !value) return value;
+
+  try {
+    const url = new URL(value);
+    const appHostname = window.location.hostname;
+    if (shouldUseAppHostnameForSupabase(url.hostname, appHostname)) {
+      url.hostname = appHostname;
+      return url.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
+function isLoopbackHostname(hostname: string) {
+  return ["localhost", "127.0.0.1", "::1"].includes(hostname);
+}
+
+function shouldUseAppHostnameForSupabase(supabaseHostname: string, appHostname: string) {
+  if (!appHostname || supabaseHostname === appHostname) return false;
+  if (isLoopbackHostname(supabaseHostname)) return true;
+  if (!isPrivateLanHostname(supabaseHostname)) return false;
+  return isLoopbackHostname(appHostname) || isPrivateLanHostname(appHostname);
+}
+
+function isPrivateLanHostname(hostname: string) {
+  if (hostname === "crm.local" || hostname.endsWith(".local")) return true;
+  const parts = hostname.split(".").map((part) => Number(part));
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return false;
+  }
+  const [first, second] = parts;
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
 
 export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);

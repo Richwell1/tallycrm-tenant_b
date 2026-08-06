@@ -4,6 +4,14 @@ import { toast } from "sonner";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { PageHeader, SectionCard, ToolbarButton } from "@/components/layout";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AUTOMATION_TEMPLATES,
   type AutomationRule,
   type AutomationRun,
@@ -28,6 +36,7 @@ import {
   useDeleteLossReason,
   useUpdateUserRole,
   useUpdateUserStatus,
+  useDeleteUser,
   useInviteUser,
   useSaveAssignmentQueue,
   useAppSettings,
@@ -88,6 +97,14 @@ const STATUS_FILTERS: Array<{ label: string; value: "all" | AutomationStatus }> 
   { label: "Inactive", value: "inactive" },
   { label: "Draft", value: "draft" },
 ];
+
+const AUTOMATION_ICON_BOX_CLASS =
+  "material-symbols-outlined flex h-10 w-10 shrink-0 select-none items-center justify-center rounded-lg text-[20px] leading-none";
+const AUTOMATION_ICON_GLYPH_BASE_CLASS =
+  "material-symbols-outlined flex shrink-0 select-none items-center justify-center leading-none";
+const AUTOMATION_ICON_GLYPH_CLASS =
+  "material-symbols-outlined flex h-5 w-5 shrink-0 select-none items-center justify-center text-[18px] leading-none";
+const AUTOMATION_CONTROL_CLASS = "h-10 rounded-lg px-3 py-0 text-sm leading-none";
 
 const SETTINGS_TABS: Array<{ id: SettingsTab; label: string; icon: string }> = [
   { id: "general", label: "General", icon: "settings" },
@@ -466,13 +483,50 @@ function PipelineSettingsPanel() {
 
 function UsersSettingsPanel() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SettingsUser | null>(null);
   const { data: users = [], isLoading, isError, error, refetch } = useSettingsUsers();
   const updateRole = useUpdateUserRole();
   const updateStatus = useUpdateUserStatus();
+  const deleteUser = useDeleteUser();
 
   const adminCount = users.filter((u) => u.role === "admin").length;
   const managerCount = users.filter((u) => u.role === "manager").length;
   const repCount = users.filter((u) => u.role === "rep").length;
+
+  async function handleRoleChange(userId: string, role: "admin" | "manager" | "rep") {
+    try {
+      await updateRole.mutateAsync({ userId, role });
+      toast.success("Role updated");
+    } catch (err) {
+      toast.error("Could not update role", {
+        description: (err as Error).message,
+      });
+    }
+  }
+
+  async function handleStatusChange(userId: string, status: "active" | "inactive") {
+    try {
+      await updateStatus.mutateAsync({ userId, status });
+      toast.success("User status updated");
+    } catch (err) {
+      toast.error("Could not update status", {
+        description: (err as Error).message,
+      });
+    }
+  }
+
+  async function confirmDeleteUser() {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser.mutateAsync({ userId: deleteTarget.id });
+      toast.success("User deleted");
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error("Could not delete user", {
+        description: (err as Error).message,
+      });
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -547,12 +601,6 @@ function UsersSettingsPanel() {
               </thead>
               <tbody className="divide-y divide-border">
                 {users.map((user) => {
-                  const roleLabel =
-                    user.role === "admin"
-                      ? "Admin"
-                      : user.role === "manager"
-                        ? "Sales Manager"
-                        : "Sales Rep";
                   const statusTone: "success" | "warning" =
                     user.status === "active" ? "success" : "warning";
                   return (
@@ -570,17 +618,10 @@ function UsersSettingsPanel() {
                           className="input h-9 min-w-[150px]"
                           defaultValue={user.role}
                           onChange={async (e) => {
-                            try {
-                              await updateRole.mutateAsync({
-                                userId: user.id,
-                                role: e.target.value as "admin" | "manager" | "rep",
-                              });
-                              toast.success("Role updated");
-                            } catch (err) {
-                              toast.error("Could not update role", {
-                                description: (err as Error).message,
-                              });
-                            }
+                            await handleRoleChange(
+                              user.id,
+                              e.target.value as "admin" | "manager" | "rep",
+                            );
                           }}
                         >
                           <option value="admin">Admin</option>
@@ -600,21 +641,65 @@ function UsersSettingsPanel() {
                         <div className="flex items-center gap-2">
                           <AutomationSwitch
                             checked={user.status === "active"}
-                            onChange={async (checked) => {
-                              try {
-                                await updateStatus.mutateAsync({
-                                  userId: user.id,
-                                  status: checked ? "active" : "inactive",
-                                });
-                                toast.success("User status updated");
-                              } catch (err) {
-                                toast.error("Could not update status", {
-                                  description: (err as Error).message,
-                                });
-                              }
-                            }}
+                            onChange={(checked) =>
+                              void handleStatusChange(user.id, checked ? "active" : "inactive")
+                            }
                           />
-                          <IconButton icon="more_vert" label="User actions" onClick={() => {}} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className="flex h-8 w-8 items-center justify-center rounded text-text-secondary hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                              aria-label="User actions"
+                            >
+                              <span className="material-symbols-outlined text-[19px]">
+                                more_vert
+                              </span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuLabel className="text-xs text-text-muted">
+                                {user.full_name}
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel
+                                inset
+                                className="text-[11px] uppercase tracking-wider text-text-muted"
+                              >
+                                Change role
+                              </DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "admin")}
+                              >
+                                Set as Admin
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "manager")}
+                              >
+                                Set as Sales Manager
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => void handleRoleChange(user.id, "rep")}
+                              >
+                                Set as Sales Rep
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  void handleStatusChange(
+                                    user.id,
+                                    user.status === "active" ? "inactive" : "active",
+                                  )
+                                }
+                              >
+                                {user.status === "active" ? "Deactivate user" : "Activate user"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-danger focus:text-danger"
+                                onSelect={() => setDeleteTarget(user)}
+                              >
+                                Delete user
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
@@ -645,6 +730,13 @@ function UsersSettingsPanel() {
       </div>
 
       {inviteOpen ? <InviteUserDialog onClose={() => setInviteOpen(false)} /> : null}
+      {deleteTarget ? (
+        <DeleteUserDialog
+          user={deleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={() => void confirmDeleteUser()}
+        />
+      ) : null}
     </div>
   );
 }
@@ -774,25 +866,27 @@ function AutomationsSettingsPanel() {
 
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto]">
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-xs)]">
-          {(["list", "builder", "detail", "empty", "error"] as ViewMode[]).map((item) => (
+          {(["list", "builder", "detail"] as ViewMode[]).map((item) => (
             <button
               key={item}
               onClick={() => setView(item)}
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold capitalize transition-colors",
+                "inline-flex h-10 items-center gap-2 rounded-lg px-3 text-[12px] font-semibold capitalize transition-colors",
                 view === item
                   ? "bg-primary text-primary-foreground"
                   : "text-text-secondary hover:bg-muted",
               )}
             >
-              <span className="material-symbols-outlined text-[17px]">{viewIcon(item)}</span>
+              <span className={AUTOMATION_ICON_GLYPH_CLASS}>{viewIcon(item)}</span>
               {item}
             </button>
           ))}
         </div>
-        <div className="rounded-xl border border-primary/20 bg-primary-light px-4 py-3 text-sm text-primary">
-          <span className="font-semibold">Audit:</span> automated actions are shown as{" "}
-          <span className="font-semibold">System/Automation</span> in run history.
+        <div className="flex min-h-14 items-center rounded-xl border border-primary/20 bg-primary-light px-4 py-3 text-sm text-primary">
+          <p>
+            <span className="font-semibold">Audit:</span> automated actions are shown as{" "}
+            <span className="font-semibold">System/Automation</span> in run history.
+          </p>
         </div>
       </div>
 
@@ -877,7 +971,7 @@ function LeadAssignmentPanel() {
   const saveSettings = useSaveAppSettings();
   const saveQueue = useSaveAssignmentQueue();
 
-  const [strategy, setStrategy] = useState<string>("round_robin");
+  const [strategy, setStrategy] = useState<string>("manual");
   const [queue, setQueue] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -911,44 +1005,39 @@ function LeadAssignmentPanel() {
       <div className="space-y-4">
         <SectionCard
           title="Assignment Strategy"
-          description="Incoming landing-page leads can stay manual or use round-robin assignment."
+          description="Incoming landing-page leads stay unassigned until an admin or sales manager assigns them."
         >
           <div className="space-y-3">
             <StrategyOption
               title="Manual Assignment"
-              description="Leads go to a general pool for manual selection."
+              description="Admins and managers review the private queue, then assign each lead to a specific rep."
               active={strategy === "manual"}
               onClick={() => setStrategy("manual")}
-            />
-            <StrategyOption
-              title="Round-Robin"
-              description="Automatically distribute leads in a sequential loop."
-              active={strategy === "round_robin"}
-              onClick={() => setStrategy("round_robin")}
             />
             <div className="rounded-lg border border-border bg-muted p-4 opacity-70">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Territory-based</p>
+                  <p className="text-sm font-semibold">Automated routing</p>
                   <p className="mt-1 text-sm text-text-secondary">
-                    Assign leads by geography or industry segment.
+                    Rules-based distribution is disabled so reps only see assigned or self-created
+                    leads.
                   </p>
                 </div>
-                <Badge>Coming Soon</Badge>
+                <Badge>Disabled</Badge>
               </div>
             </div>
           </div>
         </SectionCard>
         <InfoPanel
           icon="info"
-          title="Round-Robin Rule"
-          body="Changes to representative order or active status apply to new leads immediately."
+          title="Manual Queue"
+          body="Unassigned landing-page leads are visible to admins and sales managers only."
         />
       </div>
 
       <SectionCard
-        title="Round-Robin Queue"
-        description="Drag handles indicate assignment priority; inactive reps are skipped."
+        title="Assignment Queue"
+        description="Use this list to review eligible reps and current assigned workload before assigning leads."
         bodyClassName="p-0"
         actions={
           <Badge>
@@ -1094,7 +1183,7 @@ function EmailNotificationsPanel() {
   }> = [
     {
       label: "New Lead Assigned",
-      detail: "When a lead is manually or auto-assigned.",
+      detail: "When a lead is assigned by an admin or sales manager.",
       emailKey: "newLeadEmail",
       appKey: "newLeadApp",
     },
@@ -1747,16 +1836,28 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
   const inviteUser = useInviteUser();
   const [email, setEmail] = useState("new.user@tallycrm.com");
   const [role, setRole] = useState<"admin" | "manager" | "rep">("rep");
+  const [deliveryMode, setDeliveryMode] = useState<"invite_link" | "temporary_password">(
+    "invite_link",
+  );
 
   async function handleInvite() {
     try {
-      await inviteUser.mutateAsync({ email, role });
-      toast.success("Invitation saved", {
-        description: "The user will be required to complete 2FA enrollment.",
+      await inviteUser.mutateAsync({
+        email,
+        role,
+        deliveryMode,
+        redirectTo:
+          typeof window !== "undefined" ? `${window.location.origin}/reset-password` : undefined,
+      });
+      toast.success("Invitation sent", {
+        description:
+          deliveryMode === "invite_link"
+            ? "The user can set their own password from the email invite."
+            : "A temporary password was emailed to the user.",
       });
       onClose();
     } catch (err) {
-      toast.error("Could not save invitation", { description: (err as Error).message });
+      toast.error("Could not send invitation", { description: (err as Error).message });
     }
   }
 
@@ -1784,8 +1885,24 @@ function InviteUserDialog({ onClose }: { onClose: () => void }) {
             onChange={(value) => setRole(value as "admin" | "manager" | "rep")}
             options={["admin", "manager", "rep"]}
           />
+          <label className="block space-y-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+              Password Delivery
+            </span>
+            <select
+              value={deliveryMode}
+              onChange={(e) =>
+                setDeliveryMode(e.target.value as "invite_link" | "temporary_password")
+              }
+              className="input"
+            >
+              <option value="invite_link">Invite link (set password)</option>
+              <option value="temporary_password">Temporary password</option>
+            </select>
+          </label>
           <div className="rounded-lg border border-warning/20 bg-warning-light p-3 text-sm text-warning">
-            Pending users display as 2FA Pending until their first-login enrollment is complete.
+            Invite links let the user set their own password. Temporary passwords are emailed
+            directly and should be changed after first sign-in.
           </div>
         </div>
         <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">
@@ -1828,19 +1945,24 @@ function AutomationToolbar({
   onSortChange: (value: SortKey) => void;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)] xl:flex-row xl:items-end">
-      <label className="block min-w-[260px] flex-1 space-y-1">
+    <div className="mb-6 flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-xs)] xl:flex-row xl:items-end">
+      <label className="block min-w-[260px] flex-1 space-y-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           Search
         </span>
         <div className="relative">
-          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
+          <span
+            className={cn(
+              AUTOMATION_ICON_GLYPH_CLASS,
+              "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted",
+            )}
+          >
             search
           </span>
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="input pl-10"
+            className={cn("input", AUTOMATION_CONTROL_CLASS, "pl-10")}
             placeholder="Search automations, triggers, actions..."
             type="search"
           />
@@ -1884,11 +2006,15 @@ function SelectField({
   options: Array<{ label: string; value: string }>;
 }) {
   return (
-    <label className="block min-w-[170px] space-y-1">
+    <label className="block min-w-[170px] space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      >
         {options.map((item) => (
           <option key={item.value} value={item.value}>
             {item.label}
@@ -1954,7 +2080,7 @@ function AutomationsTable({
               >
                 <td className="px-5 py-4">
                   <button onClick={() => onOpen(rule)} className="block text-left">
-                    <span className="inline-flex items-center gap-2 text-[15px] font-semibold text-foreground">
+                    <span className="inline-flex min-h-6 items-center gap-2 text-[15px] font-semibold leading-6 text-foreground">
                       {rule.name}
                       {rule.isDefault ? <Badge>Default</Badge> : null}
                     </span>
@@ -1964,8 +2090,8 @@ function AutomationsTable({
                   </button>
                 </td>
                 <td className="px-5 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
-                    <span className="material-symbols-outlined text-[15px]">
+                  <span className="inline-flex h-7 items-center gap-2 rounded-full bg-secondary px-3 text-xs font-semibold text-primary">
+                    <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-4 w-4 text-[15px]")}>
                       {rule.triggerIcon}
                     </span>
                     {rule.triggerLabel}
@@ -1988,7 +2114,7 @@ function AutomationsTable({
                   {rule.lastRunAt ? relative(rule.lastRunAt) : "Never"}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
+                  <div className="flex items-center justify-end gap-2 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
                     <IconButton icon="visibility" label="View" onClick={() => onOpen(rule)} />
                     <IconButton icon="edit" label="Edit" onClick={() => onEdit(rule)} />
                     <IconButton
@@ -2067,25 +2193,23 @@ function RuleBuilder({
     <div className="space-y-6">
       <section
         className={cn(
-          "flex items-start gap-3 rounded-xl border border-primary/20 bg-primary-light p-4 transition-transform",
+          "flex items-start gap-4 rounded-xl border border-primary/20 bg-primary-light p-4 transition-transform",
           pulse && "scale-[1.01]",
         )}
       >
-        <span className="material-symbols-outlined flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white">
-          bolt
-        </span>
-        <div>
+        <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-primary text-white")}>bolt</span>
+        <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
             Live Summary
           </p>
-          <p className="text-[15px] font-medium text-foreground">{summary}</p>
+          <p className="break-words text-[15px] font-medium leading-6 text-foreground">{summary}</p>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
         <div className="space-y-5">
           <BuilderBlock icon="play_arrow" tone="bg-primary text-white" label="WHEN" tag="Trigger">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-3">
               <SelectControl
                 label="Event Type"
                 value={draft.triggerLabel}
@@ -2107,8 +2231,8 @@ function RuleBuilder({
           </BuilderBlock>
 
           <BuilderBlock icon="filter_alt" tone="bg-warning text-white" label="IF" tag="Conditions">
-            <div className="rounded-lg border border-border bg-muted p-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-lg border border-border bg-muted p-4">
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_152px_minmax(0,1fr)_auto] xl:items-end">
                 <SelectControl
                   label="Field"
                   value="Value"
@@ -2122,8 +2246,8 @@ function RuleBuilder({
                   options={[">", "<", "=", "contains"]}
                 />
                 <InputControl label="Value" value="5000" onChange={() => undefined} />
-                <button className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                <button className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-light">
+                  <span className={AUTOMATION_ICON_GLYPH_CLASS}>add</span>
                   Add condition
                 </button>
               </div>
@@ -2141,7 +2265,7 @@ function RuleBuilder({
               {draft.actions.map((action, index) => (
                 <div
                   key={`${action.label}-${index}`}
-                  className="grid gap-3 rounded-lg border border-border bg-muted p-3 md:grid-cols-[1fr_1fr_auto]"
+                  className="grid min-w-0 gap-4 rounded-lg border border-border bg-muted p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
                 >
                   <InputControl
                     label={`Action ${index + 1}`}
@@ -2171,10 +2295,10 @@ function RuleBuilder({
                         actions: draft.actions.filter((_, itemIndex) => itemIndex !== index),
                       })
                     }
-                    className="mt-5 flex h-10 w-10 items-center justify-center rounded-lg text-text-muted hover:bg-danger-light hover:text-danger"
+                    className="flex h-10 w-full shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-danger-light hover:text-danger md:w-10"
                     title="Remove action"
                   >
-                    <span className="material-symbols-outlined">delete</span>
+                    <span className={AUTOMATION_ICON_GLYPH_CLASS}>delete</span>
                   </button>
                 </div>
               ))}
@@ -2192,16 +2316,20 @@ function RuleBuilder({
                     ],
                   })
                 }
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-light"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold text-primary hover:bg-primary-light"
               >
-                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span className={AUTOMATION_ICON_GLYPH_CLASS}>add</span>
                 Add action
               </button>
             </div>
           </BuilderBlock>
         </div>
 
-        <SectionCard title="Rule Settings" description="Name, state, and audit behavior.">
+        <SectionCard
+          className="xl:sticky xl:top-24 xl:self-start"
+          title="Rule Settings"
+          description="Name, state, and audit behavior."
+        >
           <div className="space-y-4">
             <InputControl
               label="Automation name"
@@ -2215,7 +2343,7 @@ function RuleBuilder({
               <textarea
                 value={draft.description}
                 onChange={(e) => update({ description: e.target.value })}
-                className="min-h-28 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="min-h-28 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm leading-6 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </label>
             <div className="rounded-lg border border-border bg-muted p-3 text-sm">
@@ -2228,24 +2356,24 @@ function RuleBuilder({
         </SectionCard>
       </div>
 
-      <footer className="sticky bottom-0 z-20 -mx-6 flex flex-col justify-between gap-3 border-t border-border bg-card px-6 py-4 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] sm:flex-row sm:items-center">
-        <div className="flex gap-2">
+      <footer className="sticky bottom-3 z-20 flex flex-col justify-between gap-3 rounded-xl border border-border bg-card/95 p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-center">
+        <div className="grid gap-2 sm:flex">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+            className="h-10 rounded-lg border border-border px-4 text-sm font-semibold hover:bg-muted"
           >
             Cancel
           </button>
           <button
             onClick={onSaveDraft}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+            className="h-10 rounded-lg border border-border px-4 text-sm font-semibold hover:bg-muted"
           >
             Save as Draft
           </button>
         </div>
         <button
           onClick={onActivate}
-          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-primary-dark"
+          className="h-10 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-primary-dark"
         >
           Activate Rule
         </button>
@@ -2270,17 +2398,17 @@ function RuleDetail({
   return (
     <div className="space-y-6">
       <section className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)] md:flex-row md:items-center">
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-[28px] font-semibold tracking-tight text-primary">{rule.name}</h2>
             <Badge>{rule.object} Automation</Badge>
           </div>
           <p className="mt-1 max-w-3xl text-sm text-text-secondary">{rule.description}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold",
+              "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-semibold",
               rule.status === "active"
                 ? "bg-success-light text-success"
                 : "bg-muted text-text-secondary",
@@ -2378,7 +2506,11 @@ function RunHistory({ runs }: { runs: AutomationRun[] }) {
               <tr>
                 <td colSpan={6} className="px-5 py-8">
                   <EmptyState
-                    icon={<span className="material-symbols-outlined text-[28px]">history</span>}
+                    icon={
+                      <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-7 w-7 text-[28px]")}>
+                        history
+                      </span>
+                    }
                     title="No runs yet"
                     description="Run history will appear after this automation is activated and triggered."
                   />
@@ -2456,13 +2588,17 @@ function AutomationEmptyState({
   return (
     <SectionCard>
       <EmptyState
-        icon={<span className="material-symbols-outlined text-[36px]">auto_mode</span>}
+        icon={
+          <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-9 w-9 text-[32px]")}>
+            auto_mode
+          </span>
+        }
         title="No automations yet"
         description="Streamline sales work with rule-based triggers, tasks, reminders, notifications, and audit-visible execution history."
         action={
           <button
             onClick={() => onCreate()}
-            className="rounded-lg bg-cta px-5 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-cta-hover"
+            className="h-10 rounded-lg bg-cta px-5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-cta-hover"
           >
             Create your first automation
           </button>
@@ -2475,14 +2611,18 @@ function AutomationEmptyState({
             <button
               key={template.id}
               onClick={() => onCreate(template)}
-              className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4 text-left transition-colors hover:border-primary hover:bg-primary-light"
+              className="flex min-h-24 items-start gap-4 rounded-lg border border-border bg-muted p-4 text-left transition-colors hover:border-primary hover:bg-primary-light"
             >
-              <span className="material-symbols-outlined rounded-lg bg-card p-2 text-primary">
+              <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-card text-primary")}>
                 {template.icon}
               </span>
-              <span>
-                <span className="block text-sm font-semibold text-foreground">{template.name}</span>
-                <span className="block text-xs text-text-secondary">{template.description}</span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-5 text-foreground">
+                  {template.name}
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-text-secondary">
+                  {template.description}
+                </span>
               </span>
             </button>
           ))}
@@ -2496,7 +2636,7 @@ function AutomationErrorState({ onBack }: { onBack: () => void }) {
   return (
     <SectionCard title="Rule Builder">
       <div className="mb-6 flex items-start gap-3 rounded-lg border border-danger/20 bg-danger-light p-4 text-danger">
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+        <span className={AUTOMATION_ICON_GLYPH_CLASS} style={{ fontVariationSettings: "'FILL' 1" }}>
           error
         </span>
         <div>
@@ -2524,7 +2664,7 @@ function AutomationErrorState({ onBack }: { onBack: () => void }) {
       </div>
       <button
         onClick={onBack}
-        className="mt-6 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
+        className="mt-6 h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white"
       >
         Return to builder
       </button>
@@ -2547,7 +2687,7 @@ function DeleteAutomationDialog({
       <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
         <div className="space-y-4 p-6">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-danger-light text-danger">
+            <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-danger-light text-danger")}>
               delete_forever
             </span>
             <h3 className="text-[20px] font-semibold">Delete Automation?</h3>
@@ -2561,6 +2701,51 @@ function DeleteAutomationDialog({
         <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">
           <button
             onClick={onCancel}
+            className="h-10 rounded-lg border border-border bg-card px-4 text-sm font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="h-10 rounded-lg bg-danger px-4 text-sm font-semibold text-white"
+          >
+            Delete Rule
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteUserDialog({
+  user,
+  onCancel,
+  onConfirm,
+}: {
+  user: SettingsUser | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!user) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-[var(--shadow-lg)]">
+        <div className="space-y-4 p-6">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-danger-light text-danger">
+              person_remove
+            </span>
+            <h3 className="text-[20px] font-semibold">Delete User?</h3>
+          </div>
+          <p className="text-sm leading-6 text-text-secondary">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">"{user.full_name}"</span>? This will
+            remove their account access and role assignment.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse gap-3 border-t border-border bg-muted p-4 sm:flex-row sm:justify-end">
+          <button
+            onClick={onCancel}
             className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold"
           >
             Cancel
@@ -2569,7 +2754,7 @@ function DeleteAutomationDialog({
             onClick={onConfirm}
             className="rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white"
           >
-            Delete Rule
+            Delete User
           </button>
         </div>
       </div>
@@ -2595,25 +2780,21 @@ function BuilderBlock({
   return (
     <section
       className={cn(
-        "rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]",
+        "min-w-0 rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-xs)]",
         highlight && "border-l-4 border-l-primary",
       )}
     >
-      <header className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "material-symbols-outlined flex h-9 w-9 items-center justify-center rounded-lg",
-              tone,
-            )}
-          >
-            {icon}
-          </span>
-          <h3 className="text-[16px] font-semibold">{label}</h3>
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <span className={cn(AUTOMATION_ICON_BOX_CLASS, tone)}>{icon}</span>
+          <h3 className="text-[16px] font-semibold leading-6">{label}</h3>
           <Badge>{tag}</Badge>
         </div>
-        <button className="rounded p-1 text-text-muted hover:bg-muted" title="Add block">
-          <span className="material-symbols-outlined">add_circle</span>
+        <button
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-muted hover:text-primary"
+          title="Add block"
+        >
+          <span className={AUTOMATION_ICON_GLYPH_CLASS}>add_circle</span>
         </button>
       </header>
       {children}
@@ -2631,11 +2812,15 @@ function InputControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block space-y-1">
+    <label className="block space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="input" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      />
     </label>
   );
 }
@@ -2652,11 +2837,15 @@ function SelectControl({
   options: string[];
 }) {
   return (
-    <label className="block space-y-1">
+    <label className="block space-y-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
         {label}
       </span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("input", AUTOMATION_CONTROL_CLASS)}
+      >
         {options.map((option) => (
           <option key={option}>{option}</option>
         ))}
@@ -2710,18 +2899,18 @@ function IconButton({
       onClick={onClick}
       title={label}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded text-text-secondary hover:bg-muted hover:text-primary",
+        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-muted hover:text-primary",
         danger && "hover:bg-danger-light hover:text-danger",
       )}
     >
-      <span className="material-symbols-outlined text-[19px]">{icon}</span>
+      <span className={AUTOMATION_ICON_GLYPH_CLASS}>{icon}</span>
     </button>
   );
 }
 
 function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
+    <span className="inline-flex h-6 items-center rounded bg-secondary px-2 text-[11px] font-semibold leading-none text-secondary-foreground">
       {children}
     </span>
   );
@@ -2739,18 +2928,11 @@ function StatCard({
   tone: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]">
-      <span
-        className={cn(
-          "material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full",
-          tone,
-        )}
-      >
-        {icon}
-      </span>
-      <div>
-        <p className="text-[20px] font-semibold text-foreground">{value}</p>
-        <p className="text-xs font-semibold text-text-secondary">{label}</p>
+    <div className="flex min-h-24 items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-xs)]">
+      <span className={cn(AUTOMATION_ICON_BOX_CLASS, tone)}>{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[20px] font-semibold leading-7 text-foreground">{value}</p>
+        <p className="text-xs font-semibold leading-5 text-text-secondary">{label}</p>
       </div>
     </div>
   );
@@ -2776,13 +2958,11 @@ function DefinitionNode({
   };
   return (
     <div className={cn("flex items-start gap-4 rounded-lg border p-4", tones[tone])}>
-      <span className="material-symbols-outlined flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card">
-        {icon}
-      </span>
-      <div>
+      <span className={cn(AUTOMATION_ICON_BOX_CLASS, "bg-card")}>{icon}</span>
+      <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase tracking-wider">{label}</p>
-        <p className="mt-1 text-[16px] font-semibold text-foreground">{title}</p>
-        <p className="text-sm text-text-secondary">{detail}</p>
+        <p className="mt-1 text-[16px] font-semibold leading-6 text-foreground">{title}</p>
+        <p className="text-sm leading-6 text-text-secondary">{detail}</p>
       </div>
     </div>
   );
@@ -2802,11 +2982,13 @@ function ResultBadge({ result }: { result: AutomationRun["result"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex h-7 items-center gap-2 rounded-full px-2.5 text-xs font-semibold",
         styles[result],
       )}
     >
-      <span className="material-symbols-outlined text-[14px]">{icons[result]}</span>
+      <span className={cn(AUTOMATION_ICON_GLYPH_BASE_CLASS, "h-4 w-4 text-[14px]")}>
+        {icons[result]}
+      </span>
       {capitalize(result)}
     </span>
   );

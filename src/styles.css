@@ -363,3 +363,36 @@
     transform: translateY(112vh) rotate(360deg);
   }
 }
+
+/* Quotation print/PDF output. The browser's print dialog is the PDF engine —
+   "Save as PDF" there produces the client document, so no PDF library ships. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  .quote-document {
+    /* Keep the document's own greys when the browser strips backgrounds. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .quote-document table {
+    /* Never split a line item across a page break. */
+    page-break-inside: auto;
+  }
+
+  .quote-document tr {
+    page-break-inside: avoid;
+  }
+
+  .quote-document thead {
+    display: table-header-group;
+  }
+}

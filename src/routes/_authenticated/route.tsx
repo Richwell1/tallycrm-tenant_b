@@ -4,6 +4,7 @@ import {
   isSupabaseConfigured,
   supabase,
 } from "@/integrations/supabase/client";
+import { clearMfaSession, hasFreshMfaSession, touchMfaSession } from "@/lib/mfa-session";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -31,11 +32,12 @@ export const Route = createFileRoute("/_authenticated")({
       console.warn("[Auth] Could not check MFA assurance level", err);
       return { data: { currentLevel: "aal1", nextLevel: "aal1" } };
     });
-    const next = aal.data?.nextLevel ?? "aal1";
     const current = aal.data?.currentLevel ?? "aal1";
-    if (next === "aal2" && current !== "aal2") {
+    if (current !== "aal2" || !hasFreshMfaSession(data.user.id)) {
+      clearMfaSession();
       throw redirect({ to: "/mfa" });
     }
+    touchMfaSession(data.user.id);
     return { user: data.user };
   },
   component: () => <Outlet />,
