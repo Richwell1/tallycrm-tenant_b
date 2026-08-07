@@ -165,7 +165,9 @@ function MfaPage() {
           .eq("id", userData.user.id);
       }
       toast.success(mode === "enroll" ? "Two-factor enrolled" : "Verified");
-      navigate({ to: "/app", replace: true });
+      const back = consumePostAuthRedirect();
+      if (back) window.location.replace(back);
+      else navigate({ to: "/app", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid or expired code";
       toast.error(msg);
