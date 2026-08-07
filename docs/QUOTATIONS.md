@@ -93,6 +93,9 @@ An accepted quote can create a pipeline deal worth the quote total (or refresh
 the value of the deal it is already linked to), recording the change in
 `deal_value_history`. Converting requires a client contact on the quote.
 
+Invoices can be drafted from a quotation without mutating the quote. Receipt
+payments then roll up against those invoices; see `docs/INVOICING_RECEIPTS.md`.
+
 ## Branch/LAN sync
 
 All four tables are registered in `scripts/sync-once.mjs`. `quote_catalog_items`

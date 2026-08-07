@@ -38,6 +38,10 @@ const TABLE_CONFIGS = {
   quotes: { cursorColumn: "updated_at" },
   quote_line_items: { cursorColumn: "updated_at" },
   quote_status_history: { cursorColumn: "changed_at", appendOnly: true },
+  invoices: { cursorColumn: "updated_at" },
+  invoice_line_items: { cursorColumn: "updated_at" },
+  invoice_status_history: { cursorColumn: "changed_at", appendOnly: true },
+  receipts: { cursorColumn: "updated_at" },
   automation_runs: { cursorColumn: "created_at", appendOnly: true },
   audit_log: { cursorColumn: "created_at", appendOnly: true },
 };
@@ -58,6 +62,9 @@ const DEFAULT_TABLES = [
   "quote_catalog_items",
   "quotes",
   "quote_line_items",
+  "invoices",
+  "invoice_line_items",
+  "receipts",
 ];
 const EPOCH = "1970-01-01T00:00:00.000Z";
 const LOOP_PREVENTION_COLUMNS = new Set([

@@ -25,7 +25,7 @@ const trackedEnvFiles =
       })
         .split("\n")
         .filter(Boolean)
-        .filter((file) => ![".env.example", ".env.local.example"].includes(file))
+        .filter((file) => !file.endsWith(".example"))
     : [];
 
 assert(trackedEnvFiles.length === 0, `Tracked environment file(s): ${trackedEnvFiles.join(", ")}`);

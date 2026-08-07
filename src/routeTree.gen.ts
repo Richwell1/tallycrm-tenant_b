@@ -40,10 +40,13 @@ import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppQuotesIndexRouteImport } from './routes/_authenticated/app.quotes.index'
 import { Route as AuthenticatedAppQuotesIdRouteImport } from './routes/_authenticated/app.quotes.$id'
 import { Route as AuthenticatedAppQuotesCatalogRouteImport } from './routes/_authenticated/app.quotes.catalog'
+import { Route as AuthenticatedAppReceiptsIndexRouteImport } from './routes/_authenticated/app.receipts.index'
+import { Route as AuthenticatedAppReceiptsIdRouteImport } from './routes/_authenticated/app.receipts.$id'
 import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
 import { Route as AuthenticatedAppTasksIndexRouteImport } from './routes/_authenticated/app.tasks.index'
 import { Route as AuthenticatedAppInvoicesPrintIdRouteImport } from './routes/_authenticated/app.invoices.print.$id'
 import { Route as AuthenticatedAppQuotesPrintIdRouteImport } from './routes/_authenticated/app.quotes.print.$id'
+import { Route as AuthenticatedAppReceiptsPrintIdRouteImport } from './routes/_authenticated/app.receipts.print.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -218,6 +221,18 @@ const AuthenticatedAppQuotesCatalogRoute =
     path: '/quotes/catalog',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppReceiptsIndexRoute =
+  AuthenticatedAppReceiptsIndexRouteImport.update({
+    id: '/receipts/',
+    path: '/receipts/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppReceiptsIdRoute =
+  AuthenticatedAppReceiptsIdRouteImport.update({
+    id: '/receipts/$id',
+    path: '/receipts/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppSettingsIndexRoute =
   AuthenticatedAppSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -240,6 +255,12 @@ const AuthenticatedAppQuotesPrintIdRoute =
   AuthenticatedAppQuotesPrintIdRouteImport.update({
     id: '/quotes/print/$id',
     path: '/quotes/print/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppReceiptsPrintIdRoute =
+  AuthenticatedAppReceiptsPrintIdRouteImport.update({
+    id: '/receipts/print/$id',
+    path: '/receipts/print/$id',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 
@@ -265,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
+  '/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
@@ -274,10 +296,12 @@ export interface FileRoutesByFullPath {
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
+  '/app/receipts/': typeof AuthenticatedAppReceiptsIndexRoute
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
   '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
+  '/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -300,6 +324,7 @@ export interface FileRoutesByTo {
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
+  '/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/app/activities': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsIndexRoute
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
@@ -309,10 +334,12 @@ export interface FileRoutesByTo {
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes': typeof AuthenticatedAppQuotesIndexRoute
+  '/app/receipts': typeof AuthenticatedAppReceiptsIndexRoute
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
   '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
+  '/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -338,6 +365,7 @@ export interface FileRoutesById {
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/_authenticated/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
   '/_authenticated/app/quotes/catalog': typeof AuthenticatedAppQuotesCatalogRoute
+  '/_authenticated/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/_authenticated/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/_authenticated/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
@@ -347,10 +375,12 @@ export interface FileRoutesById {
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/_authenticated/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
+  '/_authenticated/app/receipts/': typeof AuthenticatedAppReceiptsIndexRoute
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
   '/_authenticated/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/_authenticated/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
+  '/_authenticated/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -376,6 +406,7 @@ export interface FileRouteTypes {
     | '/app/leads/$id'
     | '/app/quotes/$id'
     | '/app/quotes/catalog'
+    | '/app/receipts/$id'
     | '/app/activities/'
     | '/app/analytics/'
     | '/app/companies/'
@@ -385,10 +416,12 @@ export interface FileRouteTypes {
     | '/app/leads/'
     | '/app/pipeline/'
     | '/app/quotes/'
+    | '/app/receipts/'
     | '/app/settings/'
     | '/app/tasks/'
     | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
+    | '/app/receipts/print/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -411,6 +444,7 @@ export interface FileRouteTypes {
     | '/app/leads/$id'
     | '/app/quotes/$id'
     | '/app/quotes/catalog'
+    | '/app/receipts/$id'
     | '/app/activities'
     | '/app/analytics'
     | '/app/companies'
@@ -420,10 +454,12 @@ export interface FileRouteTypes {
     | '/app/leads'
     | '/app/pipeline'
     | '/app/quotes'
+    | '/app/receipts'
     | '/app/settings'
     | '/app/tasks'
     | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
+    | '/app/receipts/print/$id'
   id:
     | '__root__'
     | '/'
@@ -448,6 +484,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/leads/$id'
     | '/_authenticated/app/quotes/$id'
     | '/_authenticated/app/quotes/catalog'
+    | '/_authenticated/app/receipts/$id'
     | '/_authenticated/app/activities/'
     | '/_authenticated/app/analytics/'
     | '/_authenticated/app/companies/'
@@ -457,10 +494,12 @@ export interface FileRouteTypes {
     | '/_authenticated/app/leads/'
     | '/_authenticated/app/pipeline/'
     | '/_authenticated/app/quotes/'
+    | '/_authenticated/app/receipts/'
     | '/_authenticated/app/settings/'
     | '/_authenticated/app/tasks/'
     | '/_authenticated/app/invoices/print/$id'
     | '/_authenticated/app/quotes/print/$id'
+    | '/_authenticated/app/receipts/print/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -697,6 +736,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppQuotesCatalogRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/receipts/': {
+      id: '/_authenticated/app/receipts/'
+      path: '/receipts'
+      fullPath: '/app/receipts/'
+      preLoaderRoute: typeof AuthenticatedAppReceiptsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/receipts/$id': {
+      id: '/_authenticated/app/receipts/$id'
+      path: '/receipts/$id'
+      fullPath: '/app/receipts/$id'
+      preLoaderRoute: typeof AuthenticatedAppReceiptsIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/settings/': {
       id: '/_authenticated/app/settings/'
       path: '/settings'
@@ -725,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppQuotesPrintIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/receipts/print/$id': {
+      id: '/_authenticated/app/receipts/print/$id'
+      path: '/receipts/print/$id'
+      fullPath: '/app/receipts/print/$id'
+      preLoaderRoute: typeof AuthenticatedAppReceiptsPrintIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
@@ -738,6 +798,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
   AuthenticatedAppQuotesIdRoute: typeof AuthenticatedAppQuotesIdRoute
   AuthenticatedAppQuotesCatalogRoute: typeof AuthenticatedAppQuotesCatalogRoute
+  AuthenticatedAppReceiptsIdRoute: typeof AuthenticatedAppReceiptsIdRoute
   AuthenticatedAppActivitiesIndexRoute: typeof AuthenticatedAppActivitiesIndexRoute
   AuthenticatedAppAnalyticsIndexRoute: typeof AuthenticatedAppAnalyticsIndexRoute
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
@@ -747,10 +808,12 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
   AuthenticatedAppQuotesIndexRoute: typeof AuthenticatedAppQuotesIndexRoute
+  AuthenticatedAppReceiptsIndexRoute: typeof AuthenticatedAppReceiptsIndexRoute
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
   AuthenticatedAppInvoicesPrintIdRoute: typeof AuthenticatedAppInvoicesPrintIdRoute
   AuthenticatedAppQuotesPrintIdRoute: typeof AuthenticatedAppQuotesPrintIdRoute
+  AuthenticatedAppReceiptsPrintIdRoute: typeof AuthenticatedAppReceiptsPrintIdRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -763,6 +826,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
   AuthenticatedAppQuotesIdRoute: AuthenticatedAppQuotesIdRoute,
   AuthenticatedAppQuotesCatalogRoute: AuthenticatedAppQuotesCatalogRoute,
+  AuthenticatedAppReceiptsIdRoute: AuthenticatedAppReceiptsIdRoute,
   AuthenticatedAppActivitiesIndexRoute: AuthenticatedAppActivitiesIndexRoute,
   AuthenticatedAppAnalyticsIndexRoute: AuthenticatedAppAnalyticsIndexRoute,
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
@@ -772,10 +836,12 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
   AuthenticatedAppQuotesIndexRoute: AuthenticatedAppQuotesIndexRoute,
+  AuthenticatedAppReceiptsIndexRoute: AuthenticatedAppReceiptsIndexRoute,
   AuthenticatedAppSettingsIndexRoute: AuthenticatedAppSettingsIndexRoute,
   AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
   AuthenticatedAppInvoicesPrintIdRoute: AuthenticatedAppInvoicesPrintIdRoute,
   AuthenticatedAppQuotesPrintIdRoute: AuthenticatedAppQuotesPrintIdRoute,
+  AuthenticatedAppReceiptsPrintIdRoute: AuthenticatedAppReceiptsPrintIdRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =

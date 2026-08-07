@@ -8,6 +8,7 @@ import { ConvertQuoteModal } from "@/components/quotes/ConvertQuoteModal";
 import { QuoteLineItemsEditor } from "@/components/quotes/QuoteLineItemsEditor";
 import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
 import { formatDateOnly, formatMoney, formatRelative } from "@/lib/format";
+import { useInvoicesForQuote } from "@/lib/invoices-data";
 import { isEffectivelyExpired } from "@/lib/quote-totals";
 import {
   quoteClientName,
@@ -26,6 +27,7 @@ function QuoteDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { data: quote, isLoading, isError, error, refetch } = useQuote(id);
+  const { data: invoices } = useInvoicesForQuote(id);
   const { data: options } = useQuoteFormOptions();
   const updateStatus = useUpdateQuoteStatus();
   const revise = useReviseQuote();
@@ -266,6 +268,37 @@ function QuoteDetailPage() {
               </ul>
             </section>
           ) : null}
+
+          <section className="rounded-xl border border-border bg-card p-6">
+            <h2 className="text-[16px] font-semibold text-foreground">Invoices</h2>
+            {(invoices?.length ?? 0) === 0 ? (
+              <p className="mt-3 text-sm text-text-muted">
+                No invoices raised from this quote yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {invoices?.map((invoice) => (
+                  <li key={invoice.id}>
+                    <Link
+                      to="/app/invoices/$id"
+                      params={{ id: invoice.id }}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:border-primary"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-mono text-primary">
+                          {invoice.invoice_number}
+                        </span>
+                        <span className="block text-text-secondary">
+                          {invoice.status} · due {formatDateOnly(invoice.due_date)}
+                        </span>
+                      </span>
+                      <span>{formatMoney(Number(invoice.total), invoice.currency)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
           {quote.terms ? (
             <section className="rounded-xl border border-border bg-card p-6">

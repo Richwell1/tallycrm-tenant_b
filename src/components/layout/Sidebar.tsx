@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
   BarChart3,
+  BadgeDollarSign,
   Building2,
   CheckSquare,
   FileText,
@@ -41,6 +42,7 @@ const SECTIONS: NavSection[] = [
       { label: "Deals", to: "/app/deals", icon: Handshake },
       { label: "Quotations", to: "/app/quotes", icon: FileText },
       { label: "Invoices", to: "/app/invoices", icon: ReceiptText },
+      { label: "Receipts", to: "/app/receipts", icon: BadgeDollarSign },
       { label: "Leads", to: "/app/leads", icon: Search },
       { label: "Pipeline", to: "/app/pipeline", icon: KanbanSquare },
       { label: "Activities", to: "/app/activities", icon: Activity },
