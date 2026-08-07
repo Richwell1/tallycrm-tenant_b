@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://ncggjsjzjfgoceoszjhf.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "crm-core-components",
+      "version": "0.1.0",
+      "title": "CRM Core Components"
+    },
+    "tools": [
+      {
+        "name": "list_leads",
+        "title": "List leads",
+        "description": "List CRM leads visible to the signed-in user, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by lead status.",
+              "type": "string",
+              "enum": [
+                "new",
+                "contacted",
+                "qualified",
+                "converted",
+                "disqualified"
+              ]
+            },
+            "search": {
+              "description": "Match name, email or company.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 20, max 100).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_lead",
+        "title": "Create lead",
+        "description": "Create a new CRM lead owned by the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "first_name": {
+              "type": "string",
+              "description": "Lead first name."
+            },
+            "last_name": {
+              "type": "string",
+              "description": "Lead last name."
+            },
+            "email": {
+              "type": "string",
+              "description": "Lead email address."
+            },
+            "phone": {
+              "type": "string"
+            },
+            "company_name": {
+              "type": "string"
+            },
+            "source": {
+              "description": "Lead source, e.g. referral or website.",
+              "type": "string"
+            },
+            "message": {
+              "description": "Notes or the lead's enquiry text.",
+              "type": "string"
+            },
+            "value": {
+              "description": "Estimated deal value.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "first_name",
+            "last_name",
+            "email"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_deals",
+        "title": "List deals",
+        "description": "List CRM deals visible to the signed-in user with their pipeline stage.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Match the deal name.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 20, max 100).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_contacts",
+        "title": "List contacts",
+        "description": "List CRM contacts visible to the signed-in user.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "search": {
+              "description": "Match name or email.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Max rows to return (default 20, max 100).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_tasks",
+        "title": "List tasks",
+        "description": "List CRM tasks visible to the signed-in user, soonest due first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by task status.",
+              "type": "string",
+              "enum": [
+                "pending",
+                "in_progress",
+                "done",
+                "cancelled"
+              ]
+            },
+            "limit": {
+              "description": "Max rows to return (default 20, max 100).",
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_task",
+        "title": "Create task",
+        "description": "Create a follow-up task assigned to the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Task title."
+            },
+            "due_at": {
+              "description": "Due date/time as an ISO 8601 timestamp.",
+              "type": "string"
+            },
+            "priority": {
+              "description": "Task priority.",
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "type": {
+              "description": "Task type, e.g. call, email, meeting.",
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "deal_id": {
+              "description": "Related deal id.",
+              "type": "string"
+            },
+            "contact_id": {
+              "description": "Related contact id.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
