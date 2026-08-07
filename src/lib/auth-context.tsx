@@ -89,12 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     clearMfaSession();
-    if (!isSupabaseConfigured()) {
-      disableLocalPreview();
-      setUser(null);
-      navigate({ to: "/auth", replace: true });
-      return;
-    }
+    await supabase.auth.signOut();
+
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
