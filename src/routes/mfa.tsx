@@ -81,7 +81,6 @@ function MfaPage() {
         return;
       }
 
-
       if (factorsRes.error) throw factorsRes.error;
       const verified = factorsRes.data?.totp?.find((f) => f.status === "verified");
       if (verified) {
