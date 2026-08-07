@@ -77,11 +77,8 @@ function AuthPage() {
     }
   }
 
-  function continueLocalPreview() {
-    enableLocalPreview();
-    toast.success("Local preview enabled");
-    window.location.assign("/app/tasks");
-  }
+
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
