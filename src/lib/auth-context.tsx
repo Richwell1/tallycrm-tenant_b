@@ -1,12 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  disableLocalPreview,
-  isLocalPreviewEnabled,
-  isSupabaseConfigured,
-  supabase,
-} from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+
 import { clearMfaSession } from "@/lib/mfa-session";
 import type { CurrentUser, Role } from "@/types";
 
@@ -26,24 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-
-    if (!isSupabaseConfigured()) {
-      setUser(
-        isLocalPreviewEnabled()
-          ? {
-              id: "local-preview-admin",
-              fullName: "Local Preview Admin",
-              email: "preview@example.com",
-              avatarUrl: null,
-              role: "admin",
-            }
-          : null,
-      );
-      setIsLoading(false);
-      return () => {
-        mounted = false;
-      };
-    }
 
     async function hydrate(userId: string | undefined, email: string | null | undefined) {
       if (!userId) {
@@ -108,13 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     clearMfaSession();
-    if (!isSupabaseConfigured()) {
-      disableLocalPreview();
-      setUser(null);
-      navigate({ to: "/auth", replace: true });
-      return;
-    }
     await supabase.auth.signOut();
+
     navigate({ to: "/auth", replace: true });
   }
 

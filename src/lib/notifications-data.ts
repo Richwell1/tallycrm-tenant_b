@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export type NotificationRow = Database["public"]["Tables"]["notifications"]["Row"];
@@ -51,7 +51,6 @@ export function useNotifications(userId: string | undefined) {
     enabled: !!userId,
     queryFn: async () => {
       if (!userId) return [];
-      if (!isSupabaseConfigured()) return previewNotifications(userId);
 
       const { data, error } = await supabase
         .from("notifications")
@@ -77,7 +76,7 @@ export function useNotificationsRealtime(userId: string | undefined) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!userId || !isSupabaseConfigured()) return;
+    if (!userId) return;
 
     const channel = supabase
       .channel(`notifications:${userId}`)
@@ -124,7 +123,6 @@ export function useMarkNotificationRead(userId: string | undefined) {
   return useMutation({
     mutationFn: async ({ id, read = true }: { id: string; read?: boolean }) => {
       if (!userId) throw new Error("No signed-in user");
-      if (!isSupabaseConfigured()) return;
 
       const { error } = await supabase
         .from("notifications")
@@ -158,7 +156,6 @@ export function useMarkAllNotificationsRead(userId: string | undefined) {
   return useMutation({
     mutationFn: async () => {
       if (!userId) throw new Error("No signed-in user");
-      if (!isSupabaseConfigured()) return;
 
       const { error } = await supabase
         .from("notifications")
@@ -191,7 +188,6 @@ export function useDeleteNotification(userId: string | undefined) {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!userId) throw new Error("No signed-in user");
-      if (!isSupabaseConfigured()) return;
 
       const { error } = await supabase
         .from("notifications")
@@ -293,60 +289,4 @@ export function notificationHref(notification: NotificationRow) {
   if (notification.entity === "task") return "/app/tasks";
   if (notification.entity === "analytics") return "/app/analytics";
   return "/app";
-}
-
-function previewNotifications(userId: string): NotificationRow[] {
-  const now = Date.now();
-  const rows: Array<Omit<NotificationRow, "user_id">> = [
-    {
-      id: "preview-assignment",
-      type: "lead_assignment",
-      title: "New lead assigned",
-      body: "Akosua from Tally Landing Page needs first contact within 4 hours.",
-      entity: "lead",
-      entity_id: null,
-      origin_node_id: null,
-      read: false,
-      deleted_at: null,
-      created_at: new Date(now - 8 * 60_000).toISOString(),
-    },
-    {
-      id: "preview-reminder",
-      type: "task_reminder",
-      title: "Follow-up due soon",
-      body: "Send proposal follow-up for Northstar Foods before 3:00 PM.",
-      entity: "task",
-      entity_id: null,
-      origin_node_id: null,
-      read: false,
-      deleted_at: null,
-      created_at: new Date(now - 42 * 60_000).toISOString(),
-    },
-    {
-      id: "preview-escalation",
-      type: "sla_breach",
-      title: "SLA breach: Negotiation stage",
-      body: "A high-value deal has been stale for 3 days and needs manager attention.",
-      entity: "deal",
-      entity_id: null,
-      origin_node_id: null,
-      read: false,
-      deleted_at: null,
-      created_at: new Date(now - 2 * 60 * 60_000).toISOString(),
-    },
-    {
-      id: "preview-digest",
-      type: "daily_digest",
-      title: "Morning sales digest",
-      body: "5 tasks due today, 2 overdue follow-ups, and 3 new landing page leads.",
-      entity: "task",
-      entity_id: null,
-      origin_node_id: null,
-      read: true,
-      deleted_at: null,
-      created_at: new Date(now - 5 * 60 * 60_000).toISOString(),
-    },
-  ];
-
-  return rows.map((row) => ({ ...row, user_id: userId }));
 }

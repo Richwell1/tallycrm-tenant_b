@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
@@ -18,10 +18,6 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setReady(false);
-      return;
-    }
     // Recovery flow sets session via hash; wait until we have one.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);
@@ -34,10 +30,6 @@ function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isSupabaseConfigured()) {
-      toast.error("Password reset needs Supabase environment variables.");
-      return;
-    }
     if (password !== confirm) {
       toast.error("Passwords do not match");
       return;

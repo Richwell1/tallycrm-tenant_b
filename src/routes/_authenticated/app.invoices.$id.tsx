@@ -5,6 +5,8 @@ import { CardSkeleton, ErrorState } from "@/components/common";
 import { PageHeader, ToolbarButton } from "@/components/layout";
 import { InvoiceLineItemsEditor } from "@/components/invoices/InvoiceLineItemsEditor";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { AddReceiptModal } from "@/components/receipts/AddReceiptModal";
+import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
 import { formatDateOnly, formatMoney, formatRelative } from "@/lib/format";
 import {
   invoiceBalance,
@@ -16,6 +18,7 @@ import {
   useUpdateInvoiceStatus,
 } from "@/lib/invoices-data";
 import { useQuoteFormOptions } from "@/lib/quotes-data";
+import { useReceiptsForInvoice } from "@/lib/receipts-data";
 
 export const Route = createFileRoute("/_authenticated/app/invoices/$id")({
   component: InvoiceDetailPage,
@@ -26,19 +29,19 @@ function InvoiceDetailPage() {
   const navigate = useNavigate();
   const { data: invoice, isLoading, isError, error, refetch } = useInvoice(id);
   const { data: options } = useQuoteFormOptions();
+  const { data: receipts } = useReceiptsForInvoice(id);
   const updateStatus = useUpdateInvoiceStatus();
   const updateInvoice = useUpdateInvoice();
   const removeInvoice = useDeleteInvoice();
 
   const [dueDate, setDueDate] = useState("");
-  const [amountPaid, setAmountPaid] = useState("0");
   const [notes, setNotes] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
+  const [receiptOpen, setReceiptOpen] = useState(false);
 
   useEffect(() => {
     if (!invoice) return;
     setDueDate(invoice.due_date ?? "");
-    setAmountPaid(String(Number(invoice.amount_paid ?? 0)));
     setNotes(invoice.notes ?? "");
     setPaymentTerms(invoice.payment_terms ?? "");
   }, [invoice]);
@@ -62,7 +65,7 @@ function InvoiceDetailPage() {
   );
   const balance = invoiceBalance(invoice);
 
-  async function changeStatus(status: "sent" | "partially_paid" | "paid" | "cancelled") {
+  async function changeStatus(status: "sent" | "cancelled") {
     try {
       await updateStatus.mutateAsync({ id, status });
       toast.success("Invoice updated");
@@ -77,7 +80,6 @@ function InvoiceDetailPage() {
         id,
         patch: {
           due_date: dueDate || null,
-          amount_paid: Number(amountPaid) || 0,
           notes: notes.trim() || null,
           payment_terms: paymentTerms.trim() || null,
         },
@@ -138,21 +140,9 @@ function InvoiceDetailPage() {
             ) : null}
             {!locked && invoice.status !== "draft" ? (
               <>
-                <ToolbarButton
-                  icon="task_alt"
-                  variant="cta"
-                  onClick={() => void changeStatus("paid")}
-                >
-                  Mark paid
+                <ToolbarButton icon="payments" variant="cta" onClick={() => setReceiptOpen(true)}>
+                  Record payment
                 </ToolbarButton>
-                {invoice.status !== "partially_paid" ? (
-                  <ToolbarButton
-                    icon="pie_chart"
-                    onClick={() => void changeStatus("partially_paid")}
-                  >
-                    Partially paid
-                  </ToolbarButton>
-                ) : null}
                 <ToolbarButton icon="cancel" onClick={() => void changeStatus("cancelled")}>
                   Cancel
                 </ToolbarButton>
@@ -228,19 +218,6 @@ function InvoiceDetailPage() {
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                Amount paid ({invoice.currency})
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={amountPaid}
-                onChange={(event) => setAmountPaid(event.target.value)}
-                className="deal-input"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
                 Payment terms
               </span>
               <textarea
@@ -278,6 +255,63 @@ function InvoiceDetailPage() {
         readOnly={locked}
       />
 
+      <section className="mt-6 rounded-xl border border-border bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-[16px] font-semibold text-foreground">Receipts</h2>
+            <p className="text-xs text-text-secondary">
+              Payments recorded here update the paid amount and invoice status.
+            </p>
+          </div>
+          {!locked ? (
+            <ToolbarButton icon="payments" variant="primary" onClick={() => setReceiptOpen(true)}>
+              Record payment
+            </ToolbarButton>
+          ) : null}
+        </header>
+
+        {(receipts?.length ?? 0) === 0 ? (
+          <p className="px-6 py-6 text-sm text-text-muted">No payments recorded yet.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {receipts?.map((receipt) => (
+              <li
+                key={receipt.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 text-sm"
+              >
+                <div>
+                  <Link
+                    to="/app/receipts/$id"
+                    params={{ id: receipt.id }}
+                    className="font-semibold text-foreground hover:text-primary"
+                  >
+                    {receipt.receipt_number}
+                  </Link>
+                  <p className="text-xs text-text-secondary">
+                    {formatDateOnly(receipt.payment_date)} · {receipt.payment_method}
+                    {receipt.reference ? ` · ${receipt.reference}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <ReceiptStatusBadge status={receipt.status} />
+                  <span className="w-28 text-right font-semibold text-foreground">
+                    {formatMoney(Number(receipt.amount), receipt.currency)}
+                  </span>
+                  <Link
+                    to="/app/receipts/print/$id"
+                    params={{ id: receipt.id }}
+                    className="rounded-md p-1.5 text-text-muted hover:bg-muted hover:text-primary"
+                    title="Print receipt"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">print</span>
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {invoice.status_history.length ? (
         <section className="mt-6 rounded-xl border border-border bg-card">
           <header className="border-b border-border px-6 py-4">
@@ -300,6 +334,7 @@ function InvoiceDetailPage() {
           </ul>
         </section>
       ) : null}
+      <AddReceiptModal open={receiptOpen} onOpenChange={setReceiptOpen} invoice={invoice} />
     </>
   );
 }

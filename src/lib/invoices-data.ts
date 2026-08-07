@@ -392,6 +392,7 @@ export function useDeleteInvoice() {
 
 function invalidateInvoices(qc: ReturnType<typeof useQueryClient>, invoiceId?: string) {
   qc.invalidateQueries({ queryKey: invoicesKey });
+  qc.invalidateQueries({ queryKey: ["invoices", "quote"] });
   if (invoiceId) qc.invalidateQueries({ queryKey: ["invoice", invoiceId] });
 }
 

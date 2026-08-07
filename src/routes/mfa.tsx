@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { hasFreshMfaSession, markMfaVerified } from "@/lib/mfa-session";
 import { consumePostAuthRedirect } from "@/lib/post-auth-redirect";
 import { toast } from "sonner";
@@ -45,10 +45,6 @@ function MfaPage() {
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    if (!isSupabaseConfigured()) {
-      navigate({ to: "/auth", replace: true });
-      return;
-    }
     void initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
