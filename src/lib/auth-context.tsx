@@ -91,7 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearMfaSession();
     await supabase.auth.signOut();
 
-    await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
