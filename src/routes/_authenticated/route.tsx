@@ -5,10 +5,11 @@ import { clearMfaSession, hasFreshMfaSession, touchMfaSession } from "@/lib/mfa-
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-
+    const { data, error } = await supabase.auth.getUser().catch((err: unknown) => {
       console.warn("[Auth] Could not reach Supabase auth", err);
       return { data: { user: null }, error: err };
     });
+
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
     }
