@@ -58,10 +58,7 @@ function AuthPage() {
 
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabaseConfigured) {
-      toast.error("Password reset needs Supabase environment variables.");
-      return;
-    }
+
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
