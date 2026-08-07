@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { hasFreshMfaSession, markMfaVerified } from "@/lib/mfa-session";
+import { consumePostAuthRedirect } from "@/lib/post-auth-redirect";
 import { toast } from "sonner";
 import {
   ShieldCheck,
