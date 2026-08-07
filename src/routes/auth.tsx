@@ -1,11 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  enableLocalPreview,
-  isSupabaseConfigured,
-  missingSupabaseConfigMessage,
-  supabase,
-} from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+
 import { clearMfaSession, hasFreshMfaSession } from "@/lib/mfa-session";
 import { toast } from "sonner";
 
@@ -25,10 +21,8 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const supabaseConfigured = isSupabaseConfigured();
 
   useEffect(() => {
-    if (!supabaseConfigured) return;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -38,14 +32,12 @@ function AuthPage() {
         navigate({ to: "/mfa", replace: true });
       }
     });
-  }, [navigate, supabaseConfigured]);
+  }, [navigate]);
+
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabaseConfigured) {
-      toast.error("Supabase is not configured", { description: missingSupabaseConfigMessage() });
-      return;
-    }
+
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -62,10 +54,7 @@ function AuthPage() {
 
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabaseConfigured) {
-      toast.error("Password reset needs Supabase environment variables.");
-      return;
-    }
+
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -81,11 +70,8 @@ function AuthPage() {
     }
   }
 
-  function continueLocalPreview() {
-    enableLocalPreview();
-    toast.success("Local preview enabled");
-    window.location.assign("/app/tasks");
-  }
+
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -99,21 +85,8 @@ function AuthPage() {
           </p>
         </div>
 
-        {!supabaseConfigured ? (
-          <div className="mb-5 rounded-lg border border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning">
-            <p className="font-semibold">Supabase is not configured</p>
-            <p className="mt-1 text-text-secondary">
-              Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to enable real sign-in.
-            </p>
-            <button
-              type="button"
-              onClick={continueLocalPreview}
-              className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-dark"
-            >
-              Continue local preview
-            </button>
-          </div>
-        ) : null}
+
+
 
         {view === "signin" ? (
           <form onSubmit={handleSignIn} className="space-y-3">
