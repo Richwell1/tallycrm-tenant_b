@@ -34,7 +34,6 @@ function AuthPage() {
     });
   }, [navigate]);
 
-
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
 
@@ -70,9 +69,6 @@ function AuthPage() {
     }
   }
 
-
-
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 shadow-[var(--shadow-md)]">
@@ -84,9 +80,6 @@ function AuthPage() {
             {view === "signin" ? "Sign in to your workspace" : "Reset your password"}
           </p>
         </div>
-
-
-
 
         {view === "signin" ? (
           <form onSubmit={handleSignIn} className="space-y-3">

@@ -129,6 +129,7 @@ export type Database = {
           quote_number_node_prefix: string | null
           quote_number_prefix: string
           quote_terms: string | null
+          receipt_number_prefix: string
           time_zone: string
           timezone: string
           updated_at: string
@@ -171,6 +172,7 @@ export type Database = {
           quote_number_node_prefix?: string | null
           quote_number_prefix?: string
           quote_terms?: string | null
+          receipt_number_prefix?: string
           time_zone?: string
           timezone?: string
           updated_at?: string
@@ -213,6 +215,7 @@ export type Database = {
           quote_number_node_prefix?: string | null
           quote_number_prefix?: string
           quote_terms?: string | null
+          receipt_number_prefix?: string
           time_zone?: string
           timezone?: string
           updated_at?: string
@@ -1665,6 +1668,130 @@ export type Database = {
           },
         ]
       }
+      receipts: {
+        Row: {
+          amount: number
+          assigned_to: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          currency: string
+          deal_id: string | null
+          deleted_at: string | null
+          id: string
+          invoice_id: string
+          issued_at: string
+          issued_by: string | null
+          last_modified_by: string | null
+          notes: string | null
+          origin_node_id: string | null
+          payment_date: string
+          payment_method: string
+          quote_id: string | null
+          receipt_number: string
+          reference: string | null
+          status: Database["public"]["Enums"]["receipt_status"]
+          updated_at: string
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          amount: number
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          currency?: string
+          deal_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_id: string
+          issued_at?: string
+          issued_by?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          payment_date?: string
+          payment_method?: string
+          quote_id?: string | null
+          receipt_number?: string
+          reference?: string | null
+          status?: Database["public"]["Enums"]["receipt_status"]
+          updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount?: number
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          currency?: string
+          deal_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_id?: string
+          issued_at?: string
+          issued_by?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          payment_date?: string
+          payment_method?: string
+          quote_id?: string | null
+          receipt_number?: string
+          reference?: string | null
+          status?: Database["public"]["Enums"]["receipt_status"]
+          updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_checkpoints: {
         Row: {
           created_at: string
@@ -2072,6 +2199,7 @@ export type Database = {
       }
       next_invoice_number: { Args: never; Returns: string }
       next_quote_number: { Args: never; Returns: string }
+      next_receipt_number: { Args: never; Returns: string }
       notify_user: {
         Args: {
           _body: string
@@ -2095,6 +2223,10 @@ export type Database = {
         Returns: string
       }
       recalculate_invoice_totals: {
+        Args: { _invoice_id: string }
+        Returns: undefined
+      }
+      recalculate_invoice_payments: {
         Args: { _invoice_id: string }
         Returns: undefined
       }
@@ -2133,6 +2265,7 @@ export type Database = {
         | "disqualified"
       quote_discount_type: "none" | "percent" | "amount"
       quote_status: "draft" | "sent" | "accepted" | "rejected" | "expired"
+      receipt_status: "issued" | "void"
       task_priority: "low" | "medium" | "high"
       task_status: "pending" | "in_progress" | "done" | "cancelled"
       user_status: "active" | "inactive" | "invited"
@@ -2282,6 +2415,7 @@ export const Constants = {
       ],
       quote_discount_type: ["none", "percent", "amount"],
       quote_status: ["draft", "sent", "accepted", "rejected", "expired"],
+      receipt_status: ["issued", "void"],
       task_priority: ["low", "medium", "high"],
       task_status: ["pending", "in_progress", "done", "cancelled"],
       user_status: ["active", "inactive", "invited"],

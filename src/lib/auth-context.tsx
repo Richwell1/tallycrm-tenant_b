@@ -23,9 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-
-
-
     async function hydrate(userId: string | undefined, email: string | null | undefined) {
       if (!userId) {
         if (mounted) {
