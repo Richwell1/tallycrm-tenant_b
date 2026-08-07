@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { hasFreshMfaSession, markMfaVerified } from "@/lib/mfa-session";
+import { consumePostAuthRedirect } from "@/lib/post-auth-redirect";
 import { toast } from "sonner";
 import {
   ShieldCheck,
@@ -74,9 +75,12 @@ function MfaPage() {
       setEmail(userRes.data.user.email ?? "");
 
       if (aalRes.data?.currentLevel === "aal2" && hasFreshMfaSession(userRes.data.user.id)) {
-        navigate({ to: "/app", replace: true });
+        const back = consumePostAuthRedirect();
+        if (back) window.location.replace(back);
+        else navigate({ to: "/app", replace: true });
         return;
       }
+
 
       if (factorsRes.error) throw factorsRes.error;
       const verified = factorsRes.data?.totp?.find((f) => f.status === "verified");
@@ -161,7 +165,9 @@ function MfaPage() {
           .eq("id", userData.user.id);
       }
       toast.success(mode === "enroll" ? "Two-factor enrolled" : "Verified");
-      navigate({ to: "/app", replace: true });
+      const back = consumePostAuthRedirect();
+      if (back) window.location.replace(back);
+      else navigate({ to: "/app", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Invalid or expired code";
       toast.error(msg);
