@@ -95,21 +95,8 @@ function AuthPage() {
           </p>
         </div>
 
-        {!supabaseConfigured ? (
-          <div className="mb-5 rounded-lg border border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning">
-            <p className="font-semibold">Supabase is not configured</p>
-            <p className="mt-1 text-text-secondary">
-              Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to enable real sign-in.
-            </p>
-            <button
-              type="button"
-              onClick={continueLocalPreview}
-              className="mt-3 w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-dark"
-            >
-              Continue local preview
-            </button>
-          </div>
-        ) : null}
+
+
 
         {view === "signin" ? (
           <form onSubmit={handleSignIn} className="space-y-3">
