@@ -38,10 +38,7 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabaseConfigured) {
-      toast.error("Supabase is not configured", { description: missingSupabaseConfigMessage() });
-      return;
-    }
+
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
