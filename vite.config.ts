@@ -15,11 +15,13 @@ import { resolvePreset } from "./scripts/deploy-target.mjs";
 const preset = resolvePreset();
 
 export default defineConfig({
+  plugins: [mcpPlugin()],
   vite: {
     server: {
       allowedHosts: ["localhost", "127.0.0.1", "crm.local", "crm.giftedsms.com"],
     },
   },
+
   nitro: preset ? { preset } : true,
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
