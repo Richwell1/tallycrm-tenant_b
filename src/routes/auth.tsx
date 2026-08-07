@@ -21,10 +21,8 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const supabaseConfigured = isSupabaseConfigured();
 
   useEffect(() => {
-    if (!supabaseConfigured) return;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -34,7 +32,8 @@ function AuthPage() {
         navigate({ to: "/mfa", replace: true });
       }
     });
-  }, [navigate, supabaseConfigured]);
+  }, [navigate]);
+
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
