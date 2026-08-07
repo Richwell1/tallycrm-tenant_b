@@ -23,23 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    if (!isSupabaseConfigured()) {
-      setUser(
-        isLocalPreviewEnabled()
-          ? {
-              id: "local-preview-admin",
-              fullName: "Local Preview Admin",
-              email: "preview@example.com",
-              avatarUrl: null,
-              role: "admin",
-            }
-          : null,
-      );
-      setIsLoading(false);
-      return () => {
-        mounted = false;
-      };
-    }
+
+
 
     async function hydrate(userId: string | undefined, email: string | null | undefined) {
       if (!userId) {
