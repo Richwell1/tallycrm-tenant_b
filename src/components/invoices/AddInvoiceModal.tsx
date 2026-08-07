@@ -217,10 +217,7 @@ export function AddInvoiceModal({ open, onOpenChange }: AddInvoiceModalProps) {
                   <button
                     type="button"
                     onClick={() =>
-                      setLines((current) => [
-                        ...current,
-                        blankLine(options?.defaults.taxRate ?? 0),
-                      ])
+                      setLines((current) => [...current, blankLine(options?.defaults.taxRate ?? 0)])
                     }
                     className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-semibold hover:bg-secondary"
                   >

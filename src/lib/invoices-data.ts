@@ -13,8 +13,7 @@ export type InvoiceInsert = Database["public"]["Tables"]["invoices"]["Insert"];
 export type InvoiceUpdate = Database["public"]["Tables"]["invoices"]["Update"];
 export type InvoiceLineItemRow = Database["public"]["Tables"]["invoice_line_items"]["Row"];
 export type InvoiceLineItemInsert = Database["public"]["Tables"]["invoice_line_items"]["Insert"];
-export type InvoiceStatusHistoryRow =
-  Database["public"]["Tables"]["invoice_status_history"]["Row"];
+export type InvoiceStatusHistoryRow = Database["public"]["Tables"]["invoice_status_history"]["Row"];
 export type InvoiceStatus = Database["public"]["Enums"]["invoice_status"];
 
 export interface InvoiceSummary extends InvoiceRow {

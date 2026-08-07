@@ -346,7 +346,6 @@ async function sendLeadConfirmationEmail(
   await markLeadEmailStatus(leadId, "failed");
 }
 
-
 function extractResendSandboxRecipient(body: string) {
   return body.match(/own email address \(([^)\s]+@[^)\s]+)\)/i)?.[1] ?? null;
 }

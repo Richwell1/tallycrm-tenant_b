@@ -90,9 +90,7 @@ function InvoiceDetailPage() {
 
   async function handleDelete() {
     if (
-      !window.confirm(
-        `Delete invoice ${invoice!.invoice_number}? It will be archived, not erased.`,
-      )
+      !window.confirm(`Delete invoice ${invoice!.invoice_number}? It will be archived, not erased.`)
     ) {
       return;
     }
@@ -109,7 +107,10 @@ function InvoiceDetailPage() {
     <>
       <PageHeader
         title={invoice.title}
-        breadcrumbs={[{ label: "Invoices", to: "/app/invoices" }, { label: invoice.invoice_number }]}
+        breadcrumbs={[
+          { label: "Invoices", to: "/app/invoices" },
+          { label: invoice.invoice_number },
+        ]}
         actions={
           <>
             <Link

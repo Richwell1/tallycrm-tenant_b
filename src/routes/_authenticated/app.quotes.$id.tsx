@@ -279,11 +279,7 @@ function QuoteDetailPage() {
       {convertOpen ? (
         <ConvertQuoteModal quote={quote} open={convertOpen} onOpenChange={setConvertOpen} />
       ) : null}
-      <InvoiceFromQuoteModal
-        open={invoiceOpen}
-        onOpenChange={setInvoiceOpen}
-        quoteId={quote.id}
-      />
+      <InvoiceFromQuoteModal open={invoiceOpen} onOpenChange={setInvoiceOpen} quoteId={quote.id} />
     </>
   );
 }
