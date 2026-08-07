@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export type SyncRunStatus = "running" | "success" | "failed";
 export type SyncRunDirection = "push" | "pull" | "bidirectional";
@@ -78,7 +78,7 @@ export function useBrowserOnlineStatus() {
 export function useSyncStatus(enabled: boolean) {
   return useQuery<SyncStatusSnapshot>({
     queryKey: ["sync_status"],
-    enabled: enabled && isSupabaseConfigured(),
+    enabled,
     staleTime: 30_000,
     refetchInterval: 60_000,
     retry: (failureCount, error) => !isMissingSyncBackend(error) && failureCount < 2,
