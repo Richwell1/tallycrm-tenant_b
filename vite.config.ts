@@ -13,10 +13,16 @@ import { resolvePreset } from "./scripts/deploy-target.mjs";
 // `null` means "leave the platform default alone" — that is what Lovable's
 // sandbox needs, since it forces its own preset and output directory.
 const preset = resolvePreset();
+const isVercelBuild = preset === "vercel";
 
 export default defineConfig({
   plugins: [mcpPlugin()],
   vite: {
+    build: {
+      rollupOptions: {
+        external: isVercelBuild ? ["cloudflare:workers"] : [],
+      },
+    },
     server: {
       allowedHosts: ["localhost", "127.0.0.1", "crm.local", "crm.giftedsms.com"],
     },
