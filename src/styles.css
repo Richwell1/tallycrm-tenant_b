@@ -125,7 +125,16 @@
   --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.8);
 }
 
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 :root {
+
   --radius: 8px;
 
   --navy: #0a1628;

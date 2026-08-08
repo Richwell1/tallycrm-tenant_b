@@ -1714,7 +1714,7 @@ export type Database = {
           payment_date?: string
           payment_method?: string
           quote_id?: string | null
-          receipt_number?: string
+          receipt_number: string
           reference?: string | null
           status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
@@ -2222,11 +2222,11 @@ export type Database = {
         }
         Returns: string
       }
-      recalculate_invoice_totals: {
+      recalculate_invoice_payments: {
         Args: { _invoice_id: string }
         Returns: undefined
       }
-      recalculate_invoice_payments: {
+      recalculate_invoice_totals: {
         Args: { _invoice_id: string }
         Returns: undefined
       }
