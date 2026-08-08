@@ -124,12 +124,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html:
-              "try{var l=location.pathname==='/';if(l){document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light'}else{var t=localStorage.getItem('tally-crm-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}}catch(e){}",
+              "try{if(location.pathname==='/'){document.documentElement.classList.remove('dark')}else{var t=localStorage.getItem('tally-crm-theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}}catch(e){}",
           }}
         />
         <HeadContent />
