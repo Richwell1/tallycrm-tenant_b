@@ -2175,6 +2175,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_rep_owned_insert: { Args: never; Returns: boolean }
       log_audit_system: {
         Args: {
           _action: string
