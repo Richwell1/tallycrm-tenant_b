@@ -11,3 +11,4 @@ export {
   GridSkeleton,
 } from "./LoadingSkeleton";
 export { RoleGuard } from "./RoleGuard";
+export { UnitInput, COMMON_UNITS } from "./UnitInput";
