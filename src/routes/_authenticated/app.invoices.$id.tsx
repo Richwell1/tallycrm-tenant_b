@@ -56,7 +56,10 @@ function InvoiceDetailPage() {
     );
   }
 
-  const locked = invoice.status === "paid" || invoice.status === "cancelled";
+  // Pricing and discounts are frozen once a valid payment exists — the database
+  // enforces the same rule, so keep the editor read-only to match.
+  const hasValidReceipt = (receipts ?? []).some((receipt) => receipt.status === "issued");
+  const locked = invoice.status === "paid" || invoice.status === "cancelled" || hasValidReceipt;
   const overdue = isInvoiceOverdue(
     invoice.status,
     invoice.due_date,
