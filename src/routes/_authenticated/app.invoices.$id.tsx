@@ -256,7 +256,7 @@ function InvoiceDetailPage() {
         invoice={invoice}
         catalog={options?.catalog ?? []}
         defaultTaxRate={options?.defaults.taxRate ?? 0}
-        readOnly={locked}
+        readOnly={pricingLocked}
       />
 
       <section className="mt-6 rounded-xl border border-border bg-card">
