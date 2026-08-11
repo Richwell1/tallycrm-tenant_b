@@ -57,6 +57,10 @@ function InvoiceDetailPage() {
   }
 
   const locked = invoice.status === "paid" || invoice.status === "cancelled";
+  // Pricing and discounts are frozen once a valid payment exists — the database
+  // enforces the same rule, so keep the line editor read-only to match.
+  const hasValidReceipt = (receipts ?? []).some((receipt) => receipt.status === "issued");
+  const pricingLocked = locked || hasValidReceipt;
   const overdue = isInvoiceOverdue(
     invoice.status,
     invoice.due_date,
@@ -252,7 +256,7 @@ function InvoiceDetailPage() {
         invoice={invoice}
         catalog={options?.catalog ?? []}
         defaultTaxRate={options?.defaults.taxRate ?? 0}
-        readOnly={locked}
+        readOnly={pricingLocked}
       />
 
       <section className="mt-6 rounded-xl border border-border bg-card">

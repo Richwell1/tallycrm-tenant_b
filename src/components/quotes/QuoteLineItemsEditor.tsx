@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { UnitInput } from "@/components/common";
 import { formatMoney } from "@/lib/format";
 import { calculateQuoteTotals, type QuoteDiscountType } from "@/lib/quote-totals";
 import {
@@ -255,12 +256,12 @@ export function QuoteLineItemsEditor({
                     />
                   </td>
                   <td className="px-3 py-2 align-top">
-                    <input
+                    <UnitInput
                       value={line.unit}
                       readOnly={readOnly}
-                      onChange={(event) => patchLine(index, { unit: event.target.value })}
-                      className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm outline-none focus:border-border focus:bg-card"
+                      onChange={(unit) => patchLine(index, { unit })}
                     />
+
                   </td>
                   <td className="px-3 py-2 align-top">
                     <NumberCell
