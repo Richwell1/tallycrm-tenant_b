@@ -56,6 +56,7 @@ interface ToolbarButtonProps {
   onClick?: () => void;
   variant?: "default" | "cta" | "primary";
   title?: string;
+  disabled?: boolean;
 }
 
 /** Shared header action button — used for Export / Refresh / Add. */
@@ -65,6 +66,7 @@ export function ToolbarButton({
   onClick,
   variant = "default",
   title,
+  disabled = false,
 }: ToolbarButtonProps) {
   const base =
     "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2.5 text-[13px] font-semibold transition-all";
@@ -75,7 +77,12 @@ export function ToolbarButton({
         ? "bg-primary text-primary-foreground hover:bg-primary-dark"
         : "border border-border bg-surface text-foreground hover:bg-surface-hover";
   return (
-    <button onClick={onClick} title={title} className={cn(base, styles)}>
+    <button
+      onClick={onClick}
+      title={title}
+      disabled={disabled}
+      className={cn(base, styles, disabled && "cursor-not-allowed opacity-50")}
+    >
       <Icon name={icon} className="h-[18px] w-[18px]" />
       {children}
     </button>
