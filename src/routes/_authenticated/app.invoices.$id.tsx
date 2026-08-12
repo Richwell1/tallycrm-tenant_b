@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CardSkeleton, ErrorState } from "@/components/common";
 import { PageHeader, ToolbarButton } from "@/components/layout";
@@ -38,6 +38,18 @@ function InvoiceDetailPage() {
   const [notes, setNotes] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [pricingDirty, setPricingDirty] = useState(false);
+  const handleDirtyChange = useCallback((value: boolean) => setPricingDirty(value), []);
+
+  function openReceipt() {
+    if (pricingDirty) {
+      toast.error("Save your invoice changes first", {
+        description: "The outstanding balance is confirmed by the server after saving.",
+      });
+      return;
+    }
+    setReceiptOpen(true);
+  }
 
   useEffect(() => {
     if (!invoice) return;
@@ -144,7 +156,13 @@ function InvoiceDetailPage() {
             ) : null}
             {!locked && invoice.status !== "draft" ? (
               <>
-                <ToolbarButton icon="payments" variant="cta" onClick={() => setReceiptOpen(true)}>
+                <ToolbarButton
+                  icon="payments"
+                  variant="cta"
+                  onClick={openReceipt}
+                  disabled={pricingDirty}
+                  title={pricingDirty ? "Save invoice changes before recording payment" : undefined}
+                >
                   Record payment
                 </ToolbarButton>
                 <ToolbarButton icon="cancel" onClick={() => void changeStatus("cancelled")}>
@@ -257,6 +275,7 @@ function InvoiceDetailPage() {
         catalog={options?.catalog ?? []}
         defaultTaxRate={options?.defaults.taxRate ?? 0}
         readOnly={pricingLocked}
+        onDirtyChange={handleDirtyChange}
       />
 
       <section className="mt-6 rounded-xl border border-border bg-card">
@@ -266,9 +285,20 @@ function InvoiceDetailPage() {
             <p className="text-xs text-text-secondary">
               Payments recorded here update the paid amount and invoice status.
             </p>
+            {pricingDirty ? (
+              <p className="mt-1 text-xs font-semibold text-warning">
+                Save your unsaved invoice changes before recording a payment.
+              </p>
+            ) : null}
           </div>
           {!locked ? (
-            <ToolbarButton icon="payments" variant="primary" onClick={() => setReceiptOpen(true)}>
+            <ToolbarButton
+              icon="payments"
+              variant="primary"
+              onClick={openReceipt}
+              disabled={pricingDirty}
+              title={pricingDirty ? "Save invoice changes before recording payment" : undefined}
+            >
               Record payment
             </ToolbarButton>
           ) : null}
@@ -338,7 +368,11 @@ function InvoiceDetailPage() {
           </ul>
         </section>
       ) : null}
-      <AddReceiptModal open={receiptOpen} onOpenChange={setReceiptOpen} invoice={invoice} />
+      <AddReceiptModal
+        open={receiptOpen && !pricingDirty}
+        onOpenChange={setReceiptOpen}
+        invoice={invoice}
+      />
     </>
   );
 }
