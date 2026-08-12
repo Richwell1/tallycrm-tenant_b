@@ -18,8 +18,51 @@ interface InvoiceLineItemsEditorProps {
   defaultTaxRate: number;
   /** Locked once the invoice is paid or cancelled. */
   readOnly: boolean;
-  /** Notifies the parent when pricing/discount edits are pending a save. */
-  onDirtyChange?: (dirty: boolean) => void;
+  /**
+   * Notifies the parent when pricing/discount edits are pending a save, along
+   * with human-readable labels for exactly which fields changed.
+   */
+  onDirtyChange?: (dirty: boolean, changedFields: string[]) => void;
+}
+
+const LINE_FIELD_LABELS: Record<string, string> = {
+  name: "item name",
+  description: "item description",
+  unit: "unit",
+  quantity: "quantity",
+  unit_price: "unit price",
+  discount_percent: "line discount",
+  tax_rate: "tax rate",
+};
+
+/** Human-readable list of the pricing fields that differ from the saved invoice. */
+function describeChanges(
+  saved: InvoiceLineItemDraft[],
+  lines: InvoiceLineItemDraft[],
+  savedDiscount: [QuoteDiscountType, number],
+  draftDiscount: [QuoteDiscountType, number],
+): string[] {
+  const changes: string[] = [];
+
+  if (lines.length > saved.length) changes.push("added line items");
+  if (lines.length < saved.length) changes.push("removed line items");
+
+  const fields = new Set<string>();
+  const shared = Math.min(saved.length, lines.length);
+  for (let index = 0; index < shared; index += 1) {
+    for (const key of Object.keys(LINE_FIELD_LABELS)) {
+      const before = saved[index]?.[key as keyof InvoiceLineItemDraft] ?? null;
+      const after = lines[index]?.[key as keyof InvoiceLineItemDraft] ?? null;
+      if (before !== after) fields.add(LINE_FIELD_LABELS[key]!);
+    }
+  }
+  for (const field of fields) changes.push(field);
+
+  if (savedDiscount[0] !== draftDiscount[0] || savedDiscount[1] !== draftDiscount[1]) {
+    changes.push("invoice discount");
+  }
+
+  return changes;
 }
 
 function toDraft(invoice: InvoiceDetail): InvoiceLineItemDraft[] {
@@ -76,22 +119,26 @@ export function InvoiceLineItemsEditor({
     [discountType, discountValue, lines],
   );
 
-  const dirty = useMemo(() => {
-    const saved = toDraft(invoice);
-    return (
-      JSON.stringify(saved) !== JSON.stringify(lines) ||
-      discountType !== invoice.discount_type ||
-      discountValue !== Number(invoice.discount_value ?? 0)
-    );
-  }, [discountType, discountValue, lines, invoice]);
+  const changedFields = useMemo(
+    () =>
+      describeChanges(
+        toDraft(invoice),
+        lines,
+        [invoice.discount_type, Number(invoice.discount_value ?? 0)],
+        [discountType, discountValue],
+      ),
+    [discountType, discountValue, lines, invoice],
+  );
+
+  const dirty = changedFields.length > 0;
 
   const saving = saveLines.isPending || updateInvoice.isPending;
 
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    onDirtyChange?.(dirty, changedFields);
+  }, [changedFields, dirty, onDirtyChange]);
 
-  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false, []), [onDirtyChange]);
 
   function patchLine(index: number, patch: Partial<InvoiceLineItemDraft>) {
     setLines((current) =>
@@ -383,9 +430,13 @@ export function InvoiceLineItemsEditor({
             <dd>{formatMoney(totals.total, invoice.currency)}</dd>
           </div>
           {dirty ? (
-            <p className="pt-1 text-right text-[11px] font-semibold text-warning">
-              Unsaved changes — save before recording a payment so the balance is
-              confirmed by the server.
+            <p
+              className="pt-1 text-right text-[11px] font-semibold text-warning"
+              title={`Unsaved: ${changedFields.join(", ")}. Saving sends these to the server, which recalculates the invoice total and the outstanding balance used when recording a payment.`}
+            >
+              Unsaved changes to {changedFields.join(", ")} — the total above is a preview.
+              Save changes to update the invoice total and the outstanding balance used
+              for recording a payment.
             </p>
           ) : null}
         </dl>

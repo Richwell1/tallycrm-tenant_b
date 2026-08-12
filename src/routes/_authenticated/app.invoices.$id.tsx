@@ -39,12 +39,20 @@ function InvoiceDetailPage() {
   const [paymentTerms, setPaymentTerms] = useState("");
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [pricingDirty, setPricingDirty] = useState(false);
-  const handleDirtyChange = useCallback((value: boolean) => setPricingDirty(value), []);
+  const [dirtyFields, setDirtyFields] = useState<string[]>([]);
+  const handleDirtyChange = useCallback((value: boolean, fields: string[]) => {
+    setPricingDirty(value);
+    setDirtyFields(fields);
+  }, []);
+  const dirtyList = dirtyFields.join(", ");
+  const dirtyTooltip = pricingDirty
+    ? `Unsaved changes to ${dirtyList}. Save changes in the line items section first — the server then recalculates the invoice total and the outstanding balance this payment is validated against.`
+    : undefined;
 
   function openReceipt() {
     if (pricingDirty) {
       toast.error("Save your invoice changes first", {
-        description: "The outstanding balance is confirmed by the server after saving.",
+        description: `Unsaved changes to ${dirtyList}. Saving recalculates the invoice total and the outstanding balance used to validate this payment.`,
       });
       return;
     }
