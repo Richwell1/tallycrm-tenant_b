@@ -18,8 +18,51 @@ interface InvoiceLineItemsEditorProps {
   defaultTaxRate: number;
   /** Locked once the invoice is paid or cancelled. */
   readOnly: boolean;
-  /** Notifies the parent when pricing/discount edits are pending a save. */
-  onDirtyChange?: (dirty: boolean) => void;
+  /**
+   * Notifies the parent when pricing/discount edits are pending a save, along
+   * with human-readable labels for exactly which fields changed.
+   */
+  onDirtyChange?: (dirty: boolean, changedFields: string[]) => void;
+}
+
+const LINE_FIELD_LABELS: Record<string, string> = {
+  name: "item name",
+  description: "item description",
+  unit: "unit",
+  quantity: "quantity",
+  unit_price: "unit price",
+  discount_percent: "line discount",
+  tax_rate: "tax rate",
+};
+
+/** Human-readable list of the pricing fields that differ from the saved invoice. */
+function describeChanges(
+  saved: InvoiceLineItemDraft[],
+  lines: InvoiceLineItemDraft[],
+  savedDiscount: [QuoteDiscountType, number],
+  draftDiscount: [QuoteDiscountType, number],
+): string[] {
+  const changes: string[] = [];
+
+  if (lines.length > saved.length) changes.push("added line items");
+  if (lines.length < saved.length) changes.push("removed line items");
+
+  const fields = new Set<string>();
+  const shared = Math.min(saved.length, lines.length);
+  for (let index = 0; index < shared; index += 1) {
+    for (const key of Object.keys(LINE_FIELD_LABELS)) {
+      const before = saved[index]?.[key as keyof InvoiceLineItemDraft] ?? null;
+      const after = lines[index]?.[key as keyof InvoiceLineItemDraft] ?? null;
+      if (before !== after) fields.add(LINE_FIELD_LABELS[key]!);
+    }
+  }
+  for (const field of fields) changes.push(field);
+
+  if (savedDiscount[0] !== draftDiscount[0] || savedDiscount[1] !== draftDiscount[1]) {
+    changes.push("invoice discount");
+  }
+
+  return changes;
 }
 
 function toDraft(invoice: InvoiceDetail): InvoiceLineItemDraft[] {
