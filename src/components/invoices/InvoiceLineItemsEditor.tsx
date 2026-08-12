@@ -119,22 +119,26 @@ export function InvoiceLineItemsEditor({
     [discountType, discountValue, lines],
   );
 
-  const dirty = useMemo(() => {
-    const saved = toDraft(invoice);
-    return (
-      JSON.stringify(saved) !== JSON.stringify(lines) ||
-      discountType !== invoice.discount_type ||
-      discountValue !== Number(invoice.discount_value ?? 0)
-    );
-  }, [discountType, discountValue, lines, invoice]);
+  const changedFields = useMemo(
+    () =>
+      describeChanges(
+        toDraft(invoice),
+        lines,
+        [invoice.discount_type, Number(invoice.discount_value ?? 0)],
+        [discountType, discountValue],
+      ),
+    [discountType, discountValue, lines, invoice],
+  );
+
+  const dirty = changedFields.length > 0;
 
   const saving = saveLines.isPending || updateInvoice.isPending;
 
   useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
+    onDirtyChange?.(dirty, changedFields);
+  }, [changedFields, dirty, onDirtyChange]);
 
-  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false, []), [onDirtyChange]);
 
   function patchLine(index: number, patch: Partial<InvoiceLineItemDraft>) {
     setLines((current) =>
