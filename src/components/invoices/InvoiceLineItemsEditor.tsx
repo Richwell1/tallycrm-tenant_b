@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UnitInput } from "@/components/common";
 import { formatMoney } from "@/lib/format";
@@ -17,6 +18,8 @@ interface InvoiceLineItemsEditorProps {
   defaultTaxRate: number;
   /** Locked once the invoice is paid or cancelled. */
   readOnly: boolean;
+  /** Notifies the parent when pricing/discount edits are pending a save. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 function toDraft(invoice: InvoiceDetail): InvoiceLineItemDraft[] {
@@ -38,7 +41,9 @@ export function InvoiceLineItemsEditor({
   catalog,
   defaultTaxRate,
   readOnly,
+  onDirtyChange,
 }: InvoiceLineItemsEditorProps) {
+  const queryClient = useQueryClient();
   const [lines, setLines] = useState<InvoiceLineItemDraft[]>(() => toDraft(invoice));
   const [discountType, setDiscountType] = useState<QuoteDiscountType>(invoice.discount_type);
   const [discountValue, setDiscountValue] = useState(Number(invoice.discount_value ?? 0));
@@ -81,6 +86,12 @@ export function InvoiceLineItemsEditor({
   }, [discountType, discountValue, lines, invoice]);
 
   const saving = saveLines.isPending || updateInvoice.isPending;
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   function patchLine(index: number, patch: Partial<InvoiceLineItemDraft>) {
     setLines((current) =>
@@ -148,6 +159,9 @@ export function InvoiceLineItemsEditor({
         });
       }
       await saveLines.mutateAsync({ invoiceId: invoice.id, lines });
+      // Wait for the authoritative invoice (server-recalculated totals and
+      // outstanding balance) before reporting success or re-enabling payment.
+      await queryClient.refetchQueries({ queryKey: ["invoice", invoice.id] });
       toast.success("Invoice updated");
     } catch (error) {
       toast.error("Could not save the invoice", { description: (error as Error).message });
@@ -370,7 +384,8 @@ export function InvoiceLineItemsEditor({
           </div>
           {dirty ? (
             <p className="pt-1 text-right text-[11px] font-semibold text-warning">
-              Unsaved changes — totals are confirmed by the server on save.
+              Unsaved changes — save before recording a payment so the balance is
+              confirmed by the server.
             </p>
           ) : null}
         </dl>
