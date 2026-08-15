@@ -320,7 +320,6 @@ export function InvoiceLineItemsEditor({
                       readOnly={readOnly}
                       onChange={(unit) => patchLine(index, { unit })}
                     />
-
                   </td>
                   <td className="px-3 py-2 align-top">
                     <NumberCell
@@ -434,9 +433,9 @@ export function InvoiceLineItemsEditor({
               className="pt-1 text-right text-[11px] font-semibold text-warning"
               title={`Unsaved: ${changedFields.join(", ")}. Saving sends these to the server, which recalculates the invoice total and the outstanding balance used when recording a payment.`}
             >
-              Unsaved changes to {changedFields.join(", ")} — the total above is a preview.
-              Save changes to update the invoice total and the outstanding balance used
-              for recording a payment.
+              Unsaved changes to {changedFields.join(", ")} — the total above is a preview. Save
+              changes to update the invoice total and the outstanding balance used for recording a
+              payment.
             </p>
           ) : null}
         </dl>

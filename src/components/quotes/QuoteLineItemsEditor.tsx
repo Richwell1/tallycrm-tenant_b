@@ -261,7 +261,6 @@ export function QuoteLineItemsEditor({
                       readOnly={readOnly}
                       onChange={(unit) => patchLine(index, { unit })}
                     />
-
                   </td>
                   <td className="px-3 py-2 align-top">
                     <NumberCell
