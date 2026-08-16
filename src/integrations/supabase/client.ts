@@ -1,22 +1,17 @@
-// Browser Supabase client bound to the connected Lovable Cloud project.
+// Browser Supabase client. The connection is supplied by the environment.
 // Only the publishable (anon) key is used here — never the service role key.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// Connected Lovable Cloud project (publishable values are safe in client code).
-// These act as the binding when the build environment does not inject VITE_ vars.
-const CLOUD_SUPABASE_URL = "https://ncggjsjzjfgoceoszjhf.supabase.co";
-const CLOUD_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_VO_1HPPNw-Y-nGVHLEdK8g_6Dkwq6zV";
-
+// No hardcoded connection fallback. Each tenant runs against its own Supabase
+// project, so a missing env var must fail loudly rather than silently binding
+// this build to another tenant's database.
 const serverEnv = typeof process !== "undefined" && process.env ? process.env : {};
 
-export const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL || CLOUD_SUPABASE_URL;
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || serverEnv.SUPABASE_URL;
 
 export const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  serverEnv.SUPABASE_PUBLISHABLE_KEY ||
-  CLOUD_SUPABASE_PUBLISHABLE_KEY;
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || serverEnv.SUPABASE_PUBLISHABLE_KEY;
 
 export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
@@ -29,12 +24,12 @@ export function missingSupabaseConfigMessage() {
   ];
   return `Missing Supabase environment variable(s): ${missing.join(
     ", ",
-  )}. Reconnect Lovable Cloud for this project.`;
+  )}. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY for this tenant.`;
 }
 
 function createSupabaseClient() {
   if (!isSupabaseConfigured()) {
-    // Fail loudly — there is no demo/mock/offline client.
+    // Fail loudly — there is no demo/mock/offline client, and no fallback project.
     throw new Error(missingSupabaseConfigMessage());
   }
 

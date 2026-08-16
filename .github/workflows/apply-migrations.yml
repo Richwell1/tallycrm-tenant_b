@@ -1,0 +1,93 @@
+name: Apply Supabase migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apply-migrations-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  apply-migrations:
+    name: Apply pending migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read tenant configuration
+        id: context
+        shell: bash
+        run: |
+          project_ref="$(sed -nE 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' supabase/config.toml | head -n 1)"
+          if [[ -z "$project_ref" ]]; then
+            echo "Could not read project_id from supabase/config.toml" >&2
+            exit 1
+          fi
+
+          echo "project_ref=$project_ref" >> "$GITHUB_OUTPUT"
+          if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Supabase migration push skipped because one or both required secrets are absent."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record skipped migration run
+        if: steps.context.outputs.ready != 'true'
+        shell: bash
+        run: |
+          {
+            echo "## Supabase migrations"
+            echo "- Project ref: \`${{ steps.context.outputs.project_ref }}\`"
+            echo "- Result: skipped — required repository secrets are absent"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Supabase CLI
+        if: steps.context.outputs.ready == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link tenant project and apply migrations
+        id: apply
+        if: steps.context.outputs.ready == 'true'
+        shell: bash
+        env:
+          PROJECT_REF: ${{ steps.context.outputs.project_ref }}
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Record applied migrations
+        if: steps.context.outputs.ready == 'true' && steps.apply.outcome == 'success'
+        shell: bash
+        run: |
+          {
+            echo "## Supabase migrations"
+            echo "- Project ref: \`${{ steps.context.outputs.project_ref }}\`"
+            echo "- Result: pending migrations applied"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record migration failure
+        if: failure() && steps.context.outputs.project_ref != ''
+        shell: bash
+        run: |
+          {
+            echo "## Supabase migrations"
+            echo "- Project ref: \`${{ steps.context.outputs.project_ref }}\`"
+            echo "- Result: migration application failed"
+          } >> "$GITHUB_STEP_SUMMARY"

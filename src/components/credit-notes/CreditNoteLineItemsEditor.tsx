@@ -1,26 +1,65 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UnitInput } from "@/components/common";
 import { formatMoney } from "@/lib/format";
-import { calculateQuoteTotals, type QuoteDiscountType } from "@/lib/quote-totals";
+import { calculateQuoteTotals } from "@/lib/quote-totals";
 import {
-  type QuoteCatalogItemRow,
-  type QuoteDetail,
-  type QuoteLineItemDraft,
-  useSaveQuoteLineItems,
-  useUpdateQuote,
-} from "@/lib/quotes-data";
+  type CreditNoteDetail,
+  type CreditNoteLineItemDraft,
+  useSaveCreditNoteLineItems,
+} from "@/lib/credit-notes-data";
+import type { QuoteCatalogItemRow } from "@/lib/quotes-data";
 
-interface QuoteLineItemsEditorProps {
-  quote: QuoteDetail;
+interface CreditNoteLineItemsEditorProps {
+  creditNote: CreditNoteDetail;
   catalog: QuoteCatalogItemRow[];
   defaultTaxRate: number;
-  /** Locked once the quote leaves draft — revise to change a sent document. */
+  /** Locked once the credit note is applied or void. */
   readOnly: boolean;
+  /**
+   * Notifies the parent when line edits are pending a save, along with
+   * human-readable labels for exactly which fields changed.
+   */
+  onDirtyChange?: (dirty: boolean, changedFields: string[]) => void;
 }
 
-function toDraft(quote: QuoteDetail): QuoteLineItemDraft[] {
-  return quote.line_items.map((line) => ({
+const LINE_FIELD_LABELS: Record<string, string> = {
+  name: "item name",
+  description: "item description",
+  unit: "unit",
+  quantity: "quantity",
+  unit_price: "unit price",
+  discount_percent: "line discount",
+  tax_rate: "tax rate",
+};
+
+/** Human-readable list of the fields that differ from the saved credit note. */
+function describeChanges(
+  saved: CreditNoteLineItemDraft[],
+  lines: CreditNoteLineItemDraft[],
+): string[] {
+  const changes: string[] = [];
+
+  if (lines.length > saved.length) changes.push("added line items");
+  if (lines.length < saved.length) changes.push("removed line items");
+
+  const fields = new Set<string>();
+  const shared = Math.min(saved.length, lines.length);
+  for (let index = 0; index < shared; index += 1) {
+    for (const key of Object.keys(LINE_FIELD_LABELS)) {
+      const before = saved[index]?.[key as keyof CreditNoteLineItemDraft] ?? null;
+      const after = lines[index]?.[key as keyof CreditNoteLineItemDraft] ?? null;
+      if (before !== after) fields.add(LINE_FIELD_LABELS[key]!);
+    }
+  }
+  for (const field of fields) changes.push(field);
+
+  return changes;
+}
+
+function toDraft(creditNote: CreditNoteDetail): CreditNoteLineItemDraft[] {
+  return creditNote.line_items.map((line) => ({
     id: line.id,
     catalog_item_id: line.catalog_item_id,
     name: line.name,
@@ -33,56 +72,53 @@ function toDraft(quote: QuoteDetail): QuoteLineItemDraft[] {
   }));
 }
 
-export function QuoteLineItemsEditor({
-  quote,
+export function CreditNoteLineItemsEditor({
+  creditNote,
   catalog,
   defaultTaxRate,
   readOnly,
-}: QuoteLineItemsEditorProps) {
-  const [lines, setLines] = useState<QuoteLineItemDraft[]>(() => toDraft(quote));
-  const [discountType, setDiscountType] = useState<QuoteDiscountType>(quote.discount_type);
-  const [discountValue, setDiscountValue] = useState(Number(quote.discount_value ?? 0));
-  const saveLines = useSaveQuoteLineItems();
-  const updateQuote = useUpdateQuote();
+  onDirtyChange,
+}: CreditNoteLineItemsEditorProps) {
+  const queryClient = useQueryClient();
+  const [lines, setLines] = useState<CreditNoteLineItemDraft[]>(() => toDraft(creditNote));
+  const saveLines = useSaveCreditNoteLineItems();
 
-  // Re-seed only when the *saved* document actually changed — a background
-  // refetch that returns identical rows must not wipe what someone is typing.
+  // Re-seed only when the saved document actually changed, so a background
+  // refetch never wipes what someone is typing.
   const serverSignature = useMemo(
     () =>
       JSON.stringify({
-        updated: quote.updated_at,
-        discount: [quote.discount_type, quote.discount_value],
-        lines: quote.line_items.map((line) => [line.id, line.updated_at]),
+        updated: creditNote.updated_at,
+        lines: creditNote.line_items.map((line) => [line.id, line.updated_at]),
       }),
-    [quote],
+    [creditNote],
   );
   const seeded = useRef(serverSignature);
 
   useEffect(() => {
     if (seeded.current === serverSignature) return;
     seeded.current = serverSignature;
-    setLines(toDraft(quote));
-    setDiscountType(quote.discount_type);
-    setDiscountValue(Number(quote.discount_value ?? 0));
-  }, [quote, serverSignature]);
+    setLines(toDraft(creditNote));
+  }, [creditNote, serverSignature]);
 
-  const totals = useMemo(
-    () => calculateQuoteTotals(lines, discountType, discountValue),
-    [discountType, discountValue, lines],
+  // Preview only. The database is authoritative and recalculates on save.
+  const totals = useMemo(() => calculateQuoteTotals(lines, "none", 0), [lines]);
+
+  const changedFields = useMemo(
+    () => describeChanges(toDraft(creditNote), lines),
+    [lines, creditNote],
   );
 
-  const dirty = useMemo(() => {
-    const saved = toDraft(quote);
-    return (
-      JSON.stringify(saved) !== JSON.stringify(lines) ||
-      discountType !== quote.discount_type ||
-      discountValue !== Number(quote.discount_value ?? 0)
-    );
-  }, [discountType, discountValue, lines, quote]);
+  const dirty = changedFields.length > 0;
+  const saving = saveLines.isPending;
 
-  const saving = saveLines.isPending || updateQuote.isPending;
+  useEffect(() => {
+    onDirtyChange?.(dirty, changedFields);
+  }, [changedFields, dirty, onDirtyChange]);
 
-  function patchLine(index: number, patch: Partial<QuoteLineItemDraft>) {
+  useEffect(() => () => onDirtyChange?.(false, []), [onDirtyChange]);
+
+  function patchLine(index: number, patch: Partial<CreditNoteLineItemDraft>) {
     setLines((current) =>
       current.map((line, position) => (position === index ? { ...line, ...patch } : line)),
     );
@@ -134,25 +170,17 @@ export function QuoteLineItemsEditor({
 
   async function handleSave() {
     if (lines.some((line) => !line.name.trim())) {
-      toast.error("Every line needs a description");
+      toast.error("Every item needs a description");
       return;
     }
     try {
-      // Discount first: the line-item writes trigger the recalculation that
-      // has to see the final discount.
-      if (
-        discountType !== quote.discount_type ||
-        discountValue !== Number(quote.discount_value ?? 0)
-      ) {
-        await updateQuote.mutateAsync({
-          id: quote.id,
-          patch: { discount_type: discountType, discount_value: discountValue },
-        });
-      }
-      await saveLines.mutateAsync({ quoteId: quote.id, lines });
-      toast.success("Quote updated");
+      await saveLines.mutateAsync({ creditNoteId: creditNote.id, lines });
+      // Wait for the authoritative credit note (server-recalculated totals)
+      // before reporting success.
+      await queryClient.refetchQueries({ queryKey: ["credit_note", creditNote.id] });
+      toast.success("Credit note updated");
     } catch (error) {
-      toast.error("Could not save the quote", { description: (error as Error).message });
+      toast.error("Could not save the credit note", { description: (error as Error).message });
     }
   }
 
@@ -160,11 +188,11 @@ export function QuoteLineItemsEditor({
     <section className="rounded-xl border border-border bg-card">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
         <div>
-          <h2 className="text-[16px] font-semibold text-foreground">Line Items</h2>
+          <h2 className="text-[16px] font-semibold text-foreground">Credited Items</h2>
           <p className="text-xs text-text-secondary">
             {readOnly
-              ? "This quote is locked. Create a revision to change pricing."
-              : "Quantities, discounts, and tax are recalculated by the database on save."}
+              ? "This credit note is locked and can no longer be edited."
+              : "Discounts and tax are optional — totals are recalculated by the database on save."}
           </p>
         </div>
         {!readOnly ? (
@@ -189,7 +217,7 @@ export function QuoteLineItemsEditor({
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold hover:bg-surface-hover"
             >
               <span className="material-symbols-outlined text-[16px]">add</span>
-              Add line
+              Add item
             </button>
             <button
               type="button"
@@ -224,7 +252,7 @@ export function QuoteLineItemsEditor({
                   colSpan={readOnly ? 7 : 8}
                   className="px-4 py-10 text-center text-sm text-text-muted"
                 >
-                  No line items yet. Add one from the catalog or start from a blank line.
+                  No items yet. Add one from the catalog or start from a blank line.
                 </td>
               </tr>
             ) : (
@@ -291,7 +319,7 @@ export function QuoteLineItemsEditor({
                     />
                   </td>
                   <td className="px-4 py-2 text-right align-top font-semibold text-foreground">
-                    {formatMoney(totals.lines[index]?.line_total ?? 0, quote.currency)}
+                    {formatMoney(totals.lines[index]?.line_total ?? 0, creditNote.currency)}
                   </td>
                   {!readOnly ? (
                     <td className="px-3 py-2 align-top">
@@ -310,7 +338,7 @@ export function QuoteLineItemsEditor({
                         />
                         <IconButton
                           icon="delete"
-                          label="Remove line"
+                          label="Remove item"
                           danger
                           onClick={() =>
                             setLines((current) =>
@@ -330,48 +358,16 @@ export function QuoteLineItemsEditor({
 
       <footer className="flex flex-col gap-6 border-t border-border px-6 py-5 md:flex-row md:justify-end">
         <dl className="w-full max-w-sm space-y-2 text-sm">
-          <Row label="Subtotal" value={formatMoney(totals.subtotal, quote.currency)} />
-
-          <div className="flex items-center justify-between gap-3">
-            <dt className="flex items-center gap-2 text-text-secondary">
-              <span>Discount</span>
-              {!readOnly ? (
-                <>
-                  <select
-                    value={discountType}
-                    onChange={(event) => setDiscountType(event.target.value as QuoteDiscountType)}
-                    className="h-8 rounded-md border border-border bg-card px-2 text-xs font-semibold outline-none"
-                  >
-                    <option value="none">None</option>
-                    <option value="percent">%</option>
-                    <option value="amount">Fixed</option>
-                  </select>
-                  {discountType !== "none" ? (
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={discountValue}
-                      onChange={(event) => setDiscountValue(Number(event.target.value) || 0)}
-                      className="h-8 w-24 rounded-md border border-border bg-card px-2 text-right text-xs outline-none"
-                    />
-                  ) : null}
-                </>
-              ) : null}
-            </dt>
-            <dd className="font-semibold text-foreground">
-              −{formatMoney(totals.discount_amount, quote.currency)}
-            </dd>
-          </div>
-
-          <Row label="Tax" value={formatMoney(totals.tax_amount, quote.currency)} />
+          <Row label="Subtotal" value={formatMoney(totals.subtotal, creditNote.currency)} />
+          <Row label="Tax" value={formatMoney(totals.tax_amount, creditNote.currency)} />
           <div className="flex items-center justify-between border-t border-border pt-3 text-[16px] font-bold text-foreground">
-            <dt>Total</dt>
-            <dd>{formatMoney(totals.total, quote.currency)}</dd>
+            <dt>Total credited</dt>
+            <dd>{formatMoney(totals.total, creditNote.currency)}</dd>
           </div>
           {dirty ? (
             <p className="pt-1 text-right text-[11px] font-semibold text-warning">
-              Unsaved changes — totals are confirmed by the server on save.
+              Unsaved changes to {changedFields.join(", ")} — the total above is a preview. Save
+              changes to update the credited total.
             </p>
           ) : null}
         </dl>
