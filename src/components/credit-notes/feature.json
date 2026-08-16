@@ -1,6 +1,7 @@
 {
   "key": "credit_notes",
   "name": "Credit notes",
+  "description": "Create and manage credits that reduce the amount a customer owes.",
   "scope": "all",
   "audience": [],
   "has_migration": true,

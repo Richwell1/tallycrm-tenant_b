@@ -1,0 +1,74 @@
+name: Publish feature catalogue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/feature.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-catalogue-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish catalogue manifests
+    if: github.repository == 'sowlbaby/tallycrm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CONTROL_PLANE_URL: ${{ secrets.CONTROL_PLANE_URL }}
+      CONTROL_PLANE_SERVICE_KEY: ${{ secrets.CONTROL_PLANE_SERVICE_KEY }}
+
+    steps:
+      - name: Checkout full repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Publish manifests from main and feature branches
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --prune origin '+refs/heads/feature/*:refs/remotes/origin/feature/*'
+          git checkout --force -B main origin/main
+
+          publisher="$RUNNER_TEMP/publish-catalogue.mjs"
+          cp scripts/publish-catalogue.mjs "$publisher"
+
+          {
+            echo "## Published feature catalogue"
+            echo
+            echo "| Feature | Scope | Audience | Source branch |"
+            echo "| --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          return_to_main() {
+            git checkout --force main >/dev/null 2>&1 || true
+          }
+          trap return_to_main EXIT
+
+          mapfile -t feature_branches < <(
+            git for-each-ref --format='%(refname:strip=3)' 'refs/remotes/origin/feature/*' | sort
+          )
+
+          for branch in "${feature_branches[@]}"; do
+            echo "Publishing manifests found on $branch"
+            git checkout --force --detach "origin/$branch"
+            SOURCE_BRANCH="$branch" node "$publisher"
+          done
+
+          git checkout --force main
+          SOURCE_BRANCH=main node "$publisher"
+          trap - EXIT
