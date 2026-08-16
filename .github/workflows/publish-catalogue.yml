@@ -35,6 +35,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Publish manifests from main and feature branches
         shell: bash
@@ -44,7 +48,7 @@ jobs:
           git fetch --prune origin '+refs/heads/feature/*:refs/remotes/origin/feature/*'
           git checkout --force -B main origin/main
 
-          publisher="$RUNNER_TEMP/publish-catalogue.mjs"
+          publisher="$GITHUB_WORKSPACE/.publish-catalogue.mjs"
           cp scripts/publish-catalogue.mjs "$publisher"
 
           {
@@ -55,6 +59,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           return_to_main() {
+            rm -f "$publisher"
             git checkout --force main >/dev/null 2>&1 || true
           }
           trap return_to_main EXIT
@@ -71,4 +76,5 @@ jobs:
 
           git checkout --force main
           SOURCE_BRANCH=main node "$publisher"
+          rm -f "$publisher"
           trap - EXIT

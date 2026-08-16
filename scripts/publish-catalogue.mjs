@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { appendFile } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 
 const controlPlaneUrl = process.env.CONTROL_PLANE_URL?.trim();
 const serviceRoleKey = process.env.CONTROL_PLANE_SERVICE_KEY?.trim();
@@ -95,23 +96,21 @@ if (rows.length === 0) {
   process.exit(0);
 }
 
-const endpoint = `${controlPlaneUrl.replace(/\/$/, "")}/rest/v1/catalogue?on_conflict=feature_key`;
-const response = await fetch(endpoint, {
-  method: "POST",
-  headers: {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
-    "Content-Type": "application/json",
-    Prefer: "resolution=merge-duplicates,return=minimal",
+const supabase = createClient(controlPlaneUrl, serviceRoleKey, {
+  db: { schema: "control_plane" },
+  auth: {
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    persistSession: false,
   },
-  body: JSON.stringify(rows),
 });
 
-if (!response.ok) {
-  const detail = await response.text();
-  throw new Error(
-    `Catalogue publish failed (${response.status} ${response.statusText}): ${detail}`,
-  );
+const { error } = await supabase.from("catalogue").upsert(rows, {
+  onConflict: "feature_key",
+});
+
+if (error) {
+  throw new Error(`Catalogue publish failed: ${error.message} (${error.code})`);
 }
 
 console.log(

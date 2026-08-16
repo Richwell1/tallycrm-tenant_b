@@ -1,9 +1,13 @@
 -- Prymage marketplace control plane.
--- This schema belongs in its own Supabase project, never in a tenant database.
+-- This schema is isolated from the host project's application tables.
 
 create extension if not exists pgcrypto;
+create schema if not exists control_plane;
 
-create table if not exists public.tenants (
+revoke all on schema control_plane from public;
+grant usage on schema control_plane to service_role, anon;
+
+create table if not exists control_plane.tenants (
   name text primary key,
   display_name text not null,
   repo text not null,
@@ -14,7 +18,7 @@ create table if not exists public.tenants (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.catalogue (
+create table if not exists control_plane.catalogue (
   feature_key text primary key,
   name text not null,
   description text not null,
@@ -27,10 +31,10 @@ create table if not exists public.catalogue (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.tenant_features (
+create table if not exists control_plane.tenant_features (
   id uuid primary key default gen_random_uuid(),
-  tenant_name text not null references public.tenants(name),
-  feature_key text not null references public.catalogue(feature_key),
+  tenant_name text not null references control_plane.tenants(name),
+  feature_key text not null references control_plane.catalogue(feature_key),
   version text not null,
   status text not null check (status in ('requested', 'installing', 'live', 'failed')),
   requested_by text not null,
@@ -40,11 +44,11 @@ create table if not exists public.tenant_features (
   unique (tenant_name, feature_key)
 );
 
-create or replace function public.control_plane_set_updated_at()
+create or replace function control_plane.set_updated_at()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = control_plane
 as $$
 begin
   new.updated_at = now();
@@ -52,25 +56,25 @@ begin
 end;
 $$;
 
-revoke all on function public.control_plane_set_updated_at() from public;
-grant execute on function public.control_plane_set_updated_at() to service_role;
+revoke all on function control_plane.set_updated_at() from public;
+grant execute on function control_plane.set_updated_at() to service_role;
 
-drop trigger if exists tenants_set_updated_at on public.tenants;
+drop trigger if exists tenants_set_updated_at on control_plane.tenants;
 create trigger tenants_set_updated_at
-before update on public.tenants
-for each row execute function public.control_plane_set_updated_at();
+before update on control_plane.tenants
+for each row execute function control_plane.set_updated_at();
 
-drop trigger if exists catalogue_set_updated_at on public.catalogue;
+drop trigger if exists catalogue_set_updated_at on control_plane.catalogue;
 create trigger catalogue_set_updated_at
-before update on public.catalogue
-for each row execute function public.control_plane_set_updated_at();
+before update on control_plane.catalogue
+for each row execute function control_plane.set_updated_at();
 
-drop trigger if exists tenant_features_set_updated_at on public.tenant_features;
+drop trigger if exists tenant_features_set_updated_at on control_plane.tenant_features;
 create trigger tenant_features_set_updated_at
-before update on public.tenant_features
-for each row execute function public.control_plane_set_updated_at();
+before update on control_plane.tenant_features
+for each row execute function control_plane.set_updated_at();
 
-create or replace view public.tenant_available_features
+create or replace view control_plane.tenant_available_features
 with (security_barrier = true)
 as
 select
@@ -85,8 +89,8 @@ select
   catalogue.source_branch,
   catalogue.published_at,
   catalogue.updated_at
-from public.tenants
-cross join public.catalogue
+from control_plane.tenants
+cross join control_plane.catalogue
 where
   (
     catalogue.scope = 'all'
@@ -97,60 +101,78 @@ where
   )
   and not exists (
     select 1
-    from public.tenant_features
+    from control_plane.tenant_features
     where tenant_features.tenant_name = tenants.name
       and tenant_features.feature_key = catalogue.feature_key
       and tenant_features.status = 'live'
   );
 
-alter table public.tenants enable row level security;
-alter table public.catalogue enable row level security;
-alter table public.tenant_features enable row level security;
+alter view control_plane.tenant_available_features set (security_invoker = true);
 
-drop policy if exists "Service role manages tenants" on public.tenants;
+alter table control_plane.tenants enable row level security;
+alter table control_plane.catalogue enable row level security;
+alter table control_plane.tenant_features enable row level security;
+
+drop policy if exists "Service role manages tenants" on control_plane.tenants;
 create policy "Service role manages tenants"
-on public.tenants
+on control_plane.tenants
 for all
 to service_role
 using (true)
 with check (true);
 
-drop policy if exists "Service role manages catalogue" on public.catalogue;
-create policy "Service role manages catalogue"
-on public.catalogue
-for all
-to service_role
-using (true)
-with check (true);
-
-drop policy if exists "Anon reads catalogue" on public.catalogue;
-create policy "Anon reads catalogue"
-on public.catalogue
+drop policy if exists "Anon reads tenant names for availability" on control_plane.tenants;
+create policy "Anon reads tenant names for availability"
+on control_plane.tenants
 for select
 to anon
 using (true);
 
-drop policy if exists "Service role manages tenant features" on public.tenant_features;
-create policy "Service role manages tenant features"
-on public.tenant_features
+drop policy if exists "Service role manages catalogue" on control_plane.catalogue;
+create policy "Service role manages catalogue"
+on control_plane.catalogue
 for all
 to service_role
 using (true)
 with check (true);
 
-revoke all on table public.tenants from anon, authenticated;
-revoke all on table public.catalogue from anon, authenticated;
-revoke all on table public.tenant_features from anon, authenticated;
-revoke all on table public.tenant_available_features from anon, authenticated;
+drop policy if exists "Anon reads catalogue" on control_plane.catalogue;
+create policy "Anon reads catalogue"
+on control_plane.catalogue
+for select
+to anon
+using (true);
 
-grant all on table public.tenants to service_role;
-grant all on table public.catalogue to service_role;
-grant all on table public.tenant_features to service_role;
-grant select on table public.tenant_available_features to service_role;
-grant select on table public.catalogue to anon;
-grant select on table public.tenant_available_features to anon;
+drop policy if exists "Service role manages tenant features" on control_plane.tenant_features;
+create policy "Service role manages tenant features"
+on control_plane.tenant_features
+for all
+to service_role
+using (true)
+with check (true);
 
-insert into public.tenants (
+drop policy if exists "Anon reads install status for availability" on control_plane.tenant_features;
+create policy "Anon reads install status for availability"
+on control_plane.tenant_features
+for select
+to anon
+using (true);
+
+revoke all on table control_plane.tenants from anon, authenticated;
+revoke all on table control_plane.catalogue from anon, authenticated;
+revoke all on table control_plane.tenant_features from anon, authenticated;
+revoke all on table control_plane.tenant_available_features from anon, authenticated;
+
+grant all on table control_plane.tenants to service_role;
+grant all on table control_plane.catalogue to service_role;
+grant all on table control_plane.tenant_features to service_role;
+grant select on table control_plane.tenant_available_features to service_role;
+grant select (name) on table control_plane.tenants to anon;
+grant select on table control_plane.catalogue to anon;
+grant select (tenant_name, feature_key, status) on table control_plane.tenant_features to anon;
+grant select on table control_plane.tenant_available_features to anon;
+
+insert into control_plane.tenants (
   name,
   display_name,
   repo,
