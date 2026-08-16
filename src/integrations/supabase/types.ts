@@ -127,6 +127,7 @@ export type Database = {
           company_phone: string | null
           created_at: string
           credit_note_number_prefix: string
+          delivery_note_number_prefix: string
           crm_name: string
           date_format: string
           default_currency: string
@@ -171,6 +172,7 @@ export type Database = {
           company_phone?: string | null
           created_at?: string
           credit_note_number_prefix?: string
+          delivery_note_number_prefix?: string
           crm_name?: string
           date_format?: string
           default_currency?: string
@@ -215,6 +217,7 @@ export type Database = {
           company_phone?: string | null
           created_at?: string
           credit_note_number_prefix?: string
+          delivery_note_number_prefix?: string
           crm_name?: string
           date_format?: string
           default_currency?: string
@@ -791,6 +794,218 @@ export type Database = {
           },
           {
             foreignKeyName: "credit_notes_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_note_items: {
+        Row: {
+          catalog_item_id: string | null
+          created_at: string
+          delivery_note_id: string
+          description: string | null
+          id: string
+          last_modified_by: string | null
+          name: string
+          origin_node_id: string | null
+          position: number
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          catalog_item_id?: string | null
+          created_at?: string
+          delivery_note_id: string
+          description?: string | null
+          id?: string
+          last_modified_by?: string | null
+          name: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          catalog_item_id?: string | null
+          created_at?: string
+          delivery_note_id?: string
+          description?: string | null
+          id?: string
+          last_modified_by?: string | null
+          name?: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_note_items_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "quote_catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_note_items_delivery_note_id_fkey"
+            columns: ["delivery_note_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_note_items_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_note_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          delivery_note_id: string
+          from_status: Database["public"]["Enums"]["delivery_note_status"] | null
+          id: string
+          note: string | null
+          to_status: Database["public"]["Enums"]["delivery_note_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          delivery_note_id: string
+          from_status?: Database["public"]["Enums"]["delivery_note_status"] | null
+          id?: string
+          note?: string | null
+          to_status: Database["public"]["Enums"]["delivery_note_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          delivery_note_id?: string
+          from_status?: Database["public"]["Enums"]["delivery_note_status"] | null
+          id?: string
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["delivery_note_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_note_status_history_delivery_note_id_fkey"
+            columns: ["delivery_note_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_notes: {
+        Row: {
+          assigned_to: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          carrier: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          delivery_address: string | null
+          delivery_date: string
+          delivery_note_number: string
+          dispatched_at: string | null
+          id: string
+          invoice_id: string | null
+          last_modified_by: string | null
+          notes: string | null
+          origin_node_id: string | null
+          recipient_name: string | null
+          status: Database["public"]["Enums"]["delivery_note_status"]
+          tracking_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          carrier?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_address?: string | null
+          delivery_date?: string
+          delivery_note_number: string
+          dispatched_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          recipient_name?: string | null
+          status?: Database["public"]["Enums"]["delivery_note_status"]
+          tracking_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          carrier?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          delivery_address?: string | null
+          delivery_date?: string
+          delivery_note_number?: string
+          dispatched_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          recipient_name?: string | null
+          status?: Database["public"]["Enums"]["delivery_note_status"]
+          tracking_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_notes_origin_node_id_fkey"
             columns: ["origin_node_id"]
             isOneToOne: false
             referencedRelation: "sync_nodes"
@@ -2395,6 +2610,10 @@ export type Database = {
         Args: { _credit_note_id: string }
         Returns: boolean
       }
+      can_access_delivery_note: {
+        Args: { _delivery_note_id: string }
+        Returns: boolean
+      }
       can_access_invoice: { Args: { _invoice_id: string }; Returns: boolean }
       can_access_quote: { Args: { _quote_id: string }; Returns: boolean }
       can_assign_owner: { Args: { _target: string }; Returns: boolean }
@@ -2484,6 +2703,7 @@ export type Database = {
         Returns: undefined
       }
       next_credit_note_number: { Args: never; Returns: string }
+      next_delivery_note_number: { Args: never; Returns: string }
       next_invoice_number: { Args: never; Returns: string }
       next_quote_number: { Args: never; Returns: string }
       next_receipt_number: { Args: never; Returns: string }
@@ -2512,6 +2732,10 @@ export type Database = {
       recalculate_credit_note_totals: {
         Args: { _credit_note_id: string }
         Returns: undefined
+      }
+      create_delivery_note_from_invoice: {
+        Args: { _invoice_id: string }
+        Returns: string
       }
       recalculate_invoice_payments: {
         Args: { _invoice_id: string }
@@ -2542,6 +2766,7 @@ export type Database = {
       activity_type: "call" | "email" | "meeting" | "demo" | "proposal" | "note"
       app_role: "admin" | "manager" | "rep"
       credit_note_status: "draft" | "issued" | "applied" | "void"
+      delivery_note_status: "draft" | "dispatched" | "delivered" | "cancelled"
       invoice_status:
         | "draft"
         | "sent"
@@ -2694,6 +2919,7 @@ export const Constants = {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
       app_role: ["admin", "manager", "rep"],
       credit_note_status: ["draft", "issued", "applied", "void"],
+      delivery_note_status: ["draft", "dispatched", "delivered", "cancelled"],
       invoice_status: [
         "draft",
         "sent",
