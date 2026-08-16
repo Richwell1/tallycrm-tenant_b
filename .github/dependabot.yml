@@ -1,10 +1,15 @@
+# tenant_b: version updates are paused via open-pull-requests-limit: 0.
+# This tenant deliberately tracks sowlbaby/tallycrm's dependency tree so the
+# only divergence from upstream is the tenant-specific feature work. Dependency
+# bumps here would be unrelated drift and would conflict on every pull.
+# Restore the original limits to re-enable.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       production-dependencies:
         dependency-type: production
@@ -15,3 +20,4 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
