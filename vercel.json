@@ -5,7 +5,7 @@
   "installCommand": "npm ci",
   "git": {
     "deploymentEnabled": {
-      "main": false,
+      "main": true,
       "master": false,
       "lovable-implementation": false
     }
