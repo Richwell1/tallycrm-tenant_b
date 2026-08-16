@@ -45,6 +45,7 @@ const SECTIONS: NavSection[] = [
       { label: "Invoices", to: "/app/invoices", icon: ReceiptText },
       { label: "Receipts", to: "/app/receipts", icon: BadgeDollarSign },
       { label: "Credit Notes", to: "/app/credit-notes", icon: FileMinus },
+      { label: "Delivery Notes", to: "/app/delivery-notes", icon: ReceiptText },
       { label: "Leads", to: "/app/leads", icon: Search },
       { label: "Pipeline", to: "/app/pipeline", icon: KanbanSquare },
       { label: "Activities", to: "/app/activities", icon: Activity },

@@ -1,0 +1,8 @@
+{
+  "key": "delivery_notes",
+  "name": "Delivery notes",
+  "scope": "named",
+  "audience": ["tenant_b"],
+  "has_migration": true,
+  "version": "1.0.0"
+}

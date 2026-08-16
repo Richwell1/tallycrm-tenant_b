@@ -34,6 +34,8 @@ import { Route as AuthenticatedAppCreditNotesIndexRouteImport } from './routes/_
 import { Route as AuthenticatedAppCreditNotesIdRouteImport } from './routes/_authenticated/app.credit-notes.$id'
 import { Route as AuthenticatedAppDealsIndexRouteImport } from './routes/_authenticated/app.deals.index'
 import { Route as AuthenticatedAppDealsIdRouteImport } from './routes/_authenticated/app.deals.$id'
+import { Route as AuthenticatedAppDeliveryNotesIndexRouteImport } from './routes/_authenticated/app.delivery-notes.index'
+import { Route as AuthenticatedAppDeliveryNotesIdRouteImport } from './routes/_authenticated/app.delivery-notes.$id'
 import { Route as AuthenticatedAppInvoicesIndexRouteImport } from './routes/_authenticated/app.invoices.index'
 import { Route as AuthenticatedAppInvoicesIdRouteImport } from './routes/_authenticated/app.invoices.$id'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
@@ -47,6 +49,7 @@ import { Route as AuthenticatedAppReceiptsIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppSettingsIndexRouteImport } from './routes/_authenticated/app.settings.index'
 import { Route as AuthenticatedAppTasksIndexRouteImport } from './routes/_authenticated/app.tasks.index'
 import { Route as AuthenticatedAppCreditNotesPrintIdRouteImport } from './routes/_authenticated/app.credit-notes.print.$id'
+import { Route as AuthenticatedAppDeliveryNotesPrintIdRouteImport } from './routes/_authenticated/app.delivery-notes.print.$id'
 import { Route as AuthenticatedAppInvoicesPrintIdRouteImport } from './routes/_authenticated/app.invoices.print.$id'
 import { Route as AuthenticatedAppQuotesPrintIdRouteImport } from './routes/_authenticated/app.quotes.print.$id'
 import { Route as AuthenticatedAppReceiptsPrintIdRouteImport } from './routes/_authenticated/app.receipts.print.$id'
@@ -189,6 +192,18 @@ const AuthenticatedAppDealsIdRoute = AuthenticatedAppDealsIdRouteImport.update({
   path: '/deals/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppDeliveryNotesIndexRoute =
+  AuthenticatedAppDeliveryNotesIndexRouteImport.update({
+    id: '/delivery-notes/',
+    path: '/delivery-notes/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppDeliveryNotesIdRoute =
+  AuthenticatedAppDeliveryNotesIdRouteImport.update({
+    id: '/delivery-notes/$id',
+    path: '/delivery-notes/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppInvoicesIndexRoute =
   AuthenticatedAppInvoicesIndexRouteImport.update({
     id: '/invoices/',
@@ -266,6 +281,12 @@ const AuthenticatedAppCreditNotesPrintIdRoute =
     path: '/credit-notes/print/$id',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppDeliveryNotesPrintIdRoute =
+  AuthenticatedAppDeliveryNotesPrintIdRouteImport.update({
+    id: '/delivery-notes/print/$id',
+    path: '/delivery-notes/print/$id',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppInvoicesPrintIdRoute =
   AuthenticatedAppInvoicesPrintIdRouteImport.update({
     id: '/invoices/print/$id',
@@ -304,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/credit-notes/$id': typeof AuthenticatedAppCreditNotesIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/app/delivery-notes/$id': typeof AuthenticatedAppDeliveryNotesIdRoute
   '/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
@@ -315,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/app/credit-notes/': typeof AuthenticatedAppCreditNotesIndexRoute
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
+  '/app/delivery-notes/': typeof AuthenticatedAppDeliveryNotesIndexRoute
   '/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
@@ -323,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
   '/app/credit-notes/print/$id': typeof AuthenticatedAppCreditNotesPrintIdRoute
+  '/app/delivery-notes/print/$id': typeof AuthenticatedAppDeliveryNotesPrintIdRoute
   '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
   '/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
@@ -345,6 +369,7 @@ export interface FileRoutesByTo {
   '/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/app/credit-notes/$id': typeof AuthenticatedAppCreditNotesIdRoute
   '/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/app/delivery-notes/$id': typeof AuthenticatedAppDeliveryNotesIdRoute
   '/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
@@ -356,6 +381,7 @@ export interface FileRoutesByTo {
   '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
   '/app/credit-notes': typeof AuthenticatedAppCreditNotesIndexRoute
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
+  '/app/delivery-notes': typeof AuthenticatedAppDeliveryNotesIndexRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
@@ -364,6 +390,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AuthenticatedAppSettingsIndexRoute
   '/app/tasks': typeof AuthenticatedAppTasksIndexRoute
   '/app/credit-notes/print/$id': typeof AuthenticatedAppCreditNotesPrintIdRoute
+  '/app/delivery-notes/print/$id': typeof AuthenticatedAppDeliveryNotesPrintIdRoute
   '/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
   '/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
@@ -389,6 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/app/contacts/$id': typeof AuthenticatedAppContactsIdRoute
   '/_authenticated/app/credit-notes/$id': typeof AuthenticatedAppCreditNotesIdRoute
   '/_authenticated/app/deals/$id': typeof AuthenticatedAppDealsIdRoute
+  '/_authenticated/app/delivery-notes/$id': typeof AuthenticatedAppDeliveryNotesIdRoute
   '/_authenticated/app/invoices/$id': typeof AuthenticatedAppInvoicesIdRoute
   '/_authenticated/app/leads/$id': typeof AuthenticatedAppLeadsIdRoute
   '/_authenticated/app/quotes/$id': typeof AuthenticatedAppQuotesIdRoute
@@ -400,6 +428,7 @@ export interface FileRoutesById {
   '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/_authenticated/app/credit-notes/': typeof AuthenticatedAppCreditNotesIndexRoute
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
+  '/_authenticated/app/delivery-notes/': typeof AuthenticatedAppDeliveryNotesIndexRoute
   '/_authenticated/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
@@ -408,6 +437,7 @@ export interface FileRoutesById {
   '/_authenticated/app/settings/': typeof AuthenticatedAppSettingsIndexRoute
   '/_authenticated/app/tasks/': typeof AuthenticatedAppTasksIndexRoute
   '/_authenticated/app/credit-notes/print/$id': typeof AuthenticatedAppCreditNotesPrintIdRoute
+  '/_authenticated/app/delivery-notes/print/$id': typeof AuthenticatedAppDeliveryNotesPrintIdRoute
   '/_authenticated/app/invoices/print/$id': typeof AuthenticatedAppInvoicesPrintIdRoute
   '/_authenticated/app/quotes/print/$id': typeof AuthenticatedAppQuotesPrintIdRoute
   '/_authenticated/app/receipts/print/$id': typeof AuthenticatedAppReceiptsPrintIdRoute
@@ -433,6 +463,7 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/credit-notes/$id'
     | '/app/deals/$id'
+    | '/app/delivery-notes/$id'
     | '/app/invoices/$id'
     | '/app/leads/$id'
     | '/app/quotes/$id'
@@ -444,6 +475,7 @@ export interface FileRouteTypes {
     | '/app/contacts/'
     | '/app/credit-notes/'
     | '/app/deals/'
+    | '/app/delivery-notes/'
     | '/app/invoices/'
     | '/app/leads/'
     | '/app/pipeline/'
@@ -452,6 +484,7 @@ export interface FileRouteTypes {
     | '/app/settings/'
     | '/app/tasks/'
     | '/app/credit-notes/print/$id'
+    | '/app/delivery-notes/print/$id'
     | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
     | '/app/receipts/print/$id'
@@ -474,6 +507,7 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/credit-notes/$id'
     | '/app/deals/$id'
+    | '/app/delivery-notes/$id'
     | '/app/invoices/$id'
     | '/app/leads/$id'
     | '/app/quotes/$id'
@@ -485,6 +519,7 @@ export interface FileRouteTypes {
     | '/app/contacts'
     | '/app/credit-notes'
     | '/app/deals'
+    | '/app/delivery-notes'
     | '/app/invoices'
     | '/app/leads'
     | '/app/pipeline'
@@ -493,6 +528,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/app/credit-notes/print/$id'
+    | '/app/delivery-notes/print/$id'
     | '/app/invoices/print/$id'
     | '/app/quotes/print/$id'
     | '/app/receipts/print/$id'
@@ -517,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/contacts/$id'
     | '/_authenticated/app/credit-notes/$id'
     | '/_authenticated/app/deals/$id'
+    | '/_authenticated/app/delivery-notes/$id'
     | '/_authenticated/app/invoices/$id'
     | '/_authenticated/app/leads/$id'
     | '/_authenticated/app/quotes/$id'
@@ -528,6 +565,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/contacts/'
     | '/_authenticated/app/credit-notes/'
     | '/_authenticated/app/deals/'
+    | '/_authenticated/app/delivery-notes/'
     | '/_authenticated/app/invoices/'
     | '/_authenticated/app/leads/'
     | '/_authenticated/app/pipeline/'
@@ -536,6 +574,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/settings/'
     | '/_authenticated/app/tasks/'
     | '/_authenticated/app/credit-notes/print/$id'
+    | '/_authenticated/app/delivery-notes/print/$id'
     | '/_authenticated/app/invoices/print/$id'
     | '/_authenticated/app/quotes/print/$id'
     | '/_authenticated/app/receipts/print/$id'
@@ -733,6 +772,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDealsIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/delivery-notes/': {
+      id: '/_authenticated/app/delivery-notes/'
+      path: '/delivery-notes'
+      fullPath: '/app/delivery-notes/'
+      preLoaderRoute: typeof AuthenticatedAppDeliveryNotesIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/delivery-notes/$id': {
+      id: '/_authenticated/app/delivery-notes/$id'
+      path: '/delivery-notes/$id'
+      fullPath: '/app/delivery-notes/$id'
+      preLoaderRoute: typeof AuthenticatedAppDeliveryNotesIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/invoices/': {
       id: '/_authenticated/app/invoices/'
       path: '/invoices'
@@ -824,6 +877,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCreditNotesPrintIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/delivery-notes/print/$id': {
+      id: '/_authenticated/app/delivery-notes/print/$id'
+      path: '/delivery-notes/print/$id'
+      fullPath: '/app/delivery-notes/print/$id'
+      preLoaderRoute: typeof AuthenticatedAppDeliveryNotesPrintIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/invoices/print/$id': {
       id: '/_authenticated/app/invoices/print/$id'
       path: '/invoices/print/$id'
@@ -855,6 +915,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppContactsIdRoute: typeof AuthenticatedAppContactsIdRoute
   AuthenticatedAppCreditNotesIdRoute: typeof AuthenticatedAppCreditNotesIdRoute
   AuthenticatedAppDealsIdRoute: typeof AuthenticatedAppDealsIdRoute
+  AuthenticatedAppDeliveryNotesIdRoute: typeof AuthenticatedAppDeliveryNotesIdRoute
   AuthenticatedAppInvoicesIdRoute: typeof AuthenticatedAppInvoicesIdRoute
   AuthenticatedAppLeadsIdRoute: typeof AuthenticatedAppLeadsIdRoute
   AuthenticatedAppQuotesIdRoute: typeof AuthenticatedAppQuotesIdRoute
@@ -866,6 +927,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
   AuthenticatedAppCreditNotesIndexRoute: typeof AuthenticatedAppCreditNotesIndexRoute
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
+  AuthenticatedAppDeliveryNotesIndexRoute: typeof AuthenticatedAppDeliveryNotesIndexRoute
   AuthenticatedAppInvoicesIndexRoute: typeof AuthenticatedAppInvoicesIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
@@ -874,6 +936,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppSettingsIndexRoute: typeof AuthenticatedAppSettingsIndexRoute
   AuthenticatedAppTasksIndexRoute: typeof AuthenticatedAppTasksIndexRoute
   AuthenticatedAppCreditNotesPrintIdRoute: typeof AuthenticatedAppCreditNotesPrintIdRoute
+  AuthenticatedAppDeliveryNotesPrintIdRoute: typeof AuthenticatedAppDeliveryNotesPrintIdRoute
   AuthenticatedAppInvoicesPrintIdRoute: typeof AuthenticatedAppInvoicesPrintIdRoute
   AuthenticatedAppQuotesPrintIdRoute: typeof AuthenticatedAppQuotesPrintIdRoute
   AuthenticatedAppReceiptsPrintIdRoute: typeof AuthenticatedAppReceiptsPrintIdRoute
@@ -886,6 +949,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppContactsIdRoute: AuthenticatedAppContactsIdRoute,
   AuthenticatedAppCreditNotesIdRoute: AuthenticatedAppCreditNotesIdRoute,
   AuthenticatedAppDealsIdRoute: AuthenticatedAppDealsIdRoute,
+  AuthenticatedAppDeliveryNotesIdRoute: AuthenticatedAppDeliveryNotesIdRoute,
   AuthenticatedAppInvoicesIdRoute: AuthenticatedAppInvoicesIdRoute,
   AuthenticatedAppLeadsIdRoute: AuthenticatedAppLeadsIdRoute,
   AuthenticatedAppQuotesIdRoute: AuthenticatedAppQuotesIdRoute,
@@ -897,6 +961,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
   AuthenticatedAppCreditNotesIndexRoute: AuthenticatedAppCreditNotesIndexRoute,
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
+  AuthenticatedAppDeliveryNotesIndexRoute:
+    AuthenticatedAppDeliveryNotesIndexRoute,
   AuthenticatedAppInvoicesIndexRoute: AuthenticatedAppInvoicesIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
@@ -906,6 +972,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppTasksIndexRoute: AuthenticatedAppTasksIndexRoute,
   AuthenticatedAppCreditNotesPrintIdRoute:
     AuthenticatedAppCreditNotesPrintIdRoute,
+  AuthenticatedAppDeliveryNotesPrintIdRoute:
+    AuthenticatedAppDeliveryNotesPrintIdRoute,
   AuthenticatedAppInvoicesPrintIdRoute: AuthenticatedAppInvoicesPrintIdRoute,
   AuthenticatedAppQuotesPrintIdRoute: AuthenticatedAppQuotesPrintIdRoute,
   AuthenticatedAppReceiptsPrintIdRoute: AuthenticatedAppReceiptsPrintIdRoute,
