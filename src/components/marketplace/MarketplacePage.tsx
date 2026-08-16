@@ -6,14 +6,21 @@ import {
   isControlPlaneConfigured,
   missingControlPlaneConfigMessage,
 } from "@/integrations/supabase/control-plane-client";
-import { type MarketplaceFeature, useMarketplaceCatalogue } from "@/lib/marketplace-data";
+import { useAuth } from "@/lib/auth-context";
+import {
+  type MarketplaceFeature,
+  useMarketplaceCatalogue,
+  useRequestFeatureInstall,
+} from "@/lib/marketplace-data";
 import { FeatureCard } from "./FeatureCard";
 import { InstallFeatureDialog } from "./InstallFeatureDialog";
 
 export function MarketplacePage() {
+  const { user } = useAuth();
   const configured = isControlPlaneConfigured();
   const { data, isLoading, isError, error, refetch, isFetching } = useMarketplaceCatalogue();
   const [selectedFeature, setSelectedFeature] = useState<MarketplaceFeature | null>(null);
+  const requestInstall = useRequestFeatureInstall();
   const featureCount = (data?.publicFeatures.length ?? 0) + (data?.privateFeatures.length ?? 0);
 
   return (
@@ -72,12 +79,40 @@ export function MarketplacePage() {
 
       <InstallFeatureDialog
         feature={selectedFeature}
+        error={requestInstall.error ? marketplaceErrorMessage(requestInstall.error) : null}
+        isPending={requestInstall.isPending}
+        onConfirm={() => {
+          if (!selectedFeature) return;
+          requestInstall.mutate(
+            {
+              featureKey: selectedFeature.feature_key,
+              requestedBy: user?.email || user?.id || "unknown user",
+            },
+            {
+              onSuccess: () => setSelectedFeature(null),
+            },
+          );
+        }}
         onOpenChange={(open) => {
-          if (!open) setSelectedFeature(null);
+          if (!open) {
+            setSelectedFeature(null);
+            requestInstall.reset();
+          }
         }}
       />
     </>
   );
+}
+
+function marketplaceErrorMessage(error: Error) {
+  const message = error.message || "The installation request could not be submitted.";
+  if (/not entitled/i.test(message)) {
+    return "This feature is not available to your organisation.";
+  }
+  if (/already live|already installing/i.test(message)) {
+    return "This feature is already installed or currently being installed. Refresh the marketplace to see its latest status.";
+  }
+  return message;
 }
 
 interface MarketplaceSectionProps {

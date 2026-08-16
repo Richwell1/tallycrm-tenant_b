@@ -12,10 +12,19 @@ import type { MarketplaceFeature } from "@/lib/marketplace-data";
 
 interface InstallFeatureDialogProps {
   feature: MarketplaceFeature | null;
+  error: string | null;
+  isPending: boolean;
+  onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
 }
 
-export function InstallFeatureDialog({ feature, onOpenChange }: InstallFeatureDialogProps) {
+export function InstallFeatureDialog({
+  feature,
+  error,
+  isPending,
+  onConfirm,
+  onOpenChange,
+}: InstallFeatureDialogProps) {
   return (
     <AlertDialog open={Boolean(feature)} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -23,12 +32,29 @@ export function InstallFeatureDialog({ feature, onOpenChange }: InstallFeatureDi
           <AlertDialogTitle>Install {feature?.name}?</AlertDialogTitle>
           <AlertDialogDescription>
             This feature will be added to your system. Installation usually takes a few minutes to
-            complete. Installation requests are not being submitted from this page yet.
+            complete.
           </AlertDialogDescription>
+          {error ? (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {error}
+            </div>
+          ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>I understand</AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isPending}
+            onClick={(event) => {
+              event.preventDefault();
+              onConfirm();
+            }}
+          >
+            {isPending
+              ? "Requesting…"
+              : feature?.installationStatus === "failed"
+                ? "Retry"
+                : "Install"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
