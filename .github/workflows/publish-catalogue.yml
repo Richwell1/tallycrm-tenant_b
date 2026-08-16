@@ -45,11 +45,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          publisher_dir="$RUNNER_TEMP/catalogue-publisher"
+          publisher="$publisher_dir/publish-catalogue.mjs"
+          mkdir -p "$publisher_dir"
+          cp scripts/publish-catalogue.mjs "$publisher"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$publisher_dir/node_modules"
+
           git fetch --prune origin '+refs/heads/feature/*:refs/remotes/origin/feature/*'
           git checkout --force -B main origin/main
-
-          publisher="$GITHUB_WORKSPACE/.publish-catalogue.mjs"
-          cp scripts/publish-catalogue.mjs "$publisher"
 
           {
             echo "## Published feature catalogue"
@@ -59,7 +62,6 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           return_to_main() {
-            rm -f "$publisher"
             git checkout --force main >/dev/null 2>&1 || true
           }
           trap return_to_main EXIT
@@ -70,11 +72,16 @@ jobs:
 
           for branch in "${feature_branches[@]}"; do
             echo "Publishing manifests found on $branch"
-            git checkout --force --detach "origin/$branch"
-            SOURCE_BRANCH="$branch" node "$publisher"
+            if ! git checkout --force --detach "origin/$branch"; then
+              echo "::warning title=Catalogue branch checkout failed::Could not check out $branch; continuing with the remaining branches."
+              continue
+            fi
+            if ! SOURCE_BRANCH="$branch" node "$publisher"; then
+              echo "::warning title=Catalogue branch publish failed::Could not read or publish manifests from $branch; continuing with the remaining branches."
+              continue
+            fi
           done
 
           git checkout --force main
           SOURCE_BRANCH=main node "$publisher"
-          rm -f "$publisher"
           trap - EXIT
