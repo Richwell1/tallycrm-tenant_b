@@ -1,0 +1,87 @@
+name: Publish feature catalogue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/feature.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-catalogue-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish catalogue manifests
+    if: github.repository == 'sowlbaby/tallycrm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CONTROL_PLANE_URL: ${{ secrets.CONTROL_PLANE_URL }}
+      CONTROL_PLANE_SERVICE_KEY: ${{ secrets.CONTROL_PLANE_SERVICE_KEY }}
+
+    steps:
+      - name: Checkout full repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish manifests from main and feature branches
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          publisher_dir="$RUNNER_TEMP/catalogue-publisher"
+          publisher="$publisher_dir/publish-catalogue.mjs"
+          mkdir -p "$publisher_dir"
+          cp scripts/publish-catalogue.mjs "$publisher"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$publisher_dir/node_modules"
+
+          git fetch --prune origin '+refs/heads/feature/*:refs/remotes/origin/feature/*'
+          git checkout --force -B main origin/main
+
+          {
+            echo "## Published feature catalogue"
+            echo
+            echo "| Feature | Scope | Audience | Source branch |"
+            echo "| --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          return_to_main() {
+            git checkout --force main >/dev/null 2>&1 || true
+          }
+          trap return_to_main EXIT
+
+          mapfile -t feature_branches < <(
+            git for-each-ref --format='%(refname:strip=3)' 'refs/remotes/origin/feature/*' | sort
+          )
+
+          for branch in "${feature_branches[@]}"; do
+            echo "Publishing manifests found on $branch"
+            if ! git checkout --force --detach "origin/$branch"; then
+              echo "::warning title=Catalogue branch checkout failed::Could not check out $branch; continuing with the remaining branches."
+              continue
+            fi
+            if ! SOURCE_BRANCH="$branch" node "$publisher"; then
+              echo "::warning title=Catalogue branch publish failed::Could not read or publish manifests from $branch; continuing with the remaining branches."
+              continue
+            fi
+          done
+
+          git checkout --force main
+          SOURCE_BRANCH=main node "$publisher"
+          trap - EXIT

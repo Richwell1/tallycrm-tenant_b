@@ -169,3 +169,117 @@ git checkout main
   commit it here — never synced up wholesale.
 - Resolve conflicts in favour of the tenant's per-tenant config (section 3) and in favour
   of regenerating the generated files (section 2).
+
+### 9. Pushing and deploying to a tenant
+
+#### Tenants
+
+| Tenant     | Git remote | Repository                    | Supabase project ref   |
+| ---------- | ---------- | ----------------------------- | ---------------------- |
+| `tenant_a` | `tenant_a` | `damartey/tallycrm-tenant_a`  | `hqtzdoeuifgeszpkkfmh` |
+| `tenant_b` | `tenant_b` | `Richwell1/tallycrm-tenant_b` | `ntvptytysrrzoourgxjl` |
+
+Restore a missing remote with the tenant's canonical repository URL:
+
+```bash
+git remote add tenant_a git@github.com:damartey/tallycrm-tenant_a.git
+git remote add tenant_b git@github.com:Richwell1/tallycrm-tenant_b.git
+```
+
+#### Before every push
+
+`git status --short` must be empty. A dirty tree is how tenant-only code has previously
+leaked onto `main`: an agent leaves files uncommitted and a later `git add -A` sweeps
+them into the wrong commit.
+
+Generated files can reappear as modified after any build. Discard regenerated route
+changes before changing branches or committing unrelated work:
+
+```bash
+git checkout -- src/routes
+```
+
+The generated paths excluded from Prettier are `routeTree.gen.ts`,
+`src/integrations/supabase/types.ts`, `src/routes/[.mcp]/**`,
+`src/routes/[.well-known]/**`, and `src/routeTree.gen.ts`.
+
+#### Pushing a shared change (`scope: "all"`)
+
+A shared change is on `main` and goes to every tenant. Run this once per tenant,
+substituting the matching remote and work branch:
+
+```bash
+git checkout -B work-a tenant_a/main && \
+git merge main --no-edit && \
+git push tenant_a work-a:main && \
+git checkout main
+```
+
+The `&&` operators matter: if any command fails, the chain stops instead of silently
+running the remaining commands against the wrong branch.
+
+#### Pushing a tenant-only feature (`scope: "named"`)
+
+A named feature branch is never merged into `main`. Merge the feature branch directly
+into the named tenant's branch:
+
+```bash
+git checkout -B work-a tenant_a/main && \
+git merge feature/<name> --no-edit && \
+git push tenant_a work-a:main && \
+git checkout main
+```
+
+If the tenant also needs pending shared work, merge `main` first, then merge the named
+feature branch, and push the combined tenant work branch once.
+
+#### What happens automatically after the push
+
+`.github/workflows/apply-migrations.yml` runs on a push to `main` only when a file under
+`supabase/migrations/**` changed, and it can also be run with `workflow_dispatch`. It
+reads the project ref from the tenant's own `supabase/config.toml`, uses the repository
+secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`, and skips harmlessly when
+either secret is absent.
+
+The repository's Vercel Actions workflow does **not** deploy on a push to `main`; it
+runs on pushes to `deploy/vercel` or by `workflow_dispatch`. A tenant may separately
+have Vercel Git integration configured to deploy `main`, so verify the tenant's actual
+Vercel deployment rather than assuming it ran. Check both the migration workflow and
+the production deployment before calling a tenant push done.
+
+#### Manual fallback
+
+From the tenant's local checkout, when migration secrets are missing or a deployment
+does not trigger:
+
+```bash
+git pull origin main
+supabase db push
+vercel --prod
+```
+
+Migrations should land before the new code goes live. Code deployed ahead of its schema
+will error until the migration applies.
+
+#### Verifying what a tenant holds
+
+```bash
+git fetch tenant_a main
+git ls-tree -r tenant_a/main --name-only | grep -E "<feature-dir>"
+```
+
+Verify that central `main` carries no tenant-only features:
+
+```bash
+git ls-tree -r main --name-only | grep -E "support-tickets|delivery-notes"
+```
+
+That command must return nothing.
+
+#### Never
+
+- Never push `main` directly to a tenant. The tenant has its own commits, so the push is
+  rejected or discards them.
+- Never merge a tenant branch into `main`.
+- Never merge a `named` feature branch into `main`.
+- Never run `git add -A` while an agent has uncommitted work in the tree.

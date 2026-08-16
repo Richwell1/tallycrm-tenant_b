@@ -51,6 +51,7 @@ const SECTIONS: NavSection[] = [
       { label: "Activities", to: "/app/activities", icon: Activity },
       { label: "Tasks", to: "/app/tasks", icon: CheckSquare },
       { label: "Analytics", to: "/app/analytics", icon: BarChart3 },
+      { label: "Marketplace", to: "/app/marketplace", icon: BadgeDollarSign },
     ],
   },
   {

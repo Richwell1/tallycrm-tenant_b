@@ -1,0 +1,9 @@
+{
+  "key": "marketplace",
+  "name": "Marketplace",
+  "description": "Browse features available for your organisation and request them for your CRM.",
+  "scope": "all",
+  "audience": [],
+  "has_migration": false,
+  "version": "1.0.0"
+}
