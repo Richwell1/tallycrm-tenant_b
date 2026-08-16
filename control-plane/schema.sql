@@ -172,6 +172,90 @@ grant select on table control_plane.catalogue to anon;
 grant select (tenant_name, feature_key, status) on table control_plane.tenant_features to anon;
 grant select on table control_plane.tenant_available_features to anon;
 
+create or replace function public.publish_catalogue_entry(
+  feature_key text,
+  name text,
+  description text,
+  version text,
+  scope text,
+  audience text[],
+  has_migration boolean,
+  source_branch text
+)
+returns void
+language plpgsql
+security definer
+set search_path = control_plane, public
+as $$
+begin
+  insert into control_plane.catalogue (
+    feature_key,
+    name,
+    description,
+    version,
+    scope,
+    audience,
+    has_migration,
+    source_branch,
+    published_at,
+    updated_at
+  )
+  values ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())
+  on conflict on constraint catalogue_pkey
+  do update set
+    name = excluded.name,
+    description = excluded.description,
+    version = excluded.version,
+    scope = excluded.scope,
+    audience = excluded.audience,
+    has_migration = excluded.has_migration,
+    source_branch = excluded.source_branch,
+    published_at = now(),
+    updated_at = now();
+end;
+$$;
+
+revoke all on function public.publish_catalogue_entry(text, text, text, text, text, text[], boolean, text) from public;
+revoke execute on function public.publish_catalogue_entry(text, text, text, text, text, text[], boolean, text) from anon;
+grant execute on function public.publish_catalogue_entry(text, text, text, text, text, text[], boolean, text) to service_role;
+
+create or replace function public.list_catalogue()
+returns table (
+  feature_key text,
+  name text,
+  description text,
+  version text,
+  scope text,
+  audience text[],
+  has_migration boolean,
+  source_branch text,
+  published_at timestamptz,
+  updated_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = control_plane, public
+as $$
+  select
+    catalogue.feature_key,
+    catalogue.name,
+    catalogue.description,
+    catalogue.version,
+    catalogue.scope,
+    catalogue.audience,
+    catalogue.has_migration,
+    catalogue.source_branch,
+    catalogue.published_at,
+    catalogue.updated_at
+  from control_plane.catalogue
+  order by catalogue.name, catalogue.feature_key;
+$$;
+
+revoke all on function public.list_catalogue() from public;
+revoke execute on function public.list_catalogue() from anon, service_role;
+grant execute on function public.list_catalogue() to service_role, anon;
+
 insert into control_plane.tenants (
   name,
   display_name,

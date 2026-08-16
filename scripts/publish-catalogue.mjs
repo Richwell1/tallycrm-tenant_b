@@ -87,7 +87,6 @@ for (const relativePath of trackedFiles) {
     audience: manifest.audience,
     has_migration: manifest.has_migration,
     source_branch: sourceBranch,
-    published_at: new Date().toISOString(),
   });
 }
 
@@ -97,7 +96,6 @@ if (rows.length === 0) {
 }
 
 const supabase = createClient(controlPlaneUrl, serviceRoleKey, {
-  db: { schema: "control_plane" },
   auth: {
     autoRefreshToken: false,
     detectSessionInUrl: false,
@@ -105,12 +103,14 @@ const supabase = createClient(controlPlaneUrl, serviceRoleKey, {
   },
 });
 
-const { error } = await supabase.from("catalogue").upsert(rows, {
-  onConflict: "feature_key",
-});
+for (const row of rows) {
+  const { error } = await supabase.rpc("publish_catalogue_entry", row);
 
-if (error) {
-  throw new Error(`Catalogue publish failed: ${error.message} (${error.code})`);
+  if (error) {
+    throw new Error(
+      `Catalogue publish failed for ${row.feature_key}: ${error.message} (${error.code})`,
+    );
+  }
 }
 
 console.log(

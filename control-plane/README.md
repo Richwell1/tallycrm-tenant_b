@@ -18,7 +18,7 @@ unset CONTROL_PLANE_DB_URL
 
 Use the **Session pooler** connection string from the same dialog instead if the machine running `psql` cannot reach the direct project's IPv6 endpoint. The SQL is idempotent and can be run again safely. It creates the tables, view, triggers, access policies, and initial tenant records.
 
-In **Supabase Dashboard → Project Settings → API → Exposed schemas**, add `control_plane`. The catalogue publisher cannot access a custom schema through the Data API until it is exposed.
+The `control_plane` schema does not need to be exposed through the Data API. Catalogue reads and writes go through restricted security-definer functions in `public`, while the underlying tables remain isolated in `control_plane`.
 
 ## Repository secrets
 
@@ -48,7 +48,7 @@ psql "$NEW_CONTROL_PLANE_DB_URL" \
   -f /tmp/control-plane-move.sql
 ```
 
-Add `control_plane` to the new project's exposed schemas, update the two repository secrets, run the catalogue publisher, and verify the restored tables and rows. Only after that verification, remove the old copy from tenant_a by running this SQL against tenant_a:
+Update the two repository secrets, run the catalogue publisher, and verify the restored tables and rows. Only after that verification, remove the old copy from tenant_a by running this SQL against tenant_a:
 
 ```sql
 begin;
