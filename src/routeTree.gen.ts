@@ -38,6 +38,7 @@ import { Route as AuthenticatedAppInvoicesIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppInvoicesIdRouteImport } from './routes/_authenticated/app.invoices.$id'
 import { Route as AuthenticatedAppLeadsIndexRouteImport } from './routes/_authenticated/app.leads.index'
 import { Route as AuthenticatedAppLeadsIdRouteImport } from './routes/_authenticated/app.leads.$id'
+import { Route as AuthenticatedAppMarketplaceIndexRouteImport } from './routes/_authenticated/app.marketplace.index'
 import { Route as AuthenticatedAppPipelineIndexRouteImport } from './routes/_authenticated/app.pipeline.index'
 import { Route as AuthenticatedAppQuotesIndexRouteImport } from './routes/_authenticated/app.quotes.index'
 import { Route as AuthenticatedAppQuotesIdRouteImport } from './routes/_authenticated/app.quotes.$id'
@@ -212,6 +213,12 @@ const AuthenticatedAppLeadsIdRoute = AuthenticatedAppLeadsIdRouteImport.update({
   path: '/leads/$id',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppMarketplaceIndexRoute =
+  AuthenticatedAppMarketplaceIndexRouteImport.update({
+    id: '/marketplace/',
+    path: '/marketplace/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPipelineIndexRoute =
   AuthenticatedAppPipelineIndexRouteImport.update({
     id: '/pipeline/',
@@ -317,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
+  '/app/marketplace/': typeof AuthenticatedAppMarketplaceIndexRoute
   '/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/app/receipts/': typeof AuthenticatedAppReceiptsIndexRoute
@@ -358,6 +366,7 @@ export interface FileRoutesByTo {
   '/app/deals': typeof AuthenticatedAppDealsIndexRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesIndexRoute
   '/app/leads': typeof AuthenticatedAppLeadsIndexRoute
+  '/app/marketplace': typeof AuthenticatedAppMarketplaceIndexRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineIndexRoute
   '/app/quotes': typeof AuthenticatedAppQuotesIndexRoute
   '/app/receipts': typeof AuthenticatedAppReceiptsIndexRoute
@@ -402,6 +411,7 @@ export interface FileRoutesById {
   '/_authenticated/app/deals/': typeof AuthenticatedAppDealsIndexRoute
   '/_authenticated/app/invoices/': typeof AuthenticatedAppInvoicesIndexRoute
   '/_authenticated/app/leads/': typeof AuthenticatedAppLeadsIndexRoute
+  '/_authenticated/app/marketplace/': typeof AuthenticatedAppMarketplaceIndexRoute
   '/_authenticated/app/pipeline/': typeof AuthenticatedAppPipelineIndexRoute
   '/_authenticated/app/quotes/': typeof AuthenticatedAppQuotesIndexRoute
   '/_authenticated/app/receipts/': typeof AuthenticatedAppReceiptsIndexRoute
@@ -446,6 +456,7 @@ export interface FileRouteTypes {
     | '/app/deals/'
     | '/app/invoices/'
     | '/app/leads/'
+    | '/app/marketplace/'
     | '/app/pipeline/'
     | '/app/quotes/'
     | '/app/receipts/'
@@ -487,6 +498,7 @@ export interface FileRouteTypes {
     | '/app/deals'
     | '/app/invoices'
     | '/app/leads'
+    | '/app/marketplace'
     | '/app/pipeline'
     | '/app/quotes'
     | '/app/receipts'
@@ -530,6 +542,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/deals/'
     | '/_authenticated/app/invoices/'
     | '/_authenticated/app/leads/'
+    | '/_authenticated/app/marketplace/'
     | '/_authenticated/app/pipeline/'
     | '/_authenticated/app/quotes/'
     | '/_authenticated/app/receipts/'
@@ -761,6 +774,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppLeadsIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/marketplace/': {
+      id: '/_authenticated/app/marketplace/'
+      path: '/marketplace'
+      fullPath: '/app/marketplace/'
+      preLoaderRoute: typeof AuthenticatedAppMarketplaceIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/pipeline/': {
       id: '/_authenticated/app/pipeline/'
       path: '/pipeline'
@@ -868,6 +888,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppDealsIndexRoute: typeof AuthenticatedAppDealsIndexRoute
   AuthenticatedAppInvoicesIndexRoute: typeof AuthenticatedAppInvoicesIndexRoute
   AuthenticatedAppLeadsIndexRoute: typeof AuthenticatedAppLeadsIndexRoute
+  AuthenticatedAppMarketplaceIndexRoute: typeof AuthenticatedAppMarketplaceIndexRoute
   AuthenticatedAppPipelineIndexRoute: typeof AuthenticatedAppPipelineIndexRoute
   AuthenticatedAppQuotesIndexRoute: typeof AuthenticatedAppQuotesIndexRoute
   AuthenticatedAppReceiptsIndexRoute: typeof AuthenticatedAppReceiptsIndexRoute
@@ -899,6 +920,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppDealsIndexRoute: AuthenticatedAppDealsIndexRoute,
   AuthenticatedAppInvoicesIndexRoute: AuthenticatedAppInvoicesIndexRoute,
   AuthenticatedAppLeadsIndexRoute: AuthenticatedAppLeadsIndexRoute,
+  AuthenticatedAppMarketplaceIndexRoute: AuthenticatedAppMarketplaceIndexRoute,
   AuthenticatedAppPipelineIndexRoute: AuthenticatedAppPipelineIndexRoute,
   AuthenticatedAppQuotesIndexRoute: AuthenticatedAppQuotesIndexRoute,
   AuthenticatedAppReceiptsIndexRoute: AuthenticatedAppReceiptsIndexRoute,
