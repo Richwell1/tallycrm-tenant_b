@@ -1,0 +1,8 @@
+{
+  "key": "credit_notes",
+  "name": "Credit notes",
+  "scope": "all",
+  "audience": [],
+  "has_migration": true,
+  "version": "1.0.0"
+}

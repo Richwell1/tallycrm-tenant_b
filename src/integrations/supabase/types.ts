@@ -98,6 +98,7 @@ export type Database = {
           company_name: string
           company_phone: string | null
           created_at: string
+          credit_note_number_prefix: string
           crm_name: string
           date_format: string
           default_currency: string
@@ -141,6 +142,7 @@ export type Database = {
           company_name?: string
           company_phone?: string | null
           created_at?: string
+          credit_note_number_prefix?: string
           crm_name?: string
           date_format?: string
           default_currency?: string
@@ -184,6 +186,7 @@ export type Database = {
           company_name?: string
           company_phone?: string | null
           created_at?: string
+          credit_note_number_prefix?: string
           crm_name?: string
           date_format?: string
           default_currency?: string
@@ -521,6 +524,245 @@ export type Database = {
           },
           {
             foreignKeyName: "contacts_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_note_line_items: {
+        Row: {
+          catalog_item_id: string | null
+          created_at: string
+          credit_note_id: string
+          description: string | null
+          discount_percent: number
+          id: string
+          last_modified_by: string | null
+          line_discount: number
+          line_gross: number
+          line_net: number
+          line_tax: number
+          line_total: number
+          name: string
+          origin_node_id: string | null
+          position: number
+          quantity: number
+          tax_rate: number
+          unit: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          catalog_item_id?: string | null
+          created_at?: string
+          credit_note_id: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          last_modified_by?: string | null
+          line_discount?: number
+          line_gross?: number
+          line_net?: number
+          line_tax?: number
+          line_total?: number
+          name: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          tax_rate?: number
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          catalog_item_id?: string | null
+          created_at?: string
+          credit_note_id?: string
+          description?: string | null
+          discount_percent?: number
+          id?: string
+          last_modified_by?: string | null
+          line_discount?: number
+          line_gross?: number
+          line_net?: number
+          line_tax?: number
+          line_total?: number
+          name?: string
+          origin_node_id?: string | null
+          position?: number
+          quantity?: number
+          tax_rate?: number
+          unit?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_note_line_items_catalog_item_id_fkey"
+            columns: ["catalog_item_id"]
+            isOneToOne: false
+            referencedRelation: "quote_catalog_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_note_line_items_credit_note_id_fkey"
+            columns: ["credit_note_id"]
+            isOneToOne: false
+            referencedRelation: "credit_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_note_line_items_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "sync_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_note_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          credit_note_id: string
+          from_status: Database["public"]["Enums"]["credit_note_status"] | null
+          id: string
+          note: string | null
+          to_status: Database["public"]["Enums"]["credit_note_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          credit_note_id: string
+          from_status?: Database["public"]["Enums"]["credit_note_status"] | null
+          id?: string
+          note?: string | null
+          to_status: Database["public"]["Enums"]["credit_note_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          credit_note_id?: string
+          from_status?: Database["public"]["Enums"]["credit_note_status"] | null
+          id?: string
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["credit_note_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_note_status_history_credit_note_id_fkey"
+            columns: ["credit_note_id"]
+            isOneToOne: false
+            referencedRelation: "credit_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_notes: {
+        Row: {
+          applied_at: string | null
+          assigned_to: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          credit_note_number: string
+          currency: string
+          deleted_at: string | null
+          id: string
+          invoice_id: string | null
+          issue_date: string
+          issued_at: string | null
+          last_modified_by: string | null
+          notes: string | null
+          origin_node_id: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["credit_note_status"]
+          subtotal: number
+          tax_amount: number
+          total: number
+          updated_at: string
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_note_number?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          issue_date?: string
+          issued_at?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["credit_note_status"]
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          assigned_to?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_note_number?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          issue_date?: string
+          issued_at?: string | null
+          last_modified_by?: string | null
+          notes?: string | null
+          origin_node_id?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["credit_note_status"]
+          subtotal?: number
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_origin_node_id_fkey"
             columns: ["origin_node_id"]
             isOneToOne: false
             referencedRelation: "sync_nodes"
@@ -2155,6 +2397,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_credit_note_from_invoice: {
+        Args: { _invoice_id: string }
+        Returns: string
+      }
       create_invoice_from_quote: {
         Args: { _quote_id: string }
         Returns: string
@@ -2255,6 +2501,7 @@ export type Database = {
     Enums: {
       activity_type: "call" | "email" | "meeting" | "demo" | "proposal" | "note"
       app_role: "admin" | "manager" | "rep"
+      credit_note_status: "draft" | "issued" | "applied" | "void"
       invoice_status:
         | "draft"
         | "sent"
@@ -2403,6 +2650,7 @@ export const Constants = {
     Enums: {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
       app_role: ["admin", "manager", "rep"],
+      credit_note_status: ["draft", "issued", "applied", "void"],
       invoice_status: [
         "draft",
         "sent",
