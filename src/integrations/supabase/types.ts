@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -19,6 +44,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           deal_id: string | null
+          deleted_at: string | null
           due_at: string | null
           duration_minutes: number | null
           id: string
@@ -36,6 +62,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
+          deleted_at?: string | null
           due_at?: string | null
           duration_minutes?: number | null
           id?: string
@@ -53,6 +80,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
+          deleted_at?: string | null
           due_at?: string | null
           duration_minutes?: number | null
           id?: string
@@ -311,7 +339,7 @@ export type Database = {
           status?: string
           success_rate?: number
           trigger_icon?: string
-          trigger_label?: string
+          trigger_label: string
           trigger_type: string
           updated_at?: string
         }
@@ -358,8 +386,8 @@ export type Database = {
           id?: string
           message?: string | null
           record_id?: string | null
-          record_name?: string
-          record_type?: string
+          record_name: string
+          record_type: string
           result?: string
           rule_id?: string | null
         }
@@ -694,7 +722,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
-          credit_note_number?: string
+          credit_note_number: string
           currency?: string
           deleted_at?: string | null
           id?: string
@@ -2230,6 +2258,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           deal_id: string | null
+          deleted_at: string | null
           due_at: string | null
           id: string
           last_modified_by: string | null
@@ -2248,6 +2277,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
+          deleted_at?: string | null
           due_at?: string | null
           id?: string
           last_modified_by?: string | null
@@ -2266,6 +2296,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           deal_id?: string | null
+          deleted_at?: string | null
           due_at?: string | null
           id?: string
           last_modified_by?: string | null
@@ -2360,6 +2391,10 @@ export type Database = {
     Functions: {
       automation_rule_config: { Args: { _rule_id: string }; Returns: Json }
       automation_rule_enabled: { Args: { _rule_id: string }; Returns: boolean }
+      can_access_credit_note: {
+        Args: { _credit_note_id: string }
+        Returns: boolean
+      }
       can_access_invoice: { Args: { _invoice_id: string }; Returns: boolean }
       can_access_quote: { Args: { _quote_id: string }; Returns: boolean }
       can_assign_owner: { Args: { _target: string }; Returns: boolean }
@@ -2448,6 +2483,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      next_credit_note_number: { Args: never; Returns: string }
       next_invoice_number: { Args: never; Returns: string }
       next_quote_number: { Args: never; Returns: string }
       next_receipt_number: { Args: never; Returns: string }
@@ -2472,6 +2508,10 @@ export type Database = {
           _template: string
         }
         Returns: string
+      }
+      recalculate_credit_note_totals: {
+        Args: { _credit_note_id: string }
+        Returns: undefined
       }
       recalculate_invoice_payments: {
         Args: { _invoice_id: string }
@@ -2646,6 +2686,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_type: ["call", "email", "meeting", "demo", "proposal", "note"],
