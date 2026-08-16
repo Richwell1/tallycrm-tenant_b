@@ -115,14 +115,20 @@ check and **paste the passing output**:
 
 ```bash
 npm run ci         # eslint . && node scripts/security-check.mjs && vite build
+npx tsc --noEmit   # the ONLY typecheck — nothing in `npm run ci` does this
 npm run test:unit
 ```
 
-Know what these actually do:
+Know what these actually do — none of them is the gate you might assume:
 
 - `npm run test` **is only a security lint** (`scripts/security-check.mjs`). It runs no
   unit tests and no typechecking. Passing it means very little on its own.
-- `npm run build` is what **typechecks** your code. It is the real gate.
+- `npm run build` does **NOT** typecheck. Vite strips types with esbuild and never checks
+  them; a file with a genuine type error builds cleanly and ships. This was verified by
+  introducing a deliberate type error — `vite build` succeeded, `tsc` caught it.
+- **`npx tsc --noEmit` is the real typecheck**, and it is not wired into any npm script
+  or into CI. Run it by hand, every time. It is the only thing standing between a type
+  error and production.
 - `npm run test:unit` runs the one unit test file.
 
 **Work is not complete on the strength of code looking correct.** If you did not run it,
