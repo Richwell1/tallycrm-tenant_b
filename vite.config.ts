@@ -24,7 +24,13 @@ export default defineConfig({
       },
     },
     server: {
-      allowedHosts: ["localhost", "127.0.0.1", "crm.local", "crm.giftedsms.com"],
+      allowedHosts: [
+        "localhost",
+        "127.0.0.1",
+        "crm.local",
+        "crm.giftedsms.com",
+        "tallycrm-tenant-b.vercel.app",
+      ],
     },
   },
 

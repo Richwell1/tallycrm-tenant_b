@@ -1,8 +1,10 @@
 project_id = "ntvptytysrrzoourgxjl"
 
 [auth]
-site_url = "http://crm.local:3000"
+site_url = "https://tallycrm-tenant-b.vercel.app"
 additional_redirect_urls = [
+  "https://tallycrm-tenant-b.vercel.app",
+  "https://tallycrm-tenant-b.vercel.app/**",
   "http://crm.local",
   "http://crm.local/**",
   "http://crm.local:3000",
