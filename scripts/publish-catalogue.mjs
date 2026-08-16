@@ -104,7 +104,16 @@ const supabase = createClient(controlPlaneUrl, serviceRoleKey, {
 });
 
 for (const row of rows) {
-  const { error } = await supabase.rpc("publish_catalogue_entry", row);
+  const { error } = await supabase.rpc("publish_catalogue_entry", {
+    p_feature_key: row.feature_key,
+    p_name: row.name,
+    p_description: row.description,
+    p_version: row.version,
+    p_scope: row.scope,
+    p_audience: row.audience,
+    p_has_migration: row.has_migration,
+    p_source_branch: row.source_branch,
+  });
 
   if (error) {
     throw new Error(
