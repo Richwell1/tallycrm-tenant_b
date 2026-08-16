@@ -1,0 +1,130 @@
+name: Process marketplace installs
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: process-marketplace-installs
+  cancel-in-progress: false
+
+jobs:
+  process:
+    name: Claim and dispatch installs
+    if: github.repository == 'sowlbaby/tallycrm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CONTROL_PLANE_URL: ${{ secrets.CONTROL_PLANE_URL }}
+      CONTROL_PLANE_SERVICE_KEY: ${{ secrets.CONTROL_PLANE_SERVICE_KEY }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CONTROL_PLANE_URL:-}" || -z "${CONTROL_PLANE_SERVICE_KEY:-}" ]]; then
+            echo "CONTROL_PLANE_URL and CONTROL_PLANE_SERVICE_KEY are required." >&2
+            exit 1
+          fi
+
+      - name: Claim and process pending installs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rpc() {
+            local function_name="$1"
+            local payload="$2"
+            local response_file
+            local status
+            response_file="$(mktemp)"
+            status="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+              --request POST \
+              --header "apikey: $CONTROL_PLANE_SERVICE_KEY" \
+              --header "Authorization: Bearer $CONTROL_PLANE_SERVICE_KEY" \
+              --header "Content-Type: application/json" \
+              --data "$payload" \
+              "$CONTROL_PLANE_URL/rest/v1/rpc/$function_name")"
+            if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+              echo "RPC $function_name failed with HTTP $status: $(cat "$response_file")" >&2
+              return 1
+            fi
+            cat "$response_file"
+          }
+
+          set_status() {
+            local tenant="$1"
+            local feature="$2"
+            local status="$3"
+            local error_message="$4"
+            local payload
+            payload="$(jq -nc \
+              --arg tenant "$tenant" \
+              --arg feature "$feature" \
+              --arg status "$status" \
+              --arg error "$error_message" \
+              '{p_tenant_name: $tenant, p_feature_key: $feature, p_status: $status, p_error: (if $error == "" then null else $error end)}')"
+            rpc set_install_status "$payload" >/dev/null
+          }
+
+          claimed="$(rpc claim_pending_installs '{}')"
+          count="$(jq 'length' <<< "$claimed")"
+          echo "Claimed $count pending install(s)."
+
+          {
+            echo "## Marketplace installs"
+            echo
+            echo "Claimed **$count** pending install(s)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          while IFS= read -r encoded; do
+            install="$(base64 --decode <<< "$encoded")"
+            tenant="$(jq -r '.tenant_name' <<< "$install")"
+            feature="$(jq -r '.feature_key' <<< "$install")"
+            title="Install $feature for $tenant"
+            dispatched_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+            echo "Dispatching $title"
+            if ! gh workflow run propagate.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main \
+              -f "tenant_name=$tenant" \
+              -f "feature_key=$feature"; then
+              error_message="Could not dispatch the propagation workflow."
+              set_status "$tenant" "$feature" failed "$error_message"
+              echo "- ❌ \`$feature\` for \`$tenant\`: $error_message" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            run_id=""
+            for _ in {1..30}; do
+              run_id="$(gh api \
+                "repos/$GITHUB_REPOSITORY/actions/workflows/propagate.yml/runs?event=workflow_dispatch&branch=main&per_page=50" \
+                --jq ".workflow_runs | map(select(.display_title == \"$title\" and .created_at >= \"$dispatched_at\")) | sort_by(.created_at) | last | .id // empty")"
+              [[ -n "$run_id" ]] && break
+              sleep 2
+            done
+
+            if [[ -z "$run_id" ]]; then
+              error_message="Propagation was dispatched but its workflow run could not be located."
+              set_status "$tenant" "$feature" failed "$error_message"
+              echo "- ❌ \`$feature\` for \`$tenant\`: $error_message" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            if gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status; then
+              set_status "$tenant" "$feature" live ""
+              echo "- ✅ \`$feature\` for \`$tenant\`: live ([run $run_id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id))" >> "$GITHUB_STEP_SUMMARY"
+            else
+              error_message="Propagation workflow run $run_id failed."
+              set_status "$tenant" "$feature" failed "$error_message"
+              echo "- ❌ \`$feature\` for \`$tenant\`: $error_message" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done < <(jq -r '.[] | @base64' <<< "$claimed")

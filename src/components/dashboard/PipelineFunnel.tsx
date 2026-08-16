@@ -9,7 +9,7 @@ export function PipelineFunnel() {
   const max = Math.max(1, ...stages.map((s) => s.count));
 
   return (
-    <SectionCard title="Pipeline Funnel" description="Count and value of open deals per stage.">
+    <SectionCard title="Pipeline Funnel." description="Count and value of open deals per stage.">
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (

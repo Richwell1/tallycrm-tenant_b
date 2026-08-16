@@ -1,4 +1,4 @@
-import { Database, PackagePlus } from "lucide-react";
+import { CircleAlert, Database, LoaderCircle, PackageCheck, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MarketplaceFeature } from "@/lib/marketplace-data";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,15 @@ interface FeatureCardProps {
 }
 
 export function FeatureCard({ feature, onInstall }: FeatureCardProps) {
-  const installed = feature.installationStatus === "installed";
+  const status = feature.installationStatus;
+  const canInstall = status === "available" || status === "failed";
+  const statusLabel = {
+    available: "Available",
+    requested: "Requested",
+    installing: "Installing",
+    live: "Live",
+    failed: "Failed",
+  }[status];
 
   return (
     <article className="flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
@@ -26,23 +34,44 @@ export function FeatureCard({ feature, onInstall }: FeatureCardProps) {
         <span
           className={cn(
             "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-            installed ? "bg-success-light text-success" : "bg-muted text-text-secondary",
+            status === "live" && "bg-success-light text-success",
+            status === "failed" && "bg-destructive/10 text-destructive",
+            ["requested", "installing"].includes(status) && "bg-warning-light text-warning",
+            status === "available" && "bg-muted text-text-secondary",
           )}
         >
-          {installed ? "Installed" : "Available"}
+          {statusLabel}
         </span>
       </div>
 
       <p className="mt-4 flex-1 text-sm leading-6 text-text-secondary">{feature.description}</p>
+
+      {status === "failed" ? (
+        <div className="mt-4 flex gap-2 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{feature.installError || "Installation failed. You can retry the request."}</span>
+        </div>
+      ) : null}
 
       <div className="mt-5 flex items-center justify-between gap-4 border-t border-border pt-4">
         <div className="flex items-center gap-2 text-xs text-text-secondary">
           <Database className="h-4 w-4" aria-hidden="true" />
           <span>{feature.has_migration ? "Database change required" : "No database change"}</span>
         </div>
-        <Button type="button" size="sm" disabled={installed} onClick={() => onInstall(feature)}>
-          {installed ? "Installed" : "Install"}
-        </Button>
+        {canInstall ? (
+          <Button type="button" size="sm" onClick={() => onInstall(feature)}>
+            {status === "failed" ? "Retry" : "Install"}
+          </Button>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+            {status === "live" ? (
+              <PackageCheck className="h-4 w-4 text-success" aria-hidden="true" />
+            ) : (
+              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+            )}
+            {status === "live" ? "Installed" : statusLabel}
+          </div>
+        )}
       </div>
     </article>
   );

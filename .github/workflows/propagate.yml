@@ -1,0 +1,125 @@
+name: Propagate feature to tenant
+run-name: Install ${{ inputs.feature_key }} for ${{ inputs.tenant_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_name:
+        description: Tenant name from tenants.json
+        required: true
+        type: string
+      feature_key:
+        description: Catalogue feature key
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: propagate-${{ inputs.tenant_name }}-${{ inputs.feature_key }}
+  cancel-in-progress: false
+
+jobs:
+  propagate:
+    name: Merge and push feature
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TENANT_REPO_TOKEN: ${{ secrets.TENANT_REPO_TOKEN }}
+      TENANT_NAME: ${{ inputs.tenant_name }}
+      FEATURE_KEY: ${{ inputs.feature_key }}
+
+    steps:
+      - name: Checkout central repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tenant and feature
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${TENANT_REPO_TOKEN:-}" ]]; then
+            echo "TENANT_REPO_TOKEN is required to push to tenant repositories." >&2
+            exit 1
+          fi
+
+          tenant_repo="$(jq -er --arg tenant "$TENANT_NAME" '.[] | select(.name == $tenant and .status == "active") | .repo' tenants.json)"
+          feature_branch="feature/${FEATURE_KEY//_/-}"
+
+          find_manifest() {
+            local ref="$1"
+            local path
+            while IFS= read -r path; do
+              if [[ "$(git show "$ref:$path" | jq -r '.key // empty')" == "$FEATURE_KEY" ]]; then
+                echo "$path"
+                return 0
+              fi
+            done < <(git ls-tree -r --name-only "$ref" -- ':(glob)**/feature.json')
+            return 1
+          }
+
+          git fetch --prune origin main "+refs/heads/$feature_branch:refs/remotes/origin/$feature_branch" ||
+            git fetch --prune origin main
+
+          if manifest_path="$(find_manifest origin/main)"; then
+            source_ref="origin/main"
+            scope="$(git show "origin/main:$manifest_path" | jq -r '.scope')"
+            if [[ "$scope" != "all" ]]; then
+              echo "Named feature $FEATURE_KEY must not be propagated from main." >&2
+              exit 1
+            fi
+          elif git show-ref --verify --quiet "refs/remotes/origin/$feature_branch" &&
+            manifest_path="$(find_manifest "origin/$feature_branch")"; then
+            source_ref="origin/$feature_branch"
+            scope="$(git show "$source_ref:$manifest_path" | jq -r '.scope')"
+            if [[ "$scope" != "named" ]]; then
+              echo "Shared feature $FEATURE_KEY must be merged to main before propagation." >&2
+              exit 1
+            fi
+            if ! git show "$source_ref:$manifest_path" |
+              jq -e --arg tenant "$TENANT_NAME" '.audience | index($tenant) != null' >/dev/null; then
+              echo "Tenant $TENANT_NAME is not in the audience for $FEATURE_KEY." >&2
+              exit 1
+            fi
+          else
+            echo "Could not find feature $FEATURE_KEY on main or $feature_branch." >&2
+            exit 1
+          fi
+
+          echo "tenant_repo=$tenant_repo" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$source_ref" >> "$GITHUB_OUTPUT"
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
+      - name: Merge into tenant main and push
+        shell: bash
+        env:
+          TENANT_REPO: ${{ steps.resolve.outputs.tenant_repo }}
+          SOURCE_REF: ${{ steps.resolve.outputs.source_ref }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "prymage-control-plane[bot]"
+          git config user.email "prymage-control-plane[bot]@users.noreply.github.com"
+          git remote add tenant-target "https://x-access-token:${TENANT_REPO_TOKEN}@github.com/${TENANT_REPO}.git"
+          git fetch tenant-target main
+
+          work_branch="work-${TENANT_NAME}-${GITHUB_RUN_ID}"
+          git checkout -B "$work_branch" tenant-target/main
+          git merge "$SOURCE_REF" --no-edit
+          git push tenant-target "$work_branch:main"
+
+      - name: Record propagation
+        shell: bash
+        run: |
+          {
+            echo "## Feature propagation"
+            echo "- Tenant: \`$TENANT_NAME\`"
+            echo "- Feature: \`$FEATURE_KEY\`"
+            echo "- Scope: \`${{ steps.resolve.outputs.scope }}\`"
+            echo "- Repository: \`${{ steps.resolve.outputs.tenant_repo }}\`"
+            echo "- Source: \`${{ steps.resolve.outputs.source_ref }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
