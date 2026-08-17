@@ -1,0 +1,9 @@
+{
+  "key": "calendar",
+  "name": "Calendar",
+  "description": "See meetings, calls, demos and deadlines in a month view.",
+  "scope": "all",
+  "audience": [],
+  "has_migration": true,
+  "version": "1.0.0"
+}

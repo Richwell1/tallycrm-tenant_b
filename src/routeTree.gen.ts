@@ -26,6 +26,7 @@ import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/pu
 import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_authenticated/app.activities.index'
 import { Route as AuthenticatedAppAnalyticsIndexRouteImport } from './routes/_authenticated/app.analytics.index'
 import { Route as AuthenticatedAppAnalyticsRepIdRouteImport } from './routes/_authenticated/app.analytics.$repId'
+import { Route as AuthenticatedAppCalendarIndexRouteImport } from './routes/_authenticated/app.calendar.index'
 import { Route as AuthenticatedAppCompaniesIndexRouteImport } from './routes/_authenticated/app.companies.index'
 import { Route as AuthenticatedAppCompaniesIdRouteImport } from './routes/_authenticated/app.companies.$id'
 import { Route as AuthenticatedAppContactsIndexRouteImport } from './routes/_authenticated/app.contacts.index'
@@ -141,6 +142,12 @@ const AuthenticatedAppAnalyticsRepIdRoute =
   AuthenticatedAppAnalyticsRepIdRouteImport.update({
     id: '/analytics/$repId',
     path: '/analytics/$repId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCalendarIndexRoute =
+  AuthenticatedAppCalendarIndexRouteImport.update({
+    id: '/calendar/',
+    path: '/calendar/',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppCompaniesIndexRoute =
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
+  '/app/calendar/': typeof AuthenticatedAppCalendarIndexRoute
   '/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/app/credit-notes/': typeof AuthenticatedAppCreditNotesIndexRoute
@@ -360,6 +368,7 @@ export interface FileRoutesByTo {
   '/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/app/activities': typeof AuthenticatedAppActivitiesIndexRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsIndexRoute
+  '/app/calendar': typeof AuthenticatedAppCalendarIndexRoute
   '/app/companies': typeof AuthenticatedAppCompaniesIndexRoute
   '/app/contacts': typeof AuthenticatedAppContactsIndexRoute
   '/app/credit-notes': typeof AuthenticatedAppCreditNotesIndexRoute
@@ -405,6 +414,7 @@ export interface FileRoutesById {
   '/_authenticated/app/receipts/$id': typeof AuthenticatedAppReceiptsIdRoute
   '/_authenticated/app/activities/': typeof AuthenticatedAppActivitiesIndexRoute
   '/_authenticated/app/analytics/': typeof AuthenticatedAppAnalyticsIndexRoute
+  '/_authenticated/app/calendar/': typeof AuthenticatedAppCalendarIndexRoute
   '/_authenticated/app/companies/': typeof AuthenticatedAppCompaniesIndexRoute
   '/_authenticated/app/contacts/': typeof AuthenticatedAppContactsIndexRoute
   '/_authenticated/app/credit-notes/': typeof AuthenticatedAppCreditNotesIndexRoute
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/app/receipts/$id'
     | '/app/activities/'
     | '/app/analytics/'
+    | '/app/calendar/'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/credit-notes/'
@@ -492,6 +503,7 @@ export interface FileRouteTypes {
     | '/app/receipts/$id'
     | '/app/activities'
     | '/app/analytics'
+    | '/app/calendar'
     | '/app/companies'
     | '/app/contacts'
     | '/app/credit-notes'
@@ -536,6 +548,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/receipts/$id'
     | '/_authenticated/app/activities/'
     | '/_authenticated/app/analytics/'
+    | '/_authenticated/app/calendar/'
     | '/_authenticated/app/companies/'
     | '/_authenticated/app/contacts/'
     | '/_authenticated/app/credit-notes/'
@@ -688,6 +701,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics/$repId'
       fullPath: '/app/analytics/$repId'
       preLoaderRoute: typeof AuthenticatedAppAnalyticsRepIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/calendar/': {
+      id: '/_authenticated/app/calendar/'
+      path: '/calendar'
+      fullPath: '/app/calendar/'
+      preLoaderRoute: typeof AuthenticatedAppCalendarIndexRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/companies/': {
@@ -882,6 +902,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppReceiptsIdRoute: typeof AuthenticatedAppReceiptsIdRoute
   AuthenticatedAppActivitiesIndexRoute: typeof AuthenticatedAppActivitiesIndexRoute
   AuthenticatedAppAnalyticsIndexRoute: typeof AuthenticatedAppAnalyticsIndexRoute
+  AuthenticatedAppCalendarIndexRoute: typeof AuthenticatedAppCalendarIndexRoute
   AuthenticatedAppCompaniesIndexRoute: typeof AuthenticatedAppCompaniesIndexRoute
   AuthenticatedAppContactsIndexRoute: typeof AuthenticatedAppContactsIndexRoute
   AuthenticatedAppCreditNotesIndexRoute: typeof AuthenticatedAppCreditNotesIndexRoute
@@ -914,6 +935,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppReceiptsIdRoute: AuthenticatedAppReceiptsIdRoute,
   AuthenticatedAppActivitiesIndexRoute: AuthenticatedAppActivitiesIndexRoute,
   AuthenticatedAppAnalyticsIndexRoute: AuthenticatedAppAnalyticsIndexRoute,
+  AuthenticatedAppCalendarIndexRoute: AuthenticatedAppCalendarIndexRoute,
   AuthenticatedAppCompaniesIndexRoute: AuthenticatedAppCompaniesIndexRoute,
   AuthenticatedAppContactsIndexRoute: AuthenticatedAppContactsIndexRoute,
   AuthenticatedAppCreditNotesIndexRoute: AuthenticatedAppCreditNotesIndexRoute,
