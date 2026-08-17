@@ -3,6 +3,7 @@
     "name": "tenant_a",
     "display_name": "Tenant A",
     "repo": "damartey/tallycrm-tenant_a",
+    "token_secret": "TENANT_A_REPO_TOKEN",
     "supabase_project_ref": "hqtzdoeuifgeszpkkfmh",
     "app_url": null,
     "status": "active"
@@ -11,6 +12,7 @@
     "name": "tenant_b",
     "display_name": "Tenant B",
     "repo": "Richwell1/tallycrm-tenant_b",
+    "token_secret": "TENANT_B_REPO_TOKEN",
     "supabase_project_ref": "ntvptytysrrzoourgxjl",
     "app_url": null,
     "status": "active"

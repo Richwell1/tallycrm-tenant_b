@@ -330,7 +330,8 @@ end;
 $$;
 
 revoke all on function public.request_feature_install(text, text, text) from public;
-grant execute on function public.request_feature_install(text, text, text) to anon, service_role;
+revoke execute on function public.request_feature_install(text, text, text) from anon, service_role;
+grant execute on function public.request_feature_install(text, text, text) to service_role;
 
 create or replace function public.list_tenant_features(p_tenant_name text)
 returns setof control_plane.tenant_features

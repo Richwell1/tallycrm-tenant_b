@@ -17,6 +17,7 @@ import { InstallFeatureDialog } from "./InstallFeatureDialog";
 
 export function MarketplacePage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const configured = isControlPlaneConfigured();
   const { data, isLoading, isError, error, refetch, isFetching } = useMarketplaceCatalogue();
   const [selectedFeature, setSelectedFeature] = useState<MarketplaceFeature | null>(null);
@@ -58,11 +59,18 @@ export function MarketplacePage() {
         />
       ) : (
         <div className="space-y-10">
+          {!isAdmin ? (
+            <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-text-secondary">
+              Installation is restricted to administrators.
+            </p>
+          ) : null}
+
           <MarketplaceSection
             title="Available for you"
             description="Features available to every organisation using Tally CRM."
             features={data?.publicFeatures ?? []}
             onInstall={setSelectedFeature}
+            canManageInstalls={isAdmin}
             emptyMessage="There are no public marketplace features available right now."
           />
 
@@ -72,6 +80,7 @@ export function MarketplacePage() {
               description="These features were built specifically for your organisation."
               features={data?.privateFeatures ?? []}
               onInstall={setSelectedFeature}
+              canManageInstalls={isAdmin}
             />
           ) : null}
         </div>
@@ -86,7 +95,6 @@ export function MarketplacePage() {
           requestInstall.mutate(
             {
               featureKey: selectedFeature.feature_key,
-              requestedBy: user?.email || user?.id || "unknown user",
             },
             {
               onSuccess: () => setSelectedFeature(null),
@@ -120,6 +128,7 @@ interface MarketplaceSectionProps {
   description: string;
   features: MarketplaceFeature[];
   onInstall: (feature: MarketplaceFeature) => void;
+  canManageInstalls: boolean;
   emptyMessage?: string;
 }
 
@@ -128,6 +137,7 @@ function MarketplaceSection({
   description,
   features,
   onInstall,
+  canManageInstalls,
   emptyMessage,
 }: MarketplaceSectionProps) {
   return (
@@ -150,7 +160,12 @@ function MarketplaceSection({
       {features.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {features.map((feature) => (
-            <FeatureCard key={feature.feature_key} feature={feature} onInstall={onInstall} />
+            <FeatureCard
+              key={feature.feature_key}
+              feature={feature}
+              onInstall={onInstall}
+              canManageInstalls={canManageInstalls}
+            />
           ))}
         </div>
       ) : (

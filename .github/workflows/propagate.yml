@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TENANT_REPO_TOKEN: ${{ secrets.TENANT_REPO_TOKEN }}
       TENANT_NAME: ${{ inputs.tenant_name }}
       FEATURE_KEY: ${{ inputs.feature_key }}
 
@@ -42,12 +41,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -z "${TENANT_REPO_TOKEN:-}" ]]; then
-            echo "TENANT_REPO_TOKEN is required to push to tenant repositories." >&2
-            exit 1
-          fi
-
           tenant_repo="$(jq -er --arg tenant "$TENANT_NAME" '.[] | select(.name == $tenant and .status == "active") | .repo' tenants.json)"
+          token_secret="$(jq -er --arg tenant "$TENANT_NAME" '.[] | select(.name == $tenant and .status == "active") | .token_secret' tenants.json)"
           feature_branch="feature/${FEATURE_KEY//_/-}"
 
           find_manifest() {
@@ -58,7 +53,7 @@ jobs:
                 echo "$path"
                 return 0
               fi
-            done < <(git ls-tree -r --name-only "$ref" -- ':(glob)**/feature.json')
+            done < <(git ls-tree -r --name-only "$ref" | grep -E '(^|/)feature\.json$')
             return 1
           }
 
@@ -91,26 +86,44 @@ jobs:
           fi
 
           echo "tenant_repo=$tenant_repo" >> "$GITHUB_OUTPUT"
+          echo "token_secret=$token_secret" >> "$GITHUB_OUTPUT"
           echo "source_ref=$source_ref" >> "$GITHUB_OUTPUT"
           echo "scope=$scope" >> "$GITHUB_OUTPUT"
 
       - name: Merge into tenant main and push
+        id: merge
         shell: bash
         env:
           TENANT_REPO: ${{ steps.resolve.outputs.tenant_repo }}
+          TENANT_TOKEN_SECRET: ${{ steps.resolve.outputs.token_secret }}
+          TENANT_REPO_TOKEN: ${{ secrets[steps.resolve.outputs.token_secret] }}
           SOURCE_REF: ${{ steps.resolve.outputs.source_ref }}
         run: |
           set -euo pipefail
 
+          if [[ -z "${TENANT_REPO_TOKEN:-}" ]]; then
+            echo "Missing required repository secret $TENANT_TOKEN_SECRET for tenant $TENANT_NAME." >&2
+            exit 1
+          fi
+
           git config user.name "prymage-control-plane[bot]"
           git config user.email "prymage-control-plane[bot]@users.noreply.github.com"
+          git config --unset-all http.https://github.com/.extraheader || true
           git remote add tenant-target "https://x-access-token:${TENANT_REPO_TOKEN}@github.com/${TENANT_REPO}.git"
           git fetch tenant-target main
 
           work_branch="work-${TENANT_NAME}-${GITHUB_RUN_ID}"
           git checkout -B "$work_branch" tenant-target/main
+
+          if git merge-base --is-ancestor "$SOURCE_REF" tenant-target/main; then
+            echo "Feature $FEATURE_KEY is already present for $TENANT_NAME; nothing to merge or push."
+            echo "result=already present" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           git merge "$SOURCE_REF" --no-edit
           git push tenant-target "$work_branch:main"
+          echo "result=pushed" >> "$GITHUB_OUTPUT"
 
       - name: Record propagation
         shell: bash
@@ -122,4 +135,5 @@ jobs:
             echo "- Scope: \`${{ steps.resolve.outputs.scope }}\`"
             echo "- Repository: \`${{ steps.resolve.outputs.tenant_repo }}\`"
             echo "- Source: \`${{ steps.resolve.outputs.source_ref }}\`"
+            echo "- Result: ${{ steps.merge.outputs.result }}"
           } >> "$GITHUB_STEP_SUMMARY"
