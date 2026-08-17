@@ -1,6 +1,7 @@
 {
   "key": "delivery_notes",
   "name": "Delivery notes",
+  "description": "Create and print records of the goods delivered to each customer.",
   "scope": "named",
   "audience": ["tenant_b"],
   "has_migration": true,
