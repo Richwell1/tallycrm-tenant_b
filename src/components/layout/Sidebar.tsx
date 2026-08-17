@@ -15,6 +15,7 @@ import {
   Search,
   Settings,
   Users,
+  Warehouse,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ const SECTIONS: NavSection[] = [
       { label: "Tasks", to: "/app/tasks", icon: CheckSquare },
       { label: "Analytics", to: "/app/analytics", icon: BarChart3 },
       { label: "Marketplace", to: "/app/marketplace", icon: BadgeDollarSign },
+      { label: "Warehouses", to: "/app/warehouses", icon: Warehouse },
     ],
   },
   {

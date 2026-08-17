@@ -21,6 +21,7 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppWarehousesRouteImport } from './routes/_authenticated/app.warehouses'
 import { Route as ApiPublicLeadsCaptureRouteImport } from './routes/api.public.leads-capture'
 import { Route as ApiPublicLeadsCaptureSubmitRouteImport } from './routes/api/public/leads-capture-submit'
 import { Route as AuthenticatedAppActivitiesIndexRouteImport } from './routes/_authenticated/app.activities.index'
@@ -117,6 +118,12 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppWarehousesRoute =
+  AuthenticatedAppWarehousesRouteImport.update({
+    id: '/warehouses',
+    path: '/warehouses',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const ApiPublicLeadsCaptureRoute = ApiPublicLeadsCaptureRouteImport.update({
   id: '/api/public/leads-capture',
   path: '/api/public/leads-capture',
@@ -324,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/app/warehouses': typeof AuthenticatedAppWarehousesRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -369,6 +377,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/app/warehouses': typeof AuthenticatedAppWarehousesRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -417,6 +426,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/app/warehouses': typeof AuthenticatedAppWarehousesRoute
   '/api/public/leads-capture': typeof ApiPublicLeadsCaptureRoute
   '/api/public/leads-capture-submit': typeof ApiPublicLeadsCaptureSubmitRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/app/warehouses'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app/'
@@ -510,6 +521,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/app/warehouses'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/app'
@@ -557,6 +569,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/app/warehouses'
     | '/api/public/leads-capture'
     | '/api/public/leads-capture-submit'
     | '/_authenticated/app/'
@@ -692,6 +705,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/warehouses': {
+      id: '/_authenticated/app/warehouses'
+      path: '/warehouses'
+      fullPath: '/app/warehouses'
+      preLoaderRoute: typeof AuthenticatedAppWarehousesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/api/public/leads-capture': {
@@ -929,6 +949,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppWarehousesRoute: typeof AuthenticatedAppWarehousesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppAnalyticsRepIdRoute: typeof AuthenticatedAppAnalyticsRepIdRoute
   AuthenticatedAppCompaniesIdRoute: typeof AuthenticatedAppCompaniesIdRoute
@@ -964,6 +985,7 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppWarehousesRoute: AuthenticatedAppWarehousesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppAnalyticsRepIdRoute: AuthenticatedAppAnalyticsRepIdRoute,
   AuthenticatedAppCompaniesIdRoute: AuthenticatedAppCompaniesIdRoute,
