@@ -58,7 +58,7 @@ jobs:
                 echo "$path"
                 return 0
               fi
-            done < <(git ls-tree -r --name-only "$ref" -- ':(glob)**/feature.json')
+            done < <(git ls-tree -r --name-only "$ref" | grep -E '(^|/)feature\.json$')
             return 1
           }
 
@@ -95,6 +95,7 @@ jobs:
           echo "scope=$scope" >> "$GITHUB_OUTPUT"
 
       - name: Merge into tenant main and push
+        id: merge
         shell: bash
         env:
           TENANT_REPO: ${{ steps.resolve.outputs.tenant_repo }}
@@ -109,8 +110,16 @@ jobs:
 
           work_branch="work-${TENANT_NAME}-${GITHUB_RUN_ID}"
           git checkout -B "$work_branch" tenant-target/main
+
+          if git merge-base --is-ancestor "$SOURCE_REF" tenant-target/main; then
+            echo "Feature $FEATURE_KEY is already present for $TENANT_NAME; nothing to merge or push."
+            echo "result=already present" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           git merge "$SOURCE_REF" --no-edit
           git push tenant-target "$work_branch:main"
+          echo "result=pushed" >> "$GITHUB_OUTPUT"
 
       - name: Record propagation
         shell: bash
@@ -122,4 +131,5 @@ jobs:
             echo "- Scope: \`${{ steps.resolve.outputs.scope }}\`"
             echo "- Repository: \`${{ steps.resolve.outputs.tenant_repo }}\`"
             echo "- Source: \`${{ steps.resolve.outputs.source_ref }}\`"
+            echo "- Result: ${{ steps.merge.outputs.result }}"
           } >> "$GITHUB_STEP_SUMMARY"
