@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TENANT_REPO_TOKEN: ${{ secrets.TENANT_REPO_TOKEN }}
       TENANT_NAME: ${{ inputs.tenant_name }}
       FEATURE_KEY: ${{ inputs.feature_key }}
 
@@ -42,12 +41,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -z "${TENANT_REPO_TOKEN:-}" ]]; then
-            echo "TENANT_REPO_TOKEN is required to push to tenant repositories." >&2
-            exit 1
-          fi
-
           tenant_repo="$(jq -er --arg tenant "$TENANT_NAME" '.[] | select(.name == $tenant and .status == "active") | .repo' tenants.json)"
+          token_secret="$(jq -er --arg tenant "$TENANT_NAME" '.[] | select(.name == $tenant and .status == "active") | .token_secret' tenants.json)"
           feature_branch="feature/${FEATURE_KEY//_/-}"
 
           find_manifest() {
@@ -91,6 +86,7 @@ jobs:
           fi
 
           echo "tenant_repo=$tenant_repo" >> "$GITHUB_OUTPUT"
+          echo "token_secret=$token_secret" >> "$GITHUB_OUTPUT"
           echo "source_ref=$source_ref" >> "$GITHUB_OUTPUT"
           echo "scope=$scope" >> "$GITHUB_OUTPUT"
 
@@ -99,9 +95,16 @@ jobs:
         shell: bash
         env:
           TENANT_REPO: ${{ steps.resolve.outputs.tenant_repo }}
+          TENANT_TOKEN_SECRET: ${{ steps.resolve.outputs.token_secret }}
+          TENANT_REPO_TOKEN: ${{ secrets[steps.resolve.outputs.token_secret] }}
           SOURCE_REF: ${{ steps.resolve.outputs.source_ref }}
         run: |
           set -euo pipefail
+
+          if [[ -z "${TENANT_REPO_TOKEN:-}" ]]; then
+            echo "Missing required repository secret $TENANT_TOKEN_SECRET for tenant $TENANT_NAME." >&2
+            exit 1
+          fi
 
           git config user.name "prymage-control-plane[bot]"
           git config user.email "prymage-control-plane[bot]@users.noreply.github.com"
