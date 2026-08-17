@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/common";
 import { EditCompanyModal } from "@/components/companies/EditCompanyModal";
+import { CompanyNotesPanel } from "@/components/company-notes/CompanyNotesPanel";
 import { useCurrentRole } from "@/lib/auth-context";
 import { type CompanyDetail, useCompany, useDeleteCompany } from "@/lib/companies-data";
 import { formatCurrency } from "@/lib/format";
@@ -159,7 +160,9 @@ function CompanyDetailPage() {
           {tab === "contacts" && <ContactsPanel company={company} />}
           {tab === "deals" && <DealsPanel company={company} />}
           {tab === "activities" && <ActivitiesPanel company={company} />}
-          {tab === "notes" && <NotesPanel company={company} />}
+          {tab === "notes" && (
+            <CompanyNotesPanel companyId={company.id} companyName={company.name} />
+          )}
         </div>
       </section>
 
@@ -438,45 +441,6 @@ function ActivitiesPanel({ company }: { company: CompanyDetail }) {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function NotesPanel({ company }: { company: CompanyDetail }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-xs)]">
-        <textarea
-          className="h-24 w-full resize-none border-none bg-transparent p-0 text-sm outline-none placeholder:text-text-muted focus:ring-0"
-          placeholder={`Write a new note about ${company.name}...`}
-        />
-        <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-          <div className="flex gap-4 text-text-muted">
-            <button className="material-symbols-outlined hover:text-primary">format_bold</button>
-            <button className="material-symbols-outlined hover:text-primary">format_italic</button>
-            <button className="material-symbols-outlined hover:text-primary">attach_file</button>
-          </div>
-          <button className="rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white">
-            Save Note
-          </button>
-        </div>
-      </div>
-      <div className="relative rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-6 shadow-[var(--shadow-xs)]">
-        <h4 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#D97706]">
-          Pinned Note
-        </h4>
-        <p className="text-sm text-[#92400E]">
-          {company.notes ||
-            "Keep account strategy, renewal risks, and executive preferences here for the sales team."}
-        </p>
-        <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-[#92400E]">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FDE68A]">
-            {initials(company.account_manager?.full_name ?? "TM")}
-          </span>
-          {company.account_manager?.full_name || "Tally CRM"} •{" "}
-          {new Date(company.updated_at).toLocaleDateString()}
-        </div>
-      </div>
     </div>
   );
 }

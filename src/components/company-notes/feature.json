@@ -1,0 +1,9 @@
+{
+  "key": "company_notes",
+  "name": "Company notes",
+  "description": "Keep free-text notes against a company record.",
+  "scope": "all",
+  "audience": [],
+  "has_migration": true,
+  "version": "1.0.0"
+}
