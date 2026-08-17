@@ -1,0 +1,9 @@
+{
+  "key": "warehouse_locations",
+  "name": "Warehouse locations",
+  "description": "Manage the sites goods are dispatched from.",
+  "scope": "named",
+  "audience": ["tenant_b"],
+  "has_migration": true,
+  "version": "1.0.0"
+}
