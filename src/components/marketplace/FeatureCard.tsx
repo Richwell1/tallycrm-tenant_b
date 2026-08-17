@@ -6,11 +6,12 @@ import { cn } from "@/lib/utils";
 interface FeatureCardProps {
   feature: MarketplaceFeature;
   onInstall: (feature: MarketplaceFeature) => void;
+  canManageInstalls: boolean;
 }
 
-export function FeatureCard({ feature, onInstall }: FeatureCardProps) {
+export function FeatureCard({ feature, onInstall, canManageInstalls }: FeatureCardProps) {
   const status = feature.installationStatus;
-  const canInstall = status === "available" || status === "failed";
+  const canInstall = canManageInstalls && (status === "available" || status === "failed");
   const statusLabel = {
     available: "Available",
     requested: "Requested",
@@ -62,7 +63,7 @@ export function FeatureCard({ feature, onInstall }: FeatureCardProps) {
           <Button type="button" size="sm" onClick={() => onInstall(feature)}>
             {status === "failed" ? "Retry" : "Install"}
           </Button>
-        ) : (
+        ) : status !== "available" && status !== "failed" ? (
           <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary">
             {status === "live" ? (
               <PackageCheck className="h-4 w-4 text-success" aria-hidden="true" />
@@ -71,7 +72,7 @@ export function FeatureCard({ feature, onInstall }: FeatureCardProps) {
             )}
             {status === "live" ? "Installed" : statusLabel}
           </div>
-        )}
+        ) : null}
       </div>
     </article>
   );

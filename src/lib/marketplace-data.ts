@@ -4,6 +4,7 @@ import {
   controlPlaneSupabase,
   isControlPlaneConfigured,
 } from "@/integrations/supabase/control-plane-client";
+import { requestMarketplaceInstall } from "@/lib/marketplace-install.functions";
 
 export type CatalogueScope = "all" | "named";
 export type TenantFeatureStatus = "requested" | "installing" | "live" | "failed";
@@ -103,28 +104,13 @@ export function useMarketplaceCatalogue() {
   });
 }
 
-export async function requestFeatureInstall(featureKey: string, requestedBy: string) {
-  if (!isControlPlaneConfigured()) {
-    throw new Error("Marketplace configuration is incomplete.");
-  }
-
-  const { data, error } = await controlPlaneSupabase.rpc("request_feature_install", {
-    p_tenant_name: TENANT_NAME,
-    p_feature_key: featureKey,
-    p_requested_by: requestedBy,
-  });
-  if (error) throw error;
-
-  return ((data ?? []) as TenantFeature[])[0];
-}
-
 export function useRequestFeatureInstall() {
   const queryClient = useQueryClient();
   const queryKey = [...marketplaceCatalogueKey, TENANT_NAME];
 
   return useMutation({
-    mutationFn: ({ featureKey, requestedBy }: { featureKey: string; requestedBy: string }) =>
-      requestFeatureInstall(featureKey, requestedBy),
+    mutationFn: ({ featureKey }: { featureKey: string }) =>
+      requestMarketplaceInstall({ data: { featureKey } }),
     onMutate: async ({ featureKey }) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<MarketplaceCatalogue>(queryKey);
